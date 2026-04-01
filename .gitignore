@@ -1,56 +1,49 @@
- # Unity 자동 생성 폴더
-  /[Ll]ibrary/
-  /[Tt]emp/
-  /[Oo]bj/
-  /[Bb]uild/
-  /[Bb]uilds/
-  /[Ll]ogs/
-  /[Uu]serSettings/
+# Unity 자동 생성 폴더
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]serSettings/
+# MemoryCaptures
+/[Mm]emoryCaptures/
+# Recordings
+/[Rr]ecordings/
+# Asset Store 다운로드 캐시
+/[Aa]sset[Ss]tore[Tt]ools/
+# IDE 자동 생성 파일
+/*.csproj
+/*.sln
+/*.suo
+/*.tmp
+/*.user
+/*.userprefs
+/*.pidb
+/*.booproj
+/*.svd
+/*.pdb
+/*.mdb
+/*.opendb
+/*.VC.db
+# VS / Rider
+/.vs/
+/.idea/
+.vscode/
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+# Crashlytics
+crashlytics-build.properties
+# Addressables
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/*
+# TextMeshPro (자동 생성)
+/[Aa]ssets/TextMesh Pro/
+# Plastic SCM
+*.private.0
+*.private
 
-  # MemoryCaptures
-  /[Mm]emoryCaptures/
-
-  # Recordings
-  /[Rr]ecordings/
-
-  # Asset Store 다운로드 캐시
-  /[Aa]sset[Ss]tore[Tt]ools/
-
-  # IDE 자동 생성 파일
-  /*.csproj
-  /*.sln
-  /*.suo
-  /*.tmp
-  /*.user
-  /*.userprefs
-  /*.pidb
-  /*.booproj
-  /*.svd
-  /*.pdb
-  /*.mdb
-  /*.opendb
-  /*.VC.db
-
-  # VS / Rider
-  /.vs/
-  /.idea/
-  .vscode/
-
-  # OS 생성 파일
-  .DS_Store
-  Thumbs.db
-
-  # Crashlytics
-  crashlytics-build.properties
-
-  # Addressables
-  /[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
-  /[Aa]ssets/[Ss]treamingAssets/aa.meta
-  /[Aa]ssets/[Ss]treamingAssets/aa/*
-
-  # TextMeshPro (자동 생성)
-  /[Aa]ssets/TextMesh Pro/
-
-  # Plastic SCM
-  *.private.0
-  *.private
+#클로드 설정 폴더
+.claude/
