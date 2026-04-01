@@ -49,6 +49,11 @@ crashlytics-build.properties
 Packages/manifest.json
 Packages/packages-lock.json
 
+# 개인 환경별 차이 발생 가능
+ProjectSettings/PackageManagerSettings.asset
+ProjectSettings/BurstAotSettings_StandaloneWindows.json
+ProjectSettings/CommonBurstAotSettings.json
+
 #AI 에이전트, MCP 관련
 .claude/
 .mcp.json
