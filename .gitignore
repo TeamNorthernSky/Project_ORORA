@@ -47,3 +47,6 @@ crashlytics-build.properties
 
 #클로드 설정 폴더
 .claude/
+
+#Cursor 설정 폴더
+.cursor/
