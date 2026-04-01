@@ -51,6 +51,7 @@ Packages/packages-lock.json
 
 #AI 에이전트, MCP 관련
 .claude/
+.mcp.json
 node_modules/
 package.json
 package-lock.json
