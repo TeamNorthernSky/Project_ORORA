@@ -6,26 +6,14 @@ public class AStarPathfinder : MonoBehaviour
 {
     [SerializeField] private GridManager gridManager;
 
-    private static readonly Vector2Int[] Directions8 =
-    {
-        new Vector2Int(1, 0),
-        new Vector2Int(-1, 0),
-        new Vector2Int(0, 1),
-        new Vector2Int(0, -1),
-        new Vector2Int(1, 1),
-        new Vector2Int(1, -1),
-        new Vector2Int(-1, 1),
-        new Vector2Int(-1, -1)
-    };
-
     public List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal)
     {
-        if(start == goal)
+        if (start == goal)
             return new List<Vector2Int> { start };
 
-        if(gridManager != null)
+        if (gridManager != null)
         {
-            if (!gridManager.IsWalkable(start) || !gridManager.IsWalkable(goal))
+            if (!gridManager.CanEnterCell(goal, goal))
                 return null;
         }
 
@@ -43,27 +31,18 @@ public class AStarPathfinder : MonoBehaviour
             openSet.Remove(current);
             closedSet.Add(current);
 
-            for (int i = 0; i < Directions8.Length; i++)
+            for (int i = 0; i < GridManager.AxialDirections6.Length; i++)
             {
-                Vector2Int dir = Directions8[i];
+                Vector2Int dir = GridManager.AxialDirections6[i];
                 Vector2Int neighbor = current + dir;
+
                 if (closedSet.Contains(neighbor))
                     continue;
 
-                if (gridManager != null && !gridManager.IsWalkable(neighbor))
+                if (gridManager != null && !gridManager.CanEnterCell(neighbor, goal))
                     continue;
 
-                // 대각선 코너 끼임 방지: (x+dx, y) 와 (x, y+dy) 둘 다 walkable일 때만 허용
-                if (gridManager != null && dir.x != 0 && dir.y != 0)
-                {
-                    Vector2Int sideA = new Vector2Int(current.x + dir.x, current.y);
-                    Vector2Int sideB = new Vector2Int(current.x, current.y + dir.y);
-                    if (!gridManager.IsWalkable(sideA) || !gridManager.IsWalkable(sideB))
-                        continue;
-                }
-
-                float stepCost = (Directions8[i].x == 0 || Directions8[i].y == 0) ? 1f : 1.4142135f;
-                float tentativeG = GetOrInfinity(gScore, current) + stepCost;
+                float tentativeG = GetOrInfinity(gScore, current) + 1f;
 
                 if (!openSet.Contains(neighbor))
                     openSet.Add(neighbor);
@@ -77,14 +56,9 @@ public class AStarPathfinder : MonoBehaviour
 
         return null;
     }
-
     private static float Heuristic(Vector2Int a, Vector2Int b)
     {
-        int dx = Mathf.Abs(a.x - b.x);
-        int dy = Mathf.Abs(a.y - b.y);
-        int min = Mathf.Min(dx, dy);
-        int max = Mathf.Max(dx, dy);
-        return (max - min) + (1.4142135f * min);
+        return GridManager.HexDistance(a, b);
     }
 
     private static Vector2Int GetLowestF(List<Vector2Int> openSet, Dictionary<Vector2Int, float> gScore, Vector2Int goal)
