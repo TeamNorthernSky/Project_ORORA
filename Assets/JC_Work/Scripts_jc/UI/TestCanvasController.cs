@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
 public class TestCanvasController : MonoBehaviour
@@ -7,6 +8,7 @@ public class TestCanvasController : MonoBehaviour
     [Header("재화 표시")]
     [SerializeField] private TMP_InputField goldDisplay;
     [SerializeField] private TMP_InputField woodDisplay;
+    [SerializeField] private TMP_InputField oreDisplay;
 
     [Header("골드 버튼")]
     [SerializeField] private Button goldAddButton;
@@ -17,6 +19,10 @@ public class TestCanvasController : MonoBehaviour
     [SerializeField] private TMP_InputField woodInput;
     [SerializeField] private Button woodAddButton;
     [SerializeField] private Button woodResetButton;
+
+    [Header("광석 슬라이더")]
+    [SerializeField] private Slider oreSlider;
+    [SerializeField] private Button oreResetButton;
 
     [Header("전체")]
     [SerializeField] private Button resetAllButton;
@@ -32,6 +38,7 @@ public class TestCanvasController : MonoBehaviour
         SetupDisplayFields();
         BindButtons();
         BindWoodInput();
+        BindOreSlider();
         SubscribeCurrencyEvents();
         RefreshAllDisplays();
     }
@@ -56,6 +63,7 @@ public class TestCanvasController : MonoBehaviour
     {
         goldDisplay.readOnly = true;
         woodDisplay.readOnly = true;
+        oreDisplay.readOnly = true;
     }
 
     private void BindButtons()
@@ -67,7 +75,17 @@ public class TestCanvasController : MonoBehaviour
         woodAddButton.onClick.AddListener(OnWoodAddClicked);
         woodResetButton.onClick.AddListener(() => GameManager.Instance.Currency.Reset(CurrencyType.Wood));
 
-        resetAllButton.onClick.AddListener(() => GameManager.Instance.Currency.ResetAll());
+        oreResetButton.onClick.AddListener(() =>
+        {
+            GameManager.Instance.Currency.Reset(CurrencyType.Ore);
+            oreSlider.SetValueWithoutNotify(0);
+        });
+
+        resetAllButton.onClick.AddListener(() =>
+        {
+            GameManager.Instance.Currency.ResetAll();
+            oreSlider.SetValueWithoutNotify(0);
+        });
     }
 
     private void BindWoodInput()
@@ -77,6 +95,34 @@ public class TestCanvasController : MonoBehaviour
         woodAddButton.interactable = false;
 
         woodInput.onValueChanged.AddListener(OnWoodInputChanged);
+    }
+
+    private void BindOreSlider()
+    {
+        oreSlider.wholeNumbers = true;
+        oreSlider.minValue = -9999;
+        oreSlider.maxValue = 9999;
+        oreSlider.value = 0;
+
+        oreSlider.onValueChanged.AddListener(OnOreSliderDragging);
+
+        var trigger = oreSlider.gameObject.GetComponent<EventTrigger>();
+        if (trigger == null) trigger = oreSlider.gameObject.AddComponent<EventTrigger>();
+
+        var pointerUp = new EventTrigger.Entry { eventID = EventTriggerType.PointerUp };
+        pointerUp.callback.AddListener(_ => OnOreSliderReleased());
+        trigger.triggers.Add(pointerUp);
+    }
+
+    private void OnOreSliderDragging(float value)
+    {
+        oreDisplay.text = ((int)value).ToString();
+        oreDisplay.textComponent.color = value < 0 ? negativeColor : normalColor;
+    }
+
+    private void OnOreSliderReleased()
+    {
+        GameManager.Instance.Currency.Set(CurrencyType.Ore, (int)oreSlider.value);
     }
 
     private void OnWoodInputChanged(string value)
@@ -113,6 +159,9 @@ public class TestCanvasController : MonoBehaviour
             case CurrencyType.Wood:
                 UpdateDisplay(woodDisplay, newValue, type);
                 break;
+            case CurrencyType.Ore:
+                UpdateDisplay(oreDisplay, newValue, type);
+                break;
         }
     }
 
@@ -127,6 +176,7 @@ public class TestCanvasController : MonoBehaviour
         var currency = GameManager.Instance.Currency;
         UpdateDisplay(goldDisplay, currency.Get(CurrencyType.Gold), CurrencyType.Gold);
         UpdateDisplay(woodDisplay, currency.Get(CurrencyType.Wood), CurrencyType.Wood);
+        UpdateDisplay(oreDisplay, currency.Get(CurrencyType.Ore), CurrencyType.Ore);
     }
 
     private void ToggleCanvasGroup()

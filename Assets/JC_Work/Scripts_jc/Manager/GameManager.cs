@@ -1,4 +1,7 @@
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
@@ -25,7 +28,11 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         InitializeManagers();
-        LoadFirstScene();
+
+        if (SceneManager.GetActiveScene().name == "BootScene")
+        {
+            LoadFirstScene();
+        }
     }
 
     private void InitializeManagers()
@@ -41,6 +48,6 @@ public class GameManager : MonoBehaviour
 
     private void LoadFirstScene()
     {
-        SceneManager.LoadScene(firstSceneName);
+        Addressables.LoadSceneAsync(firstSceneName);
     }
 }

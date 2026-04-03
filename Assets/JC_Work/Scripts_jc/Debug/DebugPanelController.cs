@@ -51,6 +51,10 @@ public class DebugPanelController : MonoBehaviour
     public void Toggle()
     {
         gameObject.SetActive(!gameObject.activeSelf);
+        if (gameObject.activeSelf)
+        {
+            RefreshLogDisplay();
+        }
     }
 
     // --- 탭 전환 ---
@@ -153,6 +157,10 @@ public class DebugPanelController : MonoBehaviour
         }
 
         logContent.text = sb.ToString();
+        logContent.ForceMeshUpdate();
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(logContent.rectTransform);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(logScrollRect.content);
 
         Canvas.ForceUpdateCanvases();
         logScrollRect.verticalNormalizedPosition = 0f;
