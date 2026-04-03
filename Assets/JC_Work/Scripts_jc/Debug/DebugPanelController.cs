@@ -79,6 +79,8 @@ public class DebugPanelController : MonoBehaviour
 
     private void HandleUnityLog(string condition, string stackTrace, LogType type)
     {
+        if (this == null) return;
+
         DebugLogType debugType;
         switch (type)
         {
