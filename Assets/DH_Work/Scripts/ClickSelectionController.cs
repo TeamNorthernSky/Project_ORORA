@@ -22,6 +22,8 @@ public class ClickSelectionController : MonoBehaviour
 
     private Vector2Int markerGrid;
     private bool hasMarkerGrid;
+    private bool hasPendingRepath;
+    private List<Vector2Int> previewPathOverride;
 
     private void Start()
     {
@@ -40,6 +42,7 @@ public class ClickSelectionController : MonoBehaviour
         if (playerMover != null)
         {
             playerMover.PathUpdated += HandlePathUpdated;
+            playerMover.StepReached += HandleStepReached;
             playerMover.MoveCompleted += HandleMoveCompleted;
         }
     }
@@ -49,6 +52,7 @@ public class ClickSelectionController : MonoBehaviour
         if (playerMover != null)
         {
             playerMover.PathUpdated -= HandlePathUpdated;
+            playerMover.StepReached -= HandleStepReached;
             playerMover.MoveCompleted -= HandleMoveCompleted;
         }
     }
@@ -76,6 +80,14 @@ public class ClickSelectionController : MonoBehaviour
         markerWorld.y = gridManager.GetLandSurfaceY();
 
         PlaceMarker(clickedGrid, markerWorld);
+
+        if (playerMover.IsMoving)
+        {
+            hasPendingRepath = true;
+            UpdatePendingPathPreview();
+            return;
+        }
+
         StartMoveToMarker();
     }
 
@@ -125,6 +137,9 @@ public class ClickSelectionController : MonoBehaviour
         if (!hasMarkerGrid || playerMover == null || pathfinder == null)
             return;
 
+        hasPendingRepath = false;
+        previewPathOverride = null;
+
         Vector2Int playerGrid = playerMover.GetCurrentGrid();
         List<Vector2Int> path = pathfinder.FindPath(playerGrid, markerGrid);
 
@@ -148,8 +163,18 @@ public class ClickSelectionController : MonoBehaviour
             pathPreviewRenderer.RenderPath(remainingPath, gridManager);
     }
 
+    private void HandleStepReached(Vector2Int reachedGrid)
+    {
+        if (!hasPendingRepath || !hasMarkerGrid || playerMover == null || pathfinder == null)
+            return;
+
+        StartMoveToMarker();
+    }
+
     private void HandleMoveCompleted()
     {
+        hasPendingRepath = false;
+        previewPathOverride = null;
         hasMarkerGrid = false;
 
         if (marker != null)
@@ -164,6 +189,28 @@ public class ClickSelectionController : MonoBehaviour
         if (pathPreviewRenderer == null || playerMover == null || gridManager == null)
             return;
 
-        pathPreviewRenderer.RenderPathFromWorld(playerMover.transform.position, playerMover.GetRemainingPath(), gridManager);
+        List<Vector2Int> pathToRender = hasPendingRepath && previewPathOverride != null
+            ? previewPathOverride
+            : playerMover.GetRemainingPath();
+
+        pathPreviewRenderer.RenderPathFromWorld(playerMover.transform.position, pathToRender, gridManager);
+    }
+
+    private void UpdatePendingPathPreview()
+    {
+        previewPathOverride = null;
+
+        if (!hasPendingRepath || !hasMarkerGrid || playerMover == null || pathfinder == null || pathPreviewRenderer == null || gridManager == null)
+            return;
+
+        if (!playerMover.TryGetNextGrid(out Vector2Int nextGrid))
+            return;
+
+        List<Vector2Int> pendingPath = pathfinder.FindPath(nextGrid, markerGrid);
+        if (pendingPath == null || pendingPath.Count == 0)
+            return;
+
+        previewPathOverride = pendingPath;
+        pathPreviewRenderer.RenderPathFromWorld(playerMover.transform.position, previewPathOverride, gridManager);
     }
 }

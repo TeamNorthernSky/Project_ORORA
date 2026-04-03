@@ -13,14 +13,17 @@ public class PlayerGridMover : MonoBehaviour
 
     private readonly Queue<Vector2Int> pathQueue = new Queue<Vector2Int>();
     private bool isMoving;
+    private Vector2Int currentGrid;
     private float fixedY;
 
     public event Action<List<Vector2Int>> PathUpdated;
+    public event Action<Vector2Int> StepReached;
     public event Action MoveCompleted;
 
     private void Awake()
     {
         fixedY = transform.position.y;
+        currentGrid = gridManager != null ? gridManager.WorldToGrid(transform.position) : Vector2Int.zero;
     }
 
     private void Update()
@@ -37,8 +40,13 @@ public class PlayerGridMover : MonoBehaviour
         {
             transform.position = target;
             pathQueue.Dequeue();
+            currentGrid = nextGrid;
+            bool reachedPathEnd = pathQueue.Count == 0;
+
+            StepReached?.Invoke(currentGrid);
             NotifyPathUpdated();
-            if (pathQueue.Count == 0)
+
+            if (reachedPathEnd && pathQueue.Count == 0)
             {
                 isMoving = false;
                 MoveCompleted?.Invoke();
@@ -48,9 +56,7 @@ public class PlayerGridMover : MonoBehaviour
 
     public Vector2Int GetCurrentGrid()
     {
-        if (gridManager == null)
-            return Vector2Int.zero;
-        return gridManager.WorldToGrid(transform.position);
+        return currentGrid;
     }
 
     public bool IsMoving => isMoving;
@@ -62,10 +68,25 @@ public class PlayerGridMover : MonoBehaviour
         return remainingPath;
     }
 
+    public bool TryGetNextGrid(out Vector2Int nextGrid)
+    {
+        if (pathQueue.Count > 0)
+        {
+            nextGrid = pathQueue.Peek();
+            return true;
+        }
+
+        nextGrid = currentGrid;
+        return false;
+    }
+
     public void MoveByGridPath(List<Vector2Int> fullPath)
     {
         pathQueue.Clear();
         isMoving = false;
+
+        if (fullPath != null && fullPath.Count > 0)
+            currentGrid = fullPath[0];
 
         if (fullPath == null || fullPath.Count <= 1)
         {
