@@ -25,8 +25,10 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - XLength: 2
+    - ZLength: 3
     - _LineThickness: 0.014
     m_Colors:
     - _BackgroundColor: {r: 0.18238977, g: 0.12560797, b: 0.12560797, a: 0}
-    - _GridColor: {r: 0.6037736, g: 0.54491514, b: 0.54491514, a: 1}
+    - _GridColor: {r: 0.06289297, g: 0.061508536, b: 0.061508536, a: 1}
   m_BuildTextureStacks: []

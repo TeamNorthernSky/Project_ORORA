@@ -14,8 +14,12 @@ Shader "Unlit/GridShader"
         Pass
         {
             HLSLPROGRAM
+            
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            
             #pragma vertex vert
             #pragma fragment frag
+
 
             struct appdata
             {
@@ -37,7 +41,8 @@ Shader "Unlit/GridShader"
             v2f vert (appdata v)
             {
                 v2f o;
-                o.pos = UnityObjectToClipPos(v.vertex);
+                o.pos = TransformObjectToHClip(v.vertex);
+                
                 o.uv = v.uv * _GridSize;
                 return o;
             }
