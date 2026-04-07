@@ -4,51 +4,50 @@ using UnityEngine.Rendering.Universal;
 
 public class FogOfWarRenderFeature : ScriptableRendererFeature
 {
-    class CustomRenderPass : ScriptableRenderPass
+    [System.Serializable]
+    public class Settings
     {
-        private Material fogMaterial;
-        private RTHandle source;
-        private RTHandle tempCopy;
+        [Tooltip("FogOfWar.shader가 적용된 Material")]
+        public Material fogMaterial;
+        public RenderPassEvent renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
+    }
 
-        public CustomRenderPass(Material mat)
+    public Settings settings = new Settings();
+    private FogOfWarPass _fogPass;
+
+    class FogOfWarPass : ScriptableRenderPass
+    {
+        private Material _material;
+        private RTHandle _source;
+        private RTHandle _tempHandle;
+
+        public FogOfWarPass(Material material, RenderPassEvent passEvent)
         {
-            fogMaterial = mat;
-            renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
+            _material = material;
+            renderPassEvent = passEvent;
         }
 
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
-            // Unity 2022+ 에서는 AddRenderPasses 단계가 아닌 OnCameraSetup 내부에서 렌더 타겟을 가져오는 것이 안전합니다.
-            source = renderingData.cameraData.renderer.cameraColorTargetHandle;
+            // 월드 좌표 복원을 위해 Depth 정보가 필요함을 URP에 알립니다.
+            ConfigureInput(ScriptableRenderPassInput.Depth);
 
-            RenderTextureDescriptor descriptor = renderingData.cameraData.cameraTargetDescriptor;
-            descriptor.depthBufferBits = 0; // Color pass only
-            RenderingUtils.ReAllocateIfNeeded(ref tempCopy, descriptor, FilterMode.Bilinear, TextureWrapMode.Clamp, name: "_TempFogCopy");
+            _source = renderingData.cameraData.renderer.cameraColorTargetHandle;
+
+            RenderTextureDescriptor desc = renderingData.cameraData.cameraTargetDescriptor;
+            desc.depthBufferBits = 0; // 복사용 임시 RT에는 Depth를 담지 않음
+            RenderingUtils.ReAllocateIfNeeded(ref _tempHandle, desc, FilterMode.Bilinear, TextureWrapMode.Clamp, name: "_TempFogRT");
         }
 
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
-            if (fogMaterial == null || source == null) return;
-            
-            var volume = VolumeManager.instance.stack.GetComponent<FogOfWarVolume>();
-            if (volume == null || !volume.IsActive()) return;
+            if (_material == null || _source == null) return;
 
             CommandBuffer cmd = CommandBufferPool.Get("FogOfWar Blit");
 
-            // Apply Volume overloads
-            fogMaterial.SetColor("_FogColor", volume.fogColor.value);
-            if (volume.noiseTexture.value != null)
-                fogMaterial.SetTexture("_NoiseTex", volume.noiseTexture.value);
-                
-            // Combine Vignette data
-            Vector4 playerUV = Shader.GetGlobalVector("_PlayerWorldPos");
-            playerUV.z = volume.vignetteOuterRadius.value;
-            playerUV.w = volume.vignetteInnerRadius.value;
-            Shader.SetGlobalVector("_PlayerWorldPos", playerUV);
-
-            // Unity 2022+ 에서는 cmd.Blit 대신 Blitter (Core) 를 사용하여 RTHandle 간 복사를 수행합니다.
-            Blitter.BlitCameraTexture(cmd, source, tempCopy, fogMaterial, 0);
-            Blitter.BlitCameraTexture(cmd, tempCopy, source);
+            // Unity 2022+ Blitter API 사용
+            Blitter.BlitCameraTexture(cmd, _source, _tempHandle, _material, 0);
+            Blitter.BlitCameraTexture(cmd, _tempHandle, _source);
 
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
@@ -56,41 +55,27 @@ public class FogOfWarRenderFeature : ScriptableRendererFeature
 
         public void Dispose()
         {
-            tempCopy?.Release();
+            _tempHandle?.Release();
         }
     }
 
-    private CustomRenderPass m_ScriptablePass;
-    private Material m_Material;
-    public Shader shader;
-
     public override void Create()
     {
-        if (shader != null)
+        if (settings.fogMaterial != null)
         {
-            m_Material = CoreUtils.CreateEngineMaterial(shader);
+            _fogPass = new FogOfWarPass(settings.fogMaterial, settings.renderPassEvent);
         }
-        
-        m_ScriptablePass = new CustomRenderPass(m_Material);
     }
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
-        if (renderingData.cameraData.cameraType != CameraType.Game || m_Material == null) return;
-        
-        // OnCameraSetup 내부에서 Source 타겟을 할당하도록 변경했으므로 여기선 Pass만 큐에 넣습니다.
-        renderer.EnqueuePass(m_ScriptablePass);
+        if (renderingData.cameraData.cameraType != CameraType.Game || settings.fogMaterial == null) return;
+        renderer.EnqueuePass(_fogPass);
     }
 
     protected override void Dispose(bool disposing)
     {
-        m_ScriptablePass?.Dispose();
-
-        if (Application.isPlaying && m_Material != null)
-            Destroy(m_Material);
-        else if (m_Material != null)
-            DestroyImmediate(m_Material);
-            
+        _fogPass?.Dispose();
         base.Dispose(disposing);
     }
 }

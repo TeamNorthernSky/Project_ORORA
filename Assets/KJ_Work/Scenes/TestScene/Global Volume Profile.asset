@@ -29,7 +29,7 @@ MonoBehaviour:
   active: 1
   fogColor:
     m_OverrideState: 1
-    m_Value: {r: 0.91194963, g: 0.4043549, b: 0.4043549, a: 0.4745098}
+    m_Value: {r: 1, g: 0.07861614, b: 0.07861614, a: 0.50980395}
   noiseTexture:
     m_OverrideState: 0
     m_Value: {fileID: 2800000, guid: 35aa01d7fe2d64141ad2fbe262fba686, type: 3}

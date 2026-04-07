@@ -1,172 +1,120 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class FogOfWarManager : MonoBehaviour
 {
-    [Header("Map References")]
-    public Transform player;
-    public Camera mainCamera;
-    
-    [Header("Fog Map Configuration")]
-    public int textureSize = 256;
-    public float mapSizeX = 100f;
-    public float mapSizeZ = 100f;
+    public static FogOfWarManager Instance { get; private set; }
+
+    [Header("Map Settings")]
+    [Tooltip("지도의 중심 좌표 설정")]
     public Vector2 mapCenter = Vector2.zero;
-
-    [Header("Visibility Settings")]
-    public float revealRadius = 10f;
-    public float updateInterval = 0.1f;
-
-    private Texture2D fogTexture;
+    [Tooltip("지도의 실제 크기 (World X, Z)")]
+    public Vector2 mapSize = new Vector2(100f, 100f);
+    [Tooltip("시야 렌더 타겟의 해상도")]
+    public int resolution = 1024;
     
-    // 부드러운 보간을 위한 맵 데이터 배열들
-    private float[] exploredMap;  // 한 번이라도 탐험했던 지역을 기억 (최대 0.75)
-    private float[] targetMap;    // 이번 프레임의 목표 시야 (현재 시야 1.0 + 탐험 0.75)
-    private float[] currentMap;   // 실제 텍스처에 적용되는 현재 렌더링 시야 (보간됨)
-    private Color[] colorBuffer;
+    [Header("Dependencies")]
+    [Tooltip("원형 시야를 그릴 마스크 Material (FogOfWarMask.shader)")]
+    public Material visionMaskMaterial; 
+    [Tooltip("누적 메모리 블렌딩을 시킬 Material (FogOfWarAccumulate.shader)")]
+    public Material accumulateMaterial; 
+    
+    private RenderTexture _fogCurrentRT;
+    private RenderTexture _fogVisitedRT;
+    private CommandBuffer _cb;
+    private Mesh _quadMesh;
 
-    [Header("Interpolation")]
-    public float fadeSpeed = 5f;  // 안개가 걷히고 끼는 속도
-    public float vignetteMoveSpeed = 10f; // 비네트 마스크가 플레이어를 따라가는 속도
-
-    private Vector2 currentWorldPos; // 현재 비네트가 위치한 월드 좌표 (Lerp용)
-
-    void Start()
+    private void Awake()
     {
-        if(mainCamera == null)
-            mainCamera = Camera.main;
+        Instance = this;
+        InitializeFog();
+    }
 
-        if (player != null)
-        {
-            currentWorldPos = new Vector2(player.position.x, player.position.z);
-        }
-
-        fogTexture = new Texture2D(textureSize, textureSize, TextureFormat.RFloat, false);
-        fogTexture.wrapMode = TextureWrapMode.Clamp;
-        fogTexture.filterMode = FilterMode.Bilinear;
+    private void InitializeFog()
+    {
+        // 1. 실시간 시야와 누적 시야 RT 생성
+        _fogCurrentRT = new RenderTexture(resolution, resolution, 0, RenderTextureFormat.R8);
+        _fogCurrentRT.name = "_FogCurrentRT";
         
-        int totalPixels = textureSize * textureSize;
-        exploredMap = new float[totalPixels];
-        targetMap = new float[totalPixels];
-        currentMap = new float[totalPixels];
-        colorBuffer = new Color[totalPixels];
-
-        for (int i = 0; i < totalPixels; i++)
-        {
-            exploredMap[i] = 0f;
-            targetMap[i] = 0f;
-            currentMap[i] = 0f;
-            colorBuffer[i] = new Color(0, 0, 0, 0);
-        }
-
-        fogTexture.SetPixels(colorBuffer);
-        fogTexture.Apply();
-
-        // Push map size globals
-        float minX = mapCenter.x - mapSizeX * 0.5f;
-        float minZ = mapCenter.y - mapSizeZ * 0.5f;
-        Shader.SetGlobalVector("_MapBounds", new Vector4(minX, minZ, mapSizeX, mapSizeZ));
-        Shader.SetGlobalTexture("_FogTex", fogTexture);
-
-        // 첫 프레임 즉시 업데이트 (보간 없이)
-        UpdateTargetMap();
-        System.Array.Copy(targetMap, currentMap, totalPixels);
-        for(int i = 0; i < totalPixels; i++) colorBuffer[i].r = currentMap[i];
-        fogTexture.SetPixels(colorBuffer);
-        fogTexture.Apply();
-    }
-
-    void Update()
-    {
-        // 1. 매 프레임 플레이어 목표 시야맵 계산
-        UpdateTargetMap();
-
-        // 2. 현재 시야맵을 목표 시야맵으로 서서히 보간(Lerp)하여 텍스처 적용
-        LerpMap();
+        _fogVisitedRT = new RenderTexture(resolution, resolution, 0, RenderTextureFormat.R8);
+        _fogVisitedRT.name = "_FogVisitedRT";
         
-        // 3. 비네트(Vignette) 마스크가 플레이어의 월드 좌표에 맞춰 부드럽게 따라오도록 보간 적용
-        if (player != null)
-        {
-            Vector2 targetWorldPos = new Vector2(player.position.x, player.position.z);
-            
-            // 월드 좌표 보간 (부드러운 카메라 효과)
-            currentWorldPos = Vector2.Lerp(currentWorldPos, targetWorldPos, Time.deltaTime * vignetteMoveSpeed);
+        // 2. 누적 기억 RT 검은색(0, 안보임)으로 초기화 
+        RenderTexture.active = _fogVisitedRT;
+        GL.Clear(false, true, Color.black);
+        RenderTexture.active = null;
 
-            Vector4 currentPosVec = Shader.GetGlobalVector("_PlayerWorldPos");
-            currentPosVec.x = currentWorldPos.x;
-            currentPosVec.y = currentWorldPos.y;
-            Shader.SetGlobalVector("_PlayerWorldPos", currentPosVec);
-        }
+        _cb = new CommandBuffer { name = "FogOfWar_DrawVision" };
+        _quadMesh = CreateQuad();
     }
 
-    void UpdateTargetMap()
+    private void LateUpdate()
     {
-        // 최적화: 매 프레임 targetMap을 초기화하기 보다 exploredMap을 그대로 복사해옵니다. (지나간 자리는 0.75 유지)
-        System.Array.Copy(exploredMap, targetMap, exploredMap.Length);
-
-        if (player == null) return;
-
-        float minX = mapCenter.x - mapSizeX * 0.5f;
-        float minZ = mapCenter.y - mapSizeZ * 0.5f;
-
-        float normalizedPlayerX = (player.position.x - minX) / mapSizeX;
-        float normalizedPlayerZ = (player.position.z - minZ) / mapSizeZ;
-
-        int playerPixelX = Mathf.RoundToInt(normalizedPlayerX * textureSize);
-        int playerPixelZ = Mathf.RoundToInt(normalizedPlayerZ * textureSize);
-
-        int radiusPixels = Mathf.RoundToInt((revealRadius / mapSizeX) * textureSize);
-        float fadeEdgePixels = radiusPixels * 0.3f; // 원의 테두리를 부드럽게 깎아낼 픽셀 수
-
-        for (int y = -radiusPixels; y <= radiusPixels; y++)
+        if (_cb == null) return;
+        
+        _cb.Clear();
+        
+        // 1. 매 프레임 Current 시야 RT 클리어 (현재 영역 초기화)
+        _cb.SetRenderTarget(_fogCurrentRT);
+        _cb.ClearRenderTarget(false, true, Color.black);
+        
+        // 2. 위에서 바닥을 내려다보는 카메라 직교 매트릭스 설정
+        Vector3 camPos = new Vector3(mapCenter.x, 100f, mapCenter.y);
+        Matrix4x4 view = Matrix4x4.Inverse(Matrix4x4.TRS(camPos, Quaternion.LookRotation(Vector3.down, Vector3.up), Vector3.one));
+        Matrix4x4 proj = Matrix4x4.Ortho(-mapSize.x * 0.5f, mapSize.x * 0.5f, -mapSize.y * 0.5f, mapSize.y * 0.5f, 0.1f, 200f);
+        _cb.SetViewProjectionMatrices(view, proj);
+        
+        // 3. 등록된 모든 시야 보유 유닛에 대해 Quad(마스크) 그리기
+        foreach(var unit in FogOfWarUnit.AllUnits)
         {
-            for (int x = -radiusPixels; x <= radiusPixels; x++)
-            {
-                int px = playerPixelX + x;
-                int py = playerPixelZ + y;
-
-                if (px >= 0 && px < textureSize && py >= 0 && py < textureSize)
-                {
-                    float distance = Mathf.Sqrt(x * x + y * y);
-                    if (distance <= radiusPixels)
-                    {
-                        // 딱딱한 원형 시야 대신 테두리 보간을 넣어 자연스럽게 맵에 그려지도록 합니다.
-                        float edgeDist = Mathf.Max(0, distance - (radiusPixels - fadeEdgePixels));
-                        float visibility = 1.0f - Mathf.Clamp01(edgeDist / fadeEdgePixels);
-                        
-                        int idx = py * textureSize + px;
-                        
-                        // 현재 플레이어의 시야는 1.0 (최대 밝음) 까지 오를 수 있습니다.
-                        targetMap[idx] = Mathf.Max(targetMap[idx], visibility);
-                        
-                        // 한 번이라도 밝혀진 곳은 최대 0.75까지만 영구 기록으로 남깁니다.
-                        float exploredVisibility = Mathf.Min(visibility, 0.75f);
-                        exploredMap[idx] = Mathf.Max(exploredMap[idx], exploredVisibility);
-                    }
-                }
-            }
+            float r = unit.visionRadius;
+            Vector3 pos = unit.transform.position;
+            // Quad 메시는 Z=0, XY 평면 기준이므로 XZ 평면상으로 그리기위해 회전 적용
+            Matrix4x4 trs = Matrix4x4.TRS(
+                new Vector3(pos.x, 0f, pos.z), 
+                Quaternion.Euler(90f, 0f, 0f), 
+                new Vector3(r * 2f, r * 2f, 1f)
+            );
+            _cb.DrawMesh(_quadMesh, trs, visionMaskMaterial);
         }
+        
+        // 4. Current 시야를 Visited 누적 RT에 Max Blend 기법으로 덮어씌움
+        _cb.Blit(_fogCurrentRT, _fogVisitedRT, accumulateMaterial);
+        
+        // 커맨드 버퍼 실행 시점
+        Graphics.ExecuteCommandBuffer(_cb);
+        
+        // 5. 후처리 셰이더용 Global 변수 전달
+        Shader.SetGlobalTexture("_FogCurrentRT", _fogCurrentRT);
+        Shader.SetGlobalTexture("_FogVisitedRT", _fogVisitedRT);
+        
+        Vector4 mapBounds = new Vector4(mapCenter.x - mapSize.x * 0.5f, mapCenter.y - mapSize.y * 0.5f, mapSize.x, mapSize.y);
+        Shader.SetGlobalVector("_FogMapBounds", mapBounds);
     }
 
-    void LerpMap()
+    private Mesh CreateQuad()
     {
-        bool isUpdated = false;
-        float dt = Time.deltaTime * fadeSpeed;
+        Mesh mesh = new Mesh();
+        mesh.vertices = new Vector3[] {
+            new Vector3(-0.5f, -0.5f, 0),
+            new Vector3( 0.5f, -0.5f, 0),
+            new Vector3(-0.5f,  0.5f, 0),
+            new Vector3( 0.5f,  0.5f, 0)
+        };
+        mesh.uv = new Vector2[] {
+            new Vector2(0, 0),
+            new Vector2(1, 0),
+            new Vector2(0, 1),
+            new Vector2(1, 1)
+        };
+        mesh.triangles = new int[] { 0, 2, 1, 2, 3, 1 };
+        return mesh;
+    }
 
-        for (int i = 0; i < currentMap.Length; i++)
-        {
-            // 목표치와 차이가 날 때만 보간 (매우 미세한 차이는 생략하여 성능 확보)
-            if (Mathf.Abs(currentMap[i] - targetMap[i]) > 0.005f)
-            {
-                currentMap[i] = Mathf.Lerp(currentMap[i], targetMap[i], dt);
-                colorBuffer[i].r = currentMap[i];
-                isUpdated = true;
-            }
-        }
-
-        if (isUpdated)
-        {
-            fogTexture.SetPixels(colorBuffer);
-            fogTexture.Apply();
-        }
+    private void OnDestroy()
+    {
+        if (_fogCurrentRT) _fogCurrentRT.Release();
+        if (_fogVisitedRT) _fogVisitedRT.Release();
+        if (_cb != null) _cb.Release();
     }
 }
