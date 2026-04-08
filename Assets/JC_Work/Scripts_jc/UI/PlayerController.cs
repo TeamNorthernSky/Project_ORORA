@@ -1,0 +1,97 @@
+using UnityEngine;
+
+/// <summary>
+/// 임시 플레이어 컨트롤러.
+/// 우클릭(누르기/드래그) 위치로 이동, 시야 반경 속성 보유.
+/// </summary>
+public class PlayerController : MonoBehaviour
+{
+    [Header("Player Settings")]
+    [SerializeField] private int sightRadius = 5;
+    [SerializeField] private float moveSpeed = 8f;
+
+    private PlayGridManager grid;
+    private PlayFogManager fogOfWar;
+    private Vector2Int currentGridPos;
+    private Vector3 targetWorldPos;
+    private bool hasTarget;
+
+    public int SightRadius => sightRadius;
+    public Vector2Int CurrentGridPos => currentGridPos;
+
+    private void Start()
+    {
+        grid = GameManager.Instance?.Grid;
+        if (grid == null)
+        {
+            Debug.LogError("[PlayerController] PlayGridManager를 찾을 수 없습니다");
+            return;
+        }
+
+        fogOfWar = GameManager.Instance?.FogOfWar;
+
+        currentGridPos = PlayGridManager.WorldToGrid(transform.position);
+        targetWorldPos = PlayGridManager.GridToWorld(currentGridPos);
+        targetWorldPos.y = transform.position.y;
+        transform.position = targetWorldPos;
+
+        // 시작 위치 시야 공개
+        fogOfWar?.UpdatePlayerVisibility(currentGridPos, sightRadius);
+    }
+
+    private void Update()
+    {
+        if (grid == null) return;
+
+        // 우클릭 누르는 중이면 계속 목표 갱신 (드래그 추적)
+        if (Input.GetMouseButton(1))
+        {
+            HandleRightClick();
+        }
+
+        if (hasTarget)
+        {
+            MoveToTarget();
+        }
+    }
+
+    private void HandleRightClick()
+    {
+        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        var plane = new Plane(Vector3.up, Vector3.zero);
+        if (!plane.Raycast(ray, out float distance)) return;
+
+        Vector3 hitPoint = ray.GetPoint(distance);
+        Vector2Int targetGrid = PlayGridManager.WorldToGrid(hitPoint);
+
+        // 맵 경계 내로 클램프
+        targetGrid.x = Mathf.Clamp(targetGrid.x, 0, PlayGridManager.GridWidth - 1);
+        targetGrid.y = Mathf.Clamp(targetGrid.y, 0, PlayGridManager.GridHeight - 1);
+
+        currentGridPos = targetGrid;
+        targetWorldPos = PlayGridManager.GridToWorld(targetGrid);
+        targetWorldPos.y = transform.position.y;
+        hasTarget = true;
+    }
+
+    private void MoveToTarget()
+    {
+        transform.position = Vector3.MoveTowards(transform.position, targetWorldPos, moveSpeed * Time.deltaTime);
+
+        // 이동 중 현재 위치 기준 시야 갱신
+        var movingGridPos = PlayGridManager.WorldToGrid(transform.position);
+        if (movingGridPos != currentGridPos)
+        {
+            currentGridPos = movingGridPos;
+            fogOfWar?.UpdatePlayerVisibility(currentGridPos, sightRadius);
+        }
+
+        if (Vector3.Distance(transform.position, targetWorldPos) < 0.01f)
+        {
+            transform.position = targetWorldPos;
+            hasTarget = false;
+            currentGridPos = PlayGridManager.WorldToGrid(transform.position);
+            fogOfWar?.UpdatePlayerVisibility(currentGridPos, sightRadius);
+        }
+    }
+}
