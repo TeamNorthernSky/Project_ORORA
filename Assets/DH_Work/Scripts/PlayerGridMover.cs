@@ -17,7 +17,8 @@ public class PlayerGridMover : MonoBehaviour
     private float fixedY;
 
     public event Action<List<Vector2Int>> PathUpdated;
-    public event Action<Vector2Int> StepReached;
+    public event Action<Vector2Int> AdjacentItemCellEntered;
+    public event Action<Vector2Int> AdjacentFactoryCellEntered;
     public event Action MoveCompleted;
 
     private void Awake()
@@ -43,7 +44,7 @@ public class PlayerGridMover : MonoBehaviour
             currentGrid = nextGrid;
             bool reachedPathEnd = pathQueue.Count == 0;
 
-            StepReached?.Invoke(currentGrid);
+            HandleAdjacentInteractableProximity(currentGrid);
             NotifyPathUpdated();
 
             if (reachedPathEnd && pathQueue.Count == 0)
@@ -66,18 +67,6 @@ public class PlayerGridMover : MonoBehaviour
         var remainingPath = new List<Vector2Int>();
         remainingPath.AddRange(pathQueue);
         return remainingPath;
-    }
-
-    public bool TryGetNextGrid(out Vector2Int nextGrid)
-    {
-        if (pathQueue.Count > 0)
-        {
-            nextGrid = pathQueue.Peek();
-            return true;
-        }
-
-        nextGrid = currentGrid;
-        return false;
     }
 
     public void MoveByGridPath(List<Vector2Int> fullPath)
@@ -108,6 +97,43 @@ public class PlayerGridMover : MonoBehaviour
         var remainingPath = new List<Vector2Int> { GetCurrentGrid() };
         remainingPath.AddRange(pathQueue);
         PathUpdated?.Invoke(remainingPath);
+    }
+
+    private void HandleAdjacentInteractableProximity(Vector2Int enteredGrid)
+    {
+        if (gridManager == null)
+            return;
+
+        HandleAdjacentItemProximity(enteredGrid);
+        HandleAdjacentFactoryProximity(enteredGrid);
+    }
+
+    private void HandleAdjacentItemProximity(Vector2Int enteredGrid)
+    {
+        if (!gridManager.TryGetAdjacentItemGrid(enteredGrid, out Vector2Int itemGrid))
+            return;
+
+        OnAdjacentItemCellEntered(itemGrid);
+    }
+
+    private void HandleAdjacentFactoryProximity(Vector2Int enteredGrid)
+    {
+        if (!gridManager.TryGetAdjacentFactoryGrid(enteredGrid, out Vector2Int factoryGrid))
+            return;
+
+        OnAdjacentFactoryCellEntered(factoryGrid);
+    }
+
+    private void OnAdjacentItemCellEntered(Vector2Int itemGrid)
+    {
+        // TODO: Enter your item-adjacent command here when needed.
+        AdjacentItemCellEntered?.Invoke(itemGrid);
+    }
+
+    private void OnAdjacentFactoryCellEntered(Vector2Int factoryGrid)
+    {
+        // TODO: Enter your factory-adjacent command here when needed.
+        AdjacentFactoryCellEntered?.Invoke(factoryGrid);
     }
 }
 
