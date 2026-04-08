@@ -1,30 +1,54 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.SceneManagement;
 
+[System.Serializable]
+public class SceneEntry
+{
+    public string sceneName;
+    public string displayName;
+    public bool isCircularNav;
+}
+
+[System.Serializable]
+public class SceneRegistryData
+{
+    public List<SceneEntry> scenes = new List<SceneEntry>();
+}
+
 public class SceneLoader : MonoBehaviour
 {
-    // 순환 순서: 타이틀 → 로비 → 플레이 → 엔딩 → 타이틀
-    public static readonly string[] SceneOrder =
-        { "TitleScene", "LobbyScene", "PlayScene", "EndingScene" };
+    private const string RegistryPath = "Assets/SceneRegistry.json";
 
-    private static readonly Dictionary<string, string> DisplayNames = new Dictionary<string, string>
+    // 하드코딩 기본값 (JSON 파일이 없을 때 사용)
+    private static readonly SceneEntry[] DefaultEntries =
     {
-        { "TitleScene", "타이틀 씬" },
-        { "LobbyScene", "로비 씬" },
-        { "PlayScene", "플레이 씬" },
-        { "EndingScene", "엔딩 씬" },
-        { "TestScene", "테스트 씬" },
-        { "BootScene", "부트 씬" }
+        new SceneEntry { sceneName = "TitleScene",  displayName = "타이틀 씬", isCircularNav = true },
+        new SceneEntry { sceneName = "LobbyScene",  displayName = "로비 씬",   isCircularNav = true },
+        new SceneEntry { sceneName = "PlayScene",   displayName = "플레이 씬", isCircularNav = true },
+        new SceneEntry { sceneName = "EndingScene", displayName = "엔딩 씬",   isCircularNav = true },
     };
+
+    // 등록된 모든 씬
+    private List<SceneEntry> allEntries = new List<SceneEntry>();
+    // 순환 순서 씬만 (이전/다음 버튼용)
+    private List<string> circularOrder = new List<string>();
+    // 표시명 캐시
+    private Dictionary<string, string> displayNames = new Dictionary<string, string>();
 
     // 이력: List + Index (브라우저 뒤로/앞으로 패턴)
     private List<string> history = new List<string>();
     private int currentIndex = -1;
     private bool isLoading;
+
+    // --- 이벤트 ---
+    public event Action<string> OnSceneLoadStarted;
+    public event Action<string> OnSceneLoadCompleted;
 
     public string CurrentSceneName { get; private set; }
 
@@ -34,6 +58,7 @@ public class SceneLoader : MonoBehaviour
 
     public void Initialize()
     {
+        LoadSceneRegistry();
         CurrentSceneName = SceneManager.GetActiveScene().name;
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
@@ -43,21 +68,79 @@ public class SceneLoader : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
+    // --- 씬 레지스트리 로드 ---
+
+    private void LoadSceneRegistry()
+    {
+        allEntries.Clear();
+
+        // 하드코딩 기본값 추가
+        allEntries.AddRange(DefaultEntries);
+
+        // JSON 파일에서 추가 씬 로드
+        string fullPath = Path.Combine(Application.dataPath, "..", RegistryPath);
+        if (File.Exists(fullPath))
+        {
+            try
+            {
+                string json = File.ReadAllText(fullPath);
+                var data = JsonUtility.FromJson<SceneRegistryData>(json);
+                if (data?.scenes != null)
+                {
+                    foreach (var entry in data.scenes)
+                    {
+                        // 중복 방지
+                        if (!allEntries.Exists(e => e.sceneName == entry.sceneName))
+                        {
+                            allEntries.Add(entry);
+                        }
+                    }
+                    Debug.Log($"[SceneLoader] SceneRegistry.json 로드 완료: {data.scenes.Count}개 추가 씬");
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[SceneLoader] SceneRegistry.json 파싱 실패: {e.Message}");
+            }
+        }
+
+        // 캐시 구축
+        circularOrder.Clear();
+        displayNames.Clear();
+
+        foreach (var entry in allEntries)
+        {
+            displayNames[entry.sceneName] = entry.displayName;
+            if (entry.isCircularNav)
+            {
+                circularOrder.Add(entry.sceneName);
+            }
+        }
+
+        // 기본 표시명 (등록되지 않은 씬용)
+        displayNames.TryAdd("TestScene", "테스트 씬");
+        displayNames.TryAdd("BootScene", "부트 씬");
+    }
+
+    // --- 씬 로드 이벤트 ---
+
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         CurrentSceneName = scene.name;
 
         // 최초 씬이 이력에 없으면 추가
-        if (history.Count == 0 && IsNavigationScene(scene.name))
+        if (history.Count == 0 && IsRegisteredScene(scene.name))
         {
             history.Add(scene.name);
             currentIndex = 0;
         }
 
-        if (IsNavigationScene(scene.name))
+        if (IsRegisteredScene(scene.name))
         {
             StartCoroutine(SpawnNavigationCanvas());
         }
+
+        OnSceneLoadCompleted?.Invoke(scene.name);
     }
 
     // --- 씬 전환: 이력에 새 항목 추가 ---
@@ -78,7 +161,7 @@ public class SceneLoader : MonoBehaviour
         StartCoroutine(LoadSceneRoutine(sceneName));
     }
 
-    // --- 다음 씬 ---
+    // --- 다음 씬 (순환) ---
 
     public void LoadNextScene()
     {
@@ -86,13 +169,11 @@ public class SceneLoader : MonoBehaviour
 
         if (HasForwardHistory())
         {
-            // 앞쪽 이력이 있으면 이력에서 복원
             currentIndex++;
             StartCoroutine(LoadSceneRoutine(history[currentIndex]));
         }
         else
         {
-            // 최상단이면 순환 다음 씬을 이력에 추가
             string next = GetNextInOrder(CurrentSceneName);
             if (next != null) LoadScene(next);
         }
@@ -106,18 +187,15 @@ public class SceneLoader : MonoBehaviour
 
         if (HasBackHistory())
         {
-            // 뒤쪽 이력이 있으면 이력에서 복원
             currentIndex--;
             StartCoroutine(LoadSceneRoutine(history[currentIndex]));
         }
         else
         {
-            // 최하단이면 순환 이전 씬을 이력 앞에 삽입
             string prev = GetPreviousInOrder(CurrentSceneName);
             if (prev != null)
             {
                 history.Insert(0, prev);
-                // currentIndex는 0 유지 (삽입으로 기존 항목이 밀림)
                 StartCoroutine(LoadSceneRoutine(prev));
             }
         }
@@ -142,44 +220,52 @@ public class SceneLoader : MonoBehaviour
 
     public string GetNextInOrder(string sceneName)
     {
-        int index = System.Array.IndexOf(SceneOrder, sceneName);
+        int index = circularOrder.IndexOf(sceneName);
         if (index < 0) return null;
-        return SceneOrder[(index + 1) % SceneOrder.Length];
+        return circularOrder[(index + 1) % circularOrder.Count];
     }
 
     public string GetPreviousInOrder(string sceneName)
     {
-        int index = System.Array.IndexOf(SceneOrder, sceneName);
+        int index = circularOrder.IndexOf(sceneName);
         if (index < 0) return null;
-        return SceneOrder[(index - 1 + SceneOrder.Length) % SceneOrder.Length];
+        return circularOrder[(index - 1 + circularOrder.Count) % circularOrder.Count];
     }
+
+    // --- 등록 씬 조회 ---
 
     public string[] GetDirectJumpTargets(string currentScene)
     {
         var targets = new List<string>();
-        foreach (var scene in SceneOrder)
+        foreach (var entry in allEntries)
         {
-            if (scene != currentScene)
-                targets.Add(scene);
+            if (entry.sceneName != currentScene)
+                targets.Add(entry.sceneName);
         }
         return targets.ToArray();
     }
 
     public string GetDisplayName(string sceneName)
     {
-        return DisplayNames.TryGetValue(sceneName, out string name) ? name : sceneName;
+        return displayNames.TryGetValue(sceneName, out string name) ? name : sceneName;
+    }
+
+    public bool IsRegisteredScene(string sceneName)
+    {
+        return allEntries.Exists(e => e.sceneName == sceneName);
+    }
+
+    public IReadOnlyList<SceneEntry> GetAllEntries()
+    {
+        return allEntries.AsReadOnly();
     }
 
     // --- 내부 ---
 
-    private bool IsNavigationScene(string sceneName)
-    {
-        return System.Array.IndexOf(SceneOrder, sceneName) >= 0;
-    }
-
     private IEnumerator LoadSceneRoutine(string sceneName)
     {
         isLoading = true;
+        OnSceneLoadStarted?.Invoke(sceneName);
 
         var handle = Addressables.LoadSceneAsync(sceneName);
         while (!handle.IsDone)

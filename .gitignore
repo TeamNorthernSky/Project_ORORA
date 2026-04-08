@@ -54,6 +54,10 @@ ProjectSettings/PackageManagerSettings.asset
 ProjectSettings/BurstAotSettings_StandaloneWindows.json
 ProjectSettings/CommonBurstAotSettings.json
 
+# 씬 레지스트리 (개인 환경별 커스텀 씬 목록)
+Assets/SceneRegistry.json
+Assets/SceneRegistry.json.meta
+
 #AI 에이전트, MCP 관련
 .claude/
 .mcp.json
