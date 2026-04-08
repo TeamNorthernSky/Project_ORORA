@@ -8,6 +8,8 @@ public class DebugManager : MonoBehaviour
 
     [SerializeField] private KeyCode toggleKey = KeyCode.BackQuote;
 
+    public KeyCode ToggleKey => toggleKey;
+
     private DebugPanelController panelController;
 
     public void Initialize()
@@ -17,14 +19,6 @@ public class DebugManager : MonoBehaviour
         if (panelController != null)
         {
             panelController.Initialize();
-        }
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(toggleKey))
-        {
-            TogglePanel();
         }
     }
 

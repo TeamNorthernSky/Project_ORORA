@@ -25,6 +25,16 @@ public class GameManager : MonoBehaviour
         InitializeManagers();
     }
 
+    #if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private void Update()
+    {
+        if (Debug != null && Input.GetKeyDown(Debug.ToggleKey))
+        {
+            Debug.TogglePanel();
+        }
+    }
+    #endif
+
     private void InitializeManagers()
     {
         Currency = GetComponentInChildren<CurrencyManager>();

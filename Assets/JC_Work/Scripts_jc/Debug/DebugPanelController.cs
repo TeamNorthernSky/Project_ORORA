@@ -37,21 +37,18 @@ public class DebugPanelController : MonoBehaviour
 
     private Vector2 initialSize;
     private Vector2 initialPosition;
-    private Canvas debugCanvas;
-    private GraphicRaycaster debugRaycaster;
+    private GameObject debugCanvasObj;
 
     public void Initialize()
     {
         var panelRect = GetComponent<RectTransform>();
         initialSize = panelRect.sizeDelta;
         initialPosition = panelRect.anchoredPosition;
-        debugCanvas = GetComponentInParent<Canvas>();
-        debugRaycaster = debugCanvas.GetComponent<GraphicRaycaster>();
+        debugCanvasObj = GetComponentInParent<Canvas>().gameObject;
 
         SetupDragAndResize(panelRect);
 
-        debugCanvas.enabled = false;
-        if (debugRaycaster != null) debugRaycaster.enabled = false;
+        debugCanvasObj.SetActive(false);
         BindLogButtons();
         BindTabButtons();
         Application.logMessageReceived += HandleUnityLog;
@@ -118,10 +115,8 @@ public class DebugPanelController : MonoBehaviour
 
     public void Toggle()
     {
-        bool show = !debugCanvas.enabled;
-        debugCanvas.enabled = show;
-        if (debugRaycaster != null) debugRaycaster.enabled = show;
-        if (show)
+        debugCanvasObj.SetActive(!debugCanvasObj.activeSelf);
+        if (debugCanvasObj.activeSelf)
         {
             RefreshLogDisplay();
         }
@@ -190,7 +185,7 @@ public class DebugPanelController : MonoBehaviour
             logEntries.RemoveAt(0);
         }
 
-        if (debugCanvas != null && debugCanvas.enabled)
+        if (debugCanvasObj != null && debugCanvasObj.activeSelf)
         {
             RefreshLogDisplay();
         }
