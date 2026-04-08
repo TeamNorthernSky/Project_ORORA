@@ -14,7 +14,6 @@ public class QuarterViewCameraFollower : MonoBehaviour
 
     [Header("Offsets")]
     [SerializeField] private Vector3 positionOffset = new Vector3(0f, 12f, -8.6f);
-    [SerializeField] private Vector3 lookAtOffset = new Vector3(0f, 0.5f, 0f);
 
     [Header("Smoothing")]
     [SerializeField] private float rotationLerp = 10f;
@@ -28,15 +27,19 @@ public class QuarterViewCameraFollower : MonoBehaviour
     [SerializeField] private float zoomSpeed = 200f;
 
     [Header("Edge Scrolling")]
+    [SerializeField] private bool edgeScrollEnabled = true;
     [SerializeField] private float edgeThreshold = 40f;
     [SerializeField] private float edgeScrollSpeed = 30f;
+    [SerializeField] private float edgeAcceleration = 10f;
     [SerializeField] private float edgeLimitRange = 50f;
+    [SerializeField] private bool invertVerticalEdgeScroll = false;
 
     [Header("Reset")]
     [SerializeField] private KeyCode resetKey = KeyCode.Y;
 
     private Vector3 followVelocity;
     private Vector3 panOffset;
+    private Vector3 edgeScrollVelocity;
     private float defaultZoomY;
 
     public void SetFollowTarget(Transform target)
@@ -47,13 +50,6 @@ public class QuarterViewCameraFollower : MonoBehaviour
     public void SetFollowEnabled(bool enabled)
     {
         followEnabled = enabled;
-    }
-
-    public void SetQuarterView(Vector3 newPositionOffset, Vector3 newLookAtOffset)
-    {
-        positionOffset = new Vector3(0f, newPositionOffset.y, newPositionOffset.z);
-        lookAtOffset = newLookAtOffset;
-        defaultZoomY = positionOffset.y;
     }
 
     private void Awake()
@@ -74,7 +70,7 @@ public class QuarterViewCameraFollower : MonoBehaviour
         if (!followEnabled || followTarget == null)
             return;
 
-        Vector3 followAnchor = followTarget.position + new Vector3(lookAtOffset.x, 0f, lookAtOffset.z);
+        Vector3 followAnchor = followTarget.position;
         Vector3 desiredPos = followAnchor + panOffset + positionOffset;
         desiredPos.x = followAnchor.x + panOffset.x;
         desiredPos.y = positionOffset.y;
@@ -101,27 +97,36 @@ public class QuarterViewCameraFollower : MonoBehaviour
 
     private void HandleEdgeScrolling()
     {
-        if (!IsMouseInsideScreen())
-            return;
+        Vector2 edgeInput = Vector2.zero;
+        if (edgeScrollEnabled && IsMouseInsideScreen())
+        {
+            Vector3 mousePosition = Input.mousePosition;
+            edgeInput.x = EvaluateEdgeInput(mousePosition.x, Screen.width);
+            edgeInput.y = EvaluateEdgeInput(mousePosition.y, Screen.height);
+        }
 
-        Vector3 move = Vector3.zero;
-        Vector3 mousePosition = Input.mousePosition;
+        if (invertVerticalEdgeScroll)
+            edgeInput.y *= -1f;
 
-        if (mousePosition.x <= edgeThreshold)
-            move.x -= 1f;
-        else if (mousePosition.x >= Screen.width - edgeThreshold)
-            move.x += 1f;
+        Vector3 right = transform.right;
+        right.y = 0f;
+        right.Normalize();
 
-        if (mousePosition.y <= edgeThreshold)
-            move.z -= 1f;
-        else if (mousePosition.y >= Screen.height - edgeThreshold)
-            move.z += 1f;
+        Vector3 forward = transform.forward;
+        forward.y = 0f;
+        forward.Normalize();
 
-        if (move.sqrMagnitude <= 0f)
-            return;
+        Vector3 desiredVelocity = (right * edgeInput.x) + (forward * edgeInput.y);
+        if (desiredVelocity.sqrMagnitude > 1f)
+            desiredVelocity.Normalize();
 
-        move.Normalize();
-        panOffset += move * (edgeScrollSpeed * Time.deltaTime);
+        desiredVelocity *= edgeScrollSpeed;
+
+        float blend = 1f - Mathf.Exp(-Mathf.Max(0.01f, edgeAcceleration) * Time.deltaTime);
+        edgeScrollVelocity = Vector3.Lerp(edgeScrollVelocity, desiredVelocity, blend);
+        edgeScrollVelocity.y = 0f;
+
+        panOffset += edgeScrollVelocity * Time.deltaTime;
         panOffset.x = Mathf.Clamp(panOffset.x, -edgeLimitRange, edgeLimitRange);
         panOffset.z = Mathf.Clamp(panOffset.z, -edgeLimitRange, edgeLimitRange);
         panOffset.y = 0f;
@@ -133,7 +138,21 @@ public class QuarterViewCameraFollower : MonoBehaviour
             return;
 
         panOffset = Vector3.zero;
+        edgeScrollVelocity = Vector3.zero;
         positionOffset = new Vector3(0f, defaultZoomY, positionOffset.z);
+    }
+
+    private float EvaluateEdgeInput(float mouseAxis, float screenSize)
+    {
+        float safeThreshold = Mathf.Max(1f, edgeThreshold);
+
+        if (mouseAxis <= safeThreshold)
+            return -Mathf.Clamp01((safeThreshold - mouseAxis) / safeThreshold);
+
+        if (mouseAxis >= screenSize - safeThreshold)
+            return Mathf.Clamp01((mouseAxis - (screenSize - safeThreshold)) / safeThreshold);
+
+        return 0f;
     }
 
     private static bool IsMouseInsideScreen()

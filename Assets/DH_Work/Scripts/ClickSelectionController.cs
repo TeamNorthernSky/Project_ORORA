@@ -7,7 +7,7 @@ public class ClickSelectionController : MonoBehaviour
     [SerializeField] private Camera mainCamera;
     [SerializeField] private GridManager gridManager;
     [SerializeField] private AStarPathfinder pathfinder;
-    [SerializeField] private PlayerGridMover playerMover;
+    [SerializeField] private PlayerGridMover[] playerMovers;
     [SerializeField] private Transform marker;
 
     [Header("Raycast")]
@@ -20,15 +20,18 @@ public class ClickSelectionController : MonoBehaviour
     [Header("Path Preview")]
     [SerializeField] private PathPreviewRenderer pathPreviewRenderer;
 
+    private PlayerGridMover activeMover;
     private Vector2Int markerGrid;
     private bool hasMarkerGrid;
-    private bool hasPendingRepath;
-    private List<Vector2Int> previewPathOverride;
+    private List<Vector2Int> previewPath;
+    private bool hasPreviewPath;
 
     private void Start()
     {
         if (mainCamera == null)
             mainCamera = Camera.main;
+
+        activeMover = playerMovers[0];
 
         if (cameraFollower == null && mainCamera != null)
             cameraFollower = mainCamera.GetComponent<QuarterViewCameraFollower>();
@@ -39,21 +42,19 @@ public class ClickSelectionController : MonoBehaviour
         if (pathPreviewRenderer != null)
             pathPreviewRenderer.Hide();
 
-        if (playerMover != null)
+        if (activeMover != null)
         {
-            playerMover.PathUpdated += HandlePathUpdated;
-            playerMover.StepReached += HandleStepReached;
-            playerMover.MoveCompleted += HandleMoveCompleted;
+            activeMover.PathUpdated += HandlePathUpdated;
+            activeMover.MoveCompleted += HandleMoveCompleted;
         }
     }
 
     private void OnDestroy()
     {
-        if (playerMover != null)
+        if (activeMover != null)
         {
-            playerMover.PathUpdated -= HandlePathUpdated;
-            playerMover.StepReached -= HandleStepReached;
-            playerMover.MoveCompleted -= HandleMoveCompleted;
+            activeMover.PathUpdated -= HandlePathUpdated;
+            activeMover.MoveCompleted -= HandleMoveCompleted;
         }
     }
 
@@ -62,33 +63,38 @@ public class ClickSelectionController : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
             TryHandleClick();
 
-        if (playerMover != null && playerMover.IsMoving)
+        if (activeMover != null && activeMover.IsMoving)
             UpdateRealtimePathPreview();
     }
 
     private void TryHandleClick()
     {
-        if (mainCamera == null || gridManager == null || playerMover == null || pathfinder == null || marker == null)
+        if (mainCamera == null || gridManager == null || activeMover == null || pathfinder == null || marker == null)
+            return;
+
+        if (activeMover.IsMoving)
             return;
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+
+        if (TryHandleMoverSelection(ray))
+            return;
+
+        if (TryHandleMarkerClick(ray))
+            return;
+
         if (!TryGetClosestLandHit(ray, out RaycastHit landHit))
             return;
 
         Vector2Int clickedGrid = gridManager.WorldToGrid(landHit.point);
+        if (gridManager.HasObstacle(clickedGrid))
+            return;
+
         Vector3 markerWorld = gridManager.GridToWorldCenter(clickedGrid);
         markerWorld.y = gridManager.GetLandSurfaceY();
 
         PlaceMarker(clickedGrid, markerWorld);
-
-        if (playerMover.IsMoving)
-        {
-            hasPendingRepath = true;
-            UpdatePendingPathPreview();
-            return;
-        }
-
-        StartMoveToMarker();
+        PreviewMoveToMarker();
     }
 
     private bool TryGetClosestLandHit(Ray ray, out RaycastHit landHit)
@@ -122,6 +128,110 @@ public class ClickSelectionController : MonoBehaviour
         return found;
     }
 
+    private bool TryHandleMoverSelection(Ray ray)
+    {
+        var hits = Physics.RaycastAll(ray, rayDistance);
+        float bestDist = float.PositiveInfinity;
+        PlayerGridMover clickedMover = null;
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            var t = hits[i].transform;
+            if (t == null)
+                continue;
+
+            PlayerGridMover mover = t.GetComponentInParent<PlayerGridMover>();
+            if (mover == null)
+                continue;
+
+            if (!IsRegisteredMover(mover))
+                continue;
+
+            if (hits[i].distance < bestDist)
+            {
+                bestDist = hits[i].distance;
+                clickedMover = mover;
+            }
+        }
+        if (clickedMover == null)
+            return false;
+
+        SetActiveMover(clickedMover);
+        return true;
+    }
+
+    private bool IsRegisteredMover(PlayerGridMover mover)
+    {
+        foreach (var m in playerMovers)
+        {
+            if (m == mover)
+                return true;
+        }
+        return false;
+    }
+
+    private void SetActiveMover(PlayerGridMover mover)
+    {
+        if (mover == null || mover == activeMover)
+            return;
+
+        if (activeMover != null)
+        {
+            activeMover.PathUpdated -= HandlePathUpdated;
+            activeMover.MoveCompleted -= HandleMoveCompleted;
+        }
+
+        activeMover = mover;
+        activeMover.PathUpdated += HandlePathUpdated;
+        activeMover.MoveCompleted += HandleMoveCompleted;
+
+        previewPath = null;
+        hasPreviewPath = false;
+        hasMarkerGrid = false;
+
+        if (marker != null)
+            marker.gameObject.SetActive(false);
+
+        if (pathPreviewRenderer != null)
+            pathPreviewRenderer.Hide();
+
+        if (cameraFollower != null)
+            cameraFollower.SetFollowTarget(activeMover.transform);
+    }
+
+    private bool TryHandleMarkerClick(Ray ray)
+    {
+        if (marker == null || !marker.gameObject.activeInHierarchy || !hasMarkerGrid || !hasPreviewPath)
+            return false;
+
+        var hits = Physics.RaycastAll(ray, rayDistance);
+        float bestDist = float.PositiveInfinity;
+        bool hitMarker = false;
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            var hit = hits[i];
+            var t = hit.transform;
+            if (t == null)
+                continue;
+
+            if (t == marker || t.IsChildOf(marker))
+            {
+                if (hit.distance < bestDist)
+                {
+                    bestDist = hit.distance;
+                    hitMarker = true;
+                }
+            }
+        }
+
+        if (!hitMarker)
+            return false;
+
+        ConfirmMoveToMarker();
+        return true;
+    }
+
     private void PlaceMarker(Vector2Int grid, Vector3 worldPosition)
     {
         markerGrid = grid;
@@ -132,27 +242,38 @@ public class ClickSelectionController : MonoBehaviour
             marker.gameObject.SetActive(true);
     }
 
-    private void StartMoveToMarker()
+    private void PreviewMoveToMarker()
     {
-        if (!hasMarkerGrid || playerMover == null || pathfinder == null)
+        if (!hasMarkerGrid || activeMover == null || pathfinder == null)
             return;
 
-        hasPendingRepath = false;
-        previewPathOverride = null;
-
-        Vector2Int playerGrid = playerMover.GetCurrentGrid();
+        Vector2Int playerGrid = activeMover.GetCurrentGrid();
         List<Vector2Int> path = pathfinder.FindPath(playerGrid, markerGrid);
+        path = AdjustPathForSpecialDestination(path);
+        previewPath = path;
+        hasPreviewPath = path != null && path.Count > 1;
 
         Debug.Log($"[ClickToMove] playerGrid={playerGrid} goalGrid={markerGrid} pathLen={(path == null ? 0 : path.Count)}");
-
-        playerMover.MoveByGridPath(path);
 
         if (pathPreviewRenderer != null)
             pathPreviewRenderer.RenderPath(path, gridManager);
 
         if (cameraFollower != null)
         {
-            cameraFollower.SetFollowTarget(playerMover.transform);
+            cameraFollower.SetFollowTarget(activeMover.transform);
+        }
+    }
+
+    private void ConfirmMoveToMarker()
+    {
+        if (!hasMarkerGrid || !hasPreviewPath || activeMover == null)
+            return;
+
+        activeMover.MoveByGridPath(previewPath);
+
+        if (cameraFollower != null)
+        {
+            cameraFollower.SetFollowTarget(activeMover.transform);
             cameraFollower.SetFollowEnabled(true);
         }
     }
@@ -163,18 +284,10 @@ public class ClickSelectionController : MonoBehaviour
             pathPreviewRenderer.RenderPath(remainingPath, gridManager);
     }
 
-    private void HandleStepReached(Vector2Int reachedGrid)
-    {
-        if (!hasPendingRepath || !hasMarkerGrid || playerMover == null || pathfinder == null)
-            return;
-
-        StartMoveToMarker();
-    }
-
     private void HandleMoveCompleted()
     {
-        hasPendingRepath = false;
-        previewPathOverride = null;
+        previewPath = null;
+        hasPreviewPath = false;
         hasMarkerGrid = false;
 
         if (marker != null)
@@ -186,31 +299,27 @@ public class ClickSelectionController : MonoBehaviour
 
     private void UpdateRealtimePathPreview()
     {
-        if (pathPreviewRenderer == null || playerMover == null || gridManager == null)
+        if (pathPreviewRenderer == null || activeMover == null || gridManager == null)
             return;
 
-        List<Vector2Int> pathToRender = hasPendingRepath && previewPathOverride != null
-            ? previewPathOverride
-            : playerMover.GetRemainingPath();
-
-        pathPreviewRenderer.RenderPathFromWorld(playerMover.transform.position, pathToRender, gridManager);
+        pathPreviewRenderer.RenderPathFromWorld(activeMover.transform.position, activeMover.GetRemainingPath(), gridManager);
     }
 
-    private void UpdatePendingPathPreview()
+    private List<Vector2Int> AdjustPathForSpecialDestination(List<Vector2Int> path)
     {
-        previewPathOverride = null;
+        if (path == null || path.Count == 0 || gridManager == null || !hasMarkerGrid)
+            return path;
 
-        if (!hasPendingRepath || !hasMarkerGrid || playerMover == null || pathfinder == null || pathPreviewRenderer == null || gridManager == null)
-            return;
+        if (!gridManager.HasItemOrFactory(markerGrid))
+            return path;
 
-        if (!playerMover.TryGetNextGrid(out Vector2Int nextGrid))
-            return;
+        if (path[path.Count - 1] != markerGrid)
+            return path;
 
-        List<Vector2Int> pendingPath = pathfinder.FindPath(nextGrid, markerGrid);
-        if (pendingPath == null || pendingPath.Count == 0)
-            return;
+        if (path.Count <= 1)
+            return path;
 
-        previewPathOverride = pendingPath;
-        pathPreviewRenderer.RenderPathFromWorld(playerMover.transform.position, previewPathOverride, gridManager);
+        path.RemoveAt(path.Count - 1);
+        return path;
     }
 }

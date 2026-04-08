@@ -2,17 +2,38 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CharactorScript : MonoBehaviour
+public class CharactorScript : MonoBehaviour, IAttackable
 {
-    // Start is called before the first frame update
+    private UnitData charactorData;
+    private StatBlock currentStats;
+
+    //
+    public UnitData Data
+    {
+        get => charactorData;
+        set => charactorData = value;
+    }
+
+
+    public void Initialize(UnitData data)
+    {
+        charactorData = data;
+        currentStats = data != null ? data.baseStats : default;
+    }
+
     void Start()
     {
         
     }
 
-    // Update is called once per frame
+    
     void Update()
     {
         
+    }
+
+    void IAttackable.Attack()
+    {
+        Debug.Log("CharactorScript: Attack!");
     }
 }

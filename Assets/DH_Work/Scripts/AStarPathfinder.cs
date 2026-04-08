@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,7 +12,7 @@ public class AStarPathfinder : MonoBehaviour
 
         if (gridManager != null)
         {
-            if (!gridManager.CanEnterCell(goal, goal))
+            if (!gridManager.CanEnterCell(start, goal) || !gridManager.CanEnterCell(goal, goal))
                 return null;
         }
 
@@ -31,9 +30,10 @@ public class AStarPathfinder : MonoBehaviour
             openSet.Remove(current);
             closedSet.Add(current);
 
-            for (int i = 0; i < GridManager.AxialDirections6.Length; i++)
+            Vector2Int[] orderedDirections = GetOrderedDirections(current, goal);
+            for (int i = 0; i < orderedDirections.Length; i++)
             {
-                Vector2Int dir = GridManager.AxialDirections6[i];
+                Vector2Int dir = orderedDirections[i];
                 Vector2Int neighbor = current + dir;
 
                 if (closedSet.Contains(neighbor))
@@ -56,9 +56,39 @@ public class AStarPathfinder : MonoBehaviour
 
         return null;
     }
+
+    private static Vector2Int[] GetOrderedDirections(Vector2Int current, Vector2Int goal)
+    {
+        Vector2Int[] ordered = (Vector2Int[])GridManager.Directions8.Clone();
+        System.Array.Sort(ordered, (a, b) =>
+        {
+            Vector2Int nextA = current + a;
+            Vector2Int nextB = current + b;
+
+            int distanceCompare = GridManager.GridDistance(nextA, goal).CompareTo(GridManager.GridDistance(nextB, goal));
+            if (distanceCompare != 0)
+                return distanceCompare;
+
+            bool aIsDiagonal = a.x != 0 && a.y != 0;
+            bool bIsDiagonal = b.x != 0 && b.y != 0;
+            if (aIsDiagonal != bIsDiagonal)
+                return aIsDiagonal ? 1 : -1;
+
+            int manhattanCompare =
+                (Mathf.Abs(goal.x - nextA.x) + Mathf.Abs(goal.y - nextA.y))
+                .CompareTo(Mathf.Abs(goal.x - nextB.x) + Mathf.Abs(goal.y - nextB.y));
+            if (manhattanCompare != 0)
+                return manhattanCompare;
+
+            return 0;
+        });
+
+        return ordered;
+    }
+
     private static float Heuristic(Vector2Int a, Vector2Int b)
     {
-        return GridManager.HexDistance(a, b);
+        return GridManager.GridDistance(a, b);
     }
 
     private static Vector2Int GetLowestF(List<Vector2Int> openSet, Dictionary<Vector2Int, float> gScore, Vector2Int goal)
