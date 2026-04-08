@@ -135,10 +135,11 @@ public class SceneLoader : MonoBehaviour
             currentIndex = 0;
         }
 
-        if (IsRegisteredScene(scene.name))
-        {
-            StartCoroutine(SpawnNavigationCanvas());
-        }
+        // SceneNavigationCanvas 비활성화 (프로토타입 단계에서 불필요)
+        // if (IsRegisteredScene(scene.name))
+        // {
+        //     StartCoroutine(SpawnNavigationCanvas());
+        // }
 
         OnSceneLoadCompleted?.Invoke(scene.name);
     }

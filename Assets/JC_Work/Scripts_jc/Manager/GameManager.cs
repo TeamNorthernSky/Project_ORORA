@@ -6,6 +6,8 @@ public class GameManager : MonoBehaviour
 
     public CurrencyManager Currency { get; private set; }
     public SceneLoader SceneLoader { get; private set; }
+    public PlayGridManager Grid { get; private set; }
+    public PlayFogManager FogOfWar { get; private set; }
 
     #if UNITY_EDITOR || DEVELOPMENT_BUILD
     public DebugManager Debug { get; private set; }
@@ -42,6 +44,12 @@ public class GameManager : MonoBehaviour
 
         SceneLoader = GetComponentInChildren<SceneLoader>();
         if (SceneLoader != null) SceneLoader.Initialize();
+
+        Grid = GetComponentInChildren<PlayGridManager>();
+        if (Grid != null) Grid.Initialize();
+
+        FogOfWar = GetComponentInChildren<PlayFogManager>();
+        if (FogOfWar != null) FogOfWar.Initialize();
 
         #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug = GetComponentInChildren<DebugManager>(true);
