@@ -70,6 +70,21 @@ public class SceneHistoryPanelController : MonoBehaviour
         scrollRect.content.sizeDelta = new Vector2(0f, preferredHeight);
 
         Canvas.ForceUpdateCanvases();
-        scrollRect.verticalNormalizedPosition = 1f;
+        ScrollToCurrentIndex(currentIdx, history.Count);
+    }
+
+    private void ScrollToCurrentIndex(int currentIdx, int totalCount)
+    {
+        if (totalCount <= 1)
+        {
+            scrollRect.verticalNormalizedPosition = 1f;
+            return;
+        }
+
+        // 현재 항목의 비율 위치 (0=최상단 항목, 1=최하단 항목)
+        float ratio = (float)currentIdx / (totalCount - 1);
+
+        // verticalNormalizedPosition: 1=최상단, 0=최하단 (반전)
+        scrollRect.verticalNormalizedPosition = 1f - ratio;
     }
 }

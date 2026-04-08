@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 using TMPro;
 
 public class SceneNavigationController : MonoBehaviour
@@ -22,7 +21,6 @@ public class SceneNavigationController : MonoBehaviour
         CreateDirectJumpButtons();
         CreateNavigationBar();
         StartCoroutine(LoadHistoryPanel());
-        EnsureEventSystem();
     }
 
     private void LoadFont()
@@ -177,13 +175,4 @@ public class SceneNavigationController : MonoBehaviour
         }
     }
 
-    private void EnsureEventSystem()
-    {
-        if (FindObjectOfType<EventSystem>() == null)
-        {
-            var es = new GameObject("EventSystem");
-            es.AddComponent<EventSystem>();
-            es.AddComponent<StandaloneInputModule>();
-        }
-    }
 }

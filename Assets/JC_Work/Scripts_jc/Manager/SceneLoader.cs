@@ -30,7 +30,7 @@ public class SceneLoader : MonoBehaviour
 
     // 이력 패널 크기/위치 (씬 전환 시에도 유지)
     public Vector2 HistoryPanelSize { get; set; } = new Vector2(280f, 300f);
-    public Vector2 HistoryPanelPosition { get; set; } = new Vector2(20f, -20f);
+    public Vector2 HistoryPanelPosition { get; set; } = new Vector2(1550f, -60f);
 
     public void Initialize()
     {
@@ -46,6 +46,13 @@ public class SceneLoader : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         CurrentSceneName = scene.name;
+
+        // 최초 씬이 이력에 없으면 추가
+        if (history.Count == 0 && IsNavigationScene(scene.name))
+        {
+            history.Add(scene.name);
+            currentIndex = 0;
+        }
 
         if (IsNavigationScene(scene.name))
         {

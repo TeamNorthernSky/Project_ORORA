@@ -35,12 +35,77 @@ public class DebugPanelController : MonoBehaviour
         public DebugLogType type;
     }
 
+    private Vector2 initialSize;
+    private Vector2 initialPosition;
+    private GameObject debugCanvas;
+
     public void Initialize()
     {
-        gameObject.SetActive(false);
+        var panelRect = GetComponent<RectTransform>();
+        initialSize = panelRect.sizeDelta;
+        initialPosition = panelRect.anchoredPosition;
+        debugCanvas = transform.parent.gameObject;
+
+        SetupDragAndResize(panelRect);
+
+        debugCanvas.SetActive(false);
         BindLogButtons();
         BindTabButtons();
         Application.logMessageReceived += HandleUnityLog;
+    }
+
+    private void SetupDragAndResize(RectTransform panelRect)
+    {
+        // TitleBar를 드래그 핸들로 사용
+        var titleBar = transform.Find("TitleBar");
+        if (titleBar != null)
+        {
+            var drag = titleBar.gameObject.AddComponent<PanelDragHandler>();
+            drag.SetTarget(panelRect);
+        }
+
+        // 패널 배경 드래그 (상호작용 요소 위에서는 차단)
+        var panelDrag = gameObject.AddComponent<PanelDragHandler>();
+        panelDrag.SetTarget(panelRect, null, true);
+
+        // 리사이즈 핸들 생성 (우하단)
+        var resizeObj = new GameObject("ResizeHandle");
+        resizeObj.transform.SetParent(transform, false);
+
+        var resizeRect = resizeObj.AddComponent<RectTransform>();
+        resizeRect.anchorMin = new Vector2(1f, 0f);
+        resizeRect.anchorMax = new Vector2(1f, 0f);
+        resizeRect.pivot = new Vector2(1f, 0f);
+        resizeRect.anchoredPosition = Vector2.zero;
+        resizeRect.sizeDelta = new Vector2(20f, 20f);
+
+        var resizeImage = resizeObj.AddComponent<UnityEngine.UI.Image>();
+        resizeImage.color = new Color(0.4f, 0.4f, 0.4f, 0.8f);
+
+        var resizeTmpObj = new GameObject("ResizeIcon");
+        resizeTmpObj.transform.SetParent(resizeObj.transform, false);
+
+        var resizeTmpRect = resizeTmpObj.AddComponent<RectTransform>();
+        resizeTmpRect.anchorMin = Vector2.zero;
+        resizeTmpRect.anchorMax = Vector2.one;
+        resizeTmpRect.offsetMin = Vector2.zero;
+        resizeTmpRect.offsetMax = Vector2.zero;
+
+        var resizeTmp = resizeTmpObj.AddComponent<TextMeshProUGUI>();
+        resizeTmp.text = "//";
+        resizeTmp.fontSize = 10;
+        resizeTmp.alignment = TextAlignmentOptions.Center;
+        resizeTmp.color = Color.gray;
+
+        var resizer = resizeObj.AddComponent<PanelResizeHandler>();
+        resizer.SetTarget(panelRect, new Vector2(200f, 150f), new Vector2(1200f, 800f));
+    }
+
+    public void ResetLayout()
+    {
+        var panelRect = GetComponent<RectTransform>();
+        panelRect.sizeDelta = initialSize;
+        panelRect.anchoredPosition = initialPosition;
     }
 
     private void OnDestroy()
@@ -50,8 +115,8 @@ public class DebugPanelController : MonoBehaviour
 
     public void Toggle()
     {
-        gameObject.SetActive(!gameObject.activeSelf);
-        if (gameObject.activeSelf)
+        debugCanvas.SetActive(!debugCanvas.activeSelf);
+        if (debugCanvas.activeSelf)
         {
             RefreshLogDisplay();
         }
@@ -120,7 +185,7 @@ public class DebugPanelController : MonoBehaviour
             logEntries.RemoveAt(0);
         }
 
-        if (gameObject.activeSelf)
+        if (gameObject.activeInHierarchy)
         {
             RefreshLogDisplay();
         }
