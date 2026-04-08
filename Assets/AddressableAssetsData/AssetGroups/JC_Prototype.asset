@@ -17,8 +17,38 @@ MonoBehaviour:
     m_SerializedData: []
   m_GUID: 2dea7313d9d0c214e8d77617f0032783
   m_SerializeEntries:
+  - m_GUID: 21f2511c73a5c49448cc6759194c1761
+    m_Address: PlayScene
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6a0850fad83d629478ff0433bd2273ce
     m_Address: GameManager
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 84a5d7e7c5f97534bbc19f9eeb7a00ec
+    m_Address: EndingScene
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b9d86ae797864514eb35bba34ac36af8
+    m_Address: LobbyScene
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c4d6b26a5ab952243a6f85c7e03a18d6
+    m_Address: SceneNavigationCanvas
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e1f994b609d4389429adf2eb67c04704
+    m_Address: TitleScene
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fd620092746e35d4dbd69d2bd89ca7f3
+    m_Address: SceneHistoryPanel
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
