@@ -5,14 +5,14 @@ public class AStarPathfinder : MonoBehaviour
 {
     [SerializeField] private GridManager gridManager;
 
-    public List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal)
+    public List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal, Transform selfTransform = null)
     {
         if (start == goal)
             return new List<Vector2Int> { start };
 
         if (gridManager != null)
         {
-            if (!gridManager.CanEnterCell(start, goal) || !gridManager.CanEnterCell(goal, goal))
+            if (!gridManager.CanEnterCell(start, goal, selfTransform) || !gridManager.CanEnterCell(goal, goal, selfTransform))
                 return null;
         }
 
@@ -39,7 +39,7 @@ public class AStarPathfinder : MonoBehaviour
                 if (closedSet.Contains(neighbor))
                     continue;
 
-                if (gridManager != null && !gridManager.CanEnterCell(neighbor, goal))
+                if (gridManager != null && !gridManager.CanEnterCell(neighbor, goal, selfTransform))
                     continue;
 
                 float tentativeG = GetOrInfinity(gScore, current) + 1f;

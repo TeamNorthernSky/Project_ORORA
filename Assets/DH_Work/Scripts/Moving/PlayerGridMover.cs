@@ -10,15 +10,18 @@ public class PlayerGridMover : MonoBehaviour
     [Header("Move Settings")]
     [SerializeField] private float moveSpeed = 4f;
     [SerializeField] private float arriveThreshold = 0.01f;
+    [SerializeField] private float itemPickupDelay = 0.5f;
 
     private readonly Queue<Vector2Int> pathQueue = new Queue<Vector2Int>();
     private bool isMoving;
+    private bool isInputLocked;
     private Vector2Int currentGrid;
     private float fixedY;
+    private Coroutine pendingItemPickupCoroutine;
 
     public event Action<List<Vector2Int>> PathUpdated;
     public event Action<Vector2Int> AdjacentItemCellEntered;
-    public event Action<Vector2Int> AdjacentFactoryCellEntered;
+    public event Action<Vector2Int> AdjacentMineCellEntered;
     public event Action MoveCompleted;
 
     private void Awake()
@@ -61,6 +64,7 @@ public class PlayerGridMover : MonoBehaviour
     }
 
     public bool IsMoving => isMoving;
+    public bool IsInputLocked => isInputLocked;
 
     public List<Vector2Int> GetRemainingPath()
     {
@@ -105,7 +109,7 @@ public class PlayerGridMover : MonoBehaviour
             return;
 
         HandleAdjacentItemProximity(enteredGrid);
-        HandleAdjacentFactoryProximity(enteredGrid);
+        HandleAdjacentMineProximity(enteredGrid);
     }
 
     private void HandleAdjacentItemProximity(Vector2Int enteredGrid)
@@ -116,24 +120,63 @@ public class PlayerGridMover : MonoBehaviour
         OnAdjacentItemCellEntered(itemGrid);
     }
 
-    private void HandleAdjacentFactoryProximity(Vector2Int enteredGrid)
+    private void HandleAdjacentMineProximity(Vector2Int enteredGrid)
     {
-        if (!gridManager.TryGetAdjacentFactoryGrid(enteredGrid, out Vector2Int factoryGrid))
+        if (!gridManager.TryGetAdjacentMineGrid(enteredGrid, out Vector2Int mineGrid))
             return;
 
-        OnAdjacentFactoryCellEntered(factoryGrid);
+        OnAdjacentMineCellEntered(mineGrid);
     }
 
     private void OnAdjacentItemCellEntered(Vector2Int itemGrid)
     {
-        // TODO: Enter your item-adjacent command here when needed.
+        if (pendingItemPickupCoroutine != null)
+            StopCoroutine(pendingItemPickupCoroutine);
+
+        isInputLocked = true;
+        pendingItemPickupCoroutine = StartCoroutine(InvokeDelayedItemPickup(itemGrid));
         AdjacentItemCellEntered?.Invoke(itemGrid);
     }
 
-    private void OnAdjacentFactoryCellEntered(Vector2Int factoryGrid)
+    private void OnAdjacentMineCellEntered(Vector2Int mineGrid)
     {
-        // TODO: Enter your factory-adjacent command here when needed.
-        AdjacentFactoryCellEntered?.Invoke(factoryGrid);
+        // TODO: Enter your mine-adjacent command here when needed.
+        AdjacentMineCellEntered?.Invoke(mineGrid);
+    }
+
+    private System.Collections.IEnumerator InvokeDelayedItemPickup(Vector2Int itemGrid)
+    {
+        yield return new WaitForSeconds(itemPickupDelay);
+
+        pendingItemPickupCoroutine = null;
+
+        if (gridManager == null)
+        {
+            isInputLocked = false;
+            yield break;
+        }
+
+        if (!IsAdjacentOrSame(currentGrid, itemGrid))
+        {
+            isInputLocked = false;
+            yield break;
+        }
+
+        if (!gridManager.TryGetItemObjectAtGrid(itemGrid, out ItemObject itemObject))
+        {
+            isInputLocked = false;
+            yield break;
+        }
+
+        itemObject.GetItem();
+        isInputLocked = false;
+    }
+
+    private static bool IsAdjacentOrSame(Vector2Int a, Vector2Int b)
+    {
+        int dx = Mathf.Abs(a.x - b.x);
+        int dy = Mathf.Abs(a.y - b.y);
+        return dx <= 1 && dy <= 1;
     }
 }
 

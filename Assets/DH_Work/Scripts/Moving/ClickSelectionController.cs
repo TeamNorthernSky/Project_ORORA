@@ -24,7 +24,9 @@ public class ClickSelectionController : MonoBehaviour
     private Vector2Int markerGrid;
     private bool hasMarkerGrid;
     private List<Vector2Int> previewPath;
+    private List<Vector2Int> movePath;
     private bool hasPreviewPath;
+    private bool keepMarkerTailWhileMoving;
 
     private void Start()
     {
@@ -72,7 +74,7 @@ public class ClickSelectionController : MonoBehaviour
         if (mainCamera == null || gridManager == null || activeMover == null || pathfinder == null || marker == null)
             return;
 
-        if (activeMover.IsMoving)
+        if (activeMover.IsMoving || activeMover.IsInputLocked)
             return;
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -88,6 +90,9 @@ public class ClickSelectionController : MonoBehaviour
 
         Vector2Int clickedGrid = gridManager.WorldToGrid(landHit.point);
         if (gridManager.HasObstacle(clickedGrid))
+            return;
+
+        if (gridManager.HasOtherPlayer(clickedGrid, activeMover.transform))
             return;
 
         Vector3 markerWorld = gridManager.GridToWorldCenter(clickedGrid);
@@ -186,8 +191,10 @@ public class ClickSelectionController : MonoBehaviour
         activeMover.MoveCompleted += HandleMoveCompleted;
 
         previewPath = null;
+        movePath = null;
         hasPreviewPath = false;
         hasMarkerGrid = false;
+        keepMarkerTailWhileMoving = false;
 
         if (marker != null)
             marker.gameObject.SetActive(false);
@@ -196,7 +203,10 @@ public class ClickSelectionController : MonoBehaviour
             pathPreviewRenderer.Hide();
 
         if (cameraFollower != null)
+        {
             cameraFollower.SetFollowTarget(activeMover.transform);
+            cameraFollower.RecenterOnFollowTarget();
+        }
     }
 
     private bool TryHandleMarkerClick(Ray ray)
@@ -248,15 +258,16 @@ public class ClickSelectionController : MonoBehaviour
             return;
 
         Vector2Int playerGrid = activeMover.GetCurrentGrid();
-        List<Vector2Int> path = pathfinder.FindPath(playerGrid, markerGrid);
-        path = AdjustPathForSpecialDestination(path);
+        List<Vector2Int> path = pathfinder.FindPath(playerGrid, markerGrid, activeMover.transform);
         previewPath = path;
-        hasPreviewPath = path != null && path.Count > 1;
+        movePath = AdjustPathForSpecialDestination(ClonePath(path));
+        hasPreviewPath = previewPath != null && previewPath.Count > 1;
+        keepMarkerTailWhileMoving = ShouldKeepMarkerTailWhileMoving();
 
-        Debug.Log($"[ClickToMove] playerGrid={playerGrid} goalGrid={markerGrid} pathLen={(path == null ? 0 : path.Count)}");
+        Debug.Log($"[ClickToMove] playerGrid={playerGrid} goalGrid={markerGrid} pathLen={(previewPath == null ? 0 : previewPath.Count)}");
 
         if (pathPreviewRenderer != null)
-            pathPreviewRenderer.RenderPath(path, gridManager);
+            pathPreviewRenderer.RenderPath(previewPath, gridManager);
 
         if (cameraFollower != null)
         {
@@ -269,11 +280,12 @@ public class ClickSelectionController : MonoBehaviour
         if (!hasMarkerGrid || !hasPreviewPath || activeMover == null)
             return;
 
-        activeMover.MoveByGridPath(previewPath);
+        activeMover.MoveByGridPath(movePath);
 
         if (cameraFollower != null)
         {
             cameraFollower.SetFollowTarget(activeMover.transform);
+            cameraFollower.RecenterOnFollowTarget();
             cameraFollower.SetFollowEnabled(true);
         }
     }
@@ -281,14 +293,16 @@ public class ClickSelectionController : MonoBehaviour
     private void HandlePathUpdated(List<Vector2Int> remainingPath)
     {
         if (pathPreviewRenderer != null)
-            pathPreviewRenderer.RenderPath(remainingPath, gridManager);
+            pathPreviewRenderer.RenderPath(GetRenderedPathWithMarkerTail(remainingPath), gridManager);
     }
 
     private void HandleMoveCompleted()
     {
         previewPath = null;
+        movePath = null;
         hasPreviewPath = false;
         hasMarkerGrid = false;
+        keepMarkerTailWhileMoving = false;
 
         if (marker != null)
             marker.gameObject.SetActive(false);
@@ -302,7 +316,10 @@ public class ClickSelectionController : MonoBehaviour
         if (pathPreviewRenderer == null || activeMover == null || gridManager == null)
             return;
 
-        pathPreviewRenderer.RenderPathFromWorld(activeMover.transform.position, activeMover.GetRemainingPath(), gridManager);
+        pathPreviewRenderer.RenderPathFromWorld(
+            activeMover.transform.position,
+            GetRenderedPathWithMarkerTail(activeMover.GetRemainingPath()),
+            gridManager);
     }
 
     private List<Vector2Int> AdjustPathForSpecialDestination(List<Vector2Int> path)
@@ -310,7 +327,7 @@ public class ClickSelectionController : MonoBehaviour
         if (path == null || path.Count == 0 || gridManager == null || !hasMarkerGrid)
             return path;
 
-        if (!gridManager.HasItemOrFactory(markerGrid))
+        if (!gridManager.HasItemOrMine(markerGrid))
             return path;
 
         if (path[path.Count - 1] != markerGrid)
@@ -321,5 +338,39 @@ public class ClickSelectionController : MonoBehaviour
 
         path.RemoveAt(path.Count - 1);
         return path;
+    }
+
+    private List<Vector2Int> ClonePath(List<Vector2Int> path)
+    {
+        return path == null ? null : new List<Vector2Int>(path);
+    }
+
+    private bool ShouldKeepMarkerTailWhileMoving()
+    {
+        if (!hasMarkerGrid || gridManager == null || !gridManager.HasItemOrMine(markerGrid))
+            return false;
+
+        if (previewPath == null || movePath == null)
+            return false;
+
+        if (previewPath.Count <= movePath.Count)
+            return false;
+
+        return previewPath[previewPath.Count - 1] == markerGrid;
+    }
+
+    private List<Vector2Int> GetRenderedPathWithMarkerTail(List<Vector2Int> basePath)
+    {
+        if (basePath == null || basePath.Count <= 1)
+            return basePath;
+
+        if (!keepMarkerTailWhileMoving || !hasMarkerGrid)
+            return basePath;
+
+        List<Vector2Int> renderedPath = new List<Vector2Int>(basePath);
+        if (renderedPath[renderedPath.Count - 1] != markerGrid)
+            renderedPath.Add(markerGrid);
+
+        return renderedPath;
     }
 }

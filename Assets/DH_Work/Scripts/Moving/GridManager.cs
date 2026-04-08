@@ -24,7 +24,8 @@ public class GridManager : MonoBehaviour
     [Tooltip("이 레이어에 있는 콜라이더는 장애물로 간주합니다.")]
     [SerializeField] private LayerMask obstacleLayerMask;
     [SerializeField] private LayerMask itemLayerMask;
-    [SerializeField] private LayerMask factoryLayerMask;
+    [SerializeField] private LayerMask mineLayerMask;
+    [SerializeField] private LayerMask playerLayerMask;
     [Tooltip("셀 워커블 검사 시, 셀 크기 대비 체크 박스 비율(너무 크면 오탐, 너무 작으면 통과).")]
     [SerializeField, Range(0.1f, 1f)] private float obstacleCheckFill = 0.9f;
 
@@ -74,7 +75,7 @@ public class GridManager : MonoBehaviour
 
     public bool IsWalkable(Vector2Int grid)
     {
-        return !HasObstacle(grid) && !HasItem(grid) && !HasFactory(grid);
+        return !HasObstacle(grid) && !HasItem(grid) && !HasMine(grid);
     }
 
     public bool HasObstacle(Vector2Int grid)
@@ -82,19 +83,48 @@ public class GridManager : MonoBehaviour
         return HasBlockingCollider(grid, obstacleLayerMask);
     }
 
+    public bool HasOtherPlayer(Vector2Int grid, Transform selfTransform)
+    {
+        return HasBlockingCollider(grid, playerLayerMask, selfTransform);
+    }
+
     public bool HasItem(Vector2Int grid)
     {
         return HasBlockingCollider(grid, itemLayerMask);
     }
 
-    public bool HasFactory(Vector2Int grid)
+    public bool TryGetItemObjectAtGrid(Vector2Int grid, out ItemObject itemObject)
     {
-        return HasBlockingCollider(grid, factoryLayerMask);
+        itemObject = null;
+
+        Vector3 center = GridToWorldCenter(grid);
+        center.y = GetLandSurfaceY() + 0.5f;
+
+        Vector3 halfExtents = new Vector3(hexRadius * 0.5f * obstacleCheckFill, 0.5f, hexRadius * 0.5f * obstacleCheckFill);
+        Collider[] cols = Physics.OverlapBox(center, halfExtents, Quaternion.identity, itemLayerMask);
+
+        for (int i = 0; i < cols.Length; i++)
+        {
+            var c = cols[i];
+            if (c == null)
+                continue;
+
+            itemObject = c.GetComponentInParent<ItemObject>();
+            if (itemObject != null)
+                return true;
+        }
+
+        return false;
     }
 
-    public bool HasItemOrFactory(Vector2Int grid)
+    public bool HasMine(Vector2Int grid)
     {
-        return HasItem(grid) || HasFactory(grid);
+        return HasBlockingCollider(grid, mineLayerMask);
+    }
+
+    public bool HasItemOrMine(Vector2Int grid)
+    {
+        return HasItem(grid) || HasMine(grid);
     }
     public bool TryGetAdjacentItemGrid(Vector2Int grid, out Vector2Int itemGrid)
     {
@@ -112,34 +142,42 @@ public class GridManager : MonoBehaviour
         return false;
     }
 
-    public bool TryGetAdjacentFactoryGrid(Vector2Int grid, out Vector2Int factoryGrid)
+    public bool TryGetAdjacentMineGrid(Vector2Int grid, out Vector2Int mineGrid)
     {
         for (int i = 0; i < directions8.Length; i++)
         {
             Vector2Int candidate = grid + directions8[i];
-            if (HasFactory(candidate))
+            if (HasMine(candidate))
             {
-                factoryGrid = candidate;
+                mineGrid = candidate;
                 return true;
             }
         }
 
-        factoryGrid = grid;
+        mineGrid = grid;
         return false;
     }
 
-    public bool CanEnterCell(Vector2Int grid, Vector2Int destination)
+    public bool CanEnterCell(Vector2Int grid, Vector2Int destination, Transform selfTransform = null)
     {
         if (HasObstacle(grid))
+            return false;
+
+        if (HasOtherPlayer(grid, selfTransform))
             return false;
 
         if (grid == destination)
             return true;
 
-        return !HasItemOrFactory(grid);
+        return !HasItemOrMine(grid);
     }
 
     private bool HasBlockingCollider(Vector2Int grid, LayerMask layerMask)
+    {
+        return HasBlockingCollider(grid, layerMask, null);
+    }
+
+    private bool HasBlockingCollider(Vector2Int grid, LayerMask layerMask, Transform ignoredTransform)
     {
         Vector3 center = GridToWorldCenter(grid);
         center.y = GetLandSurfaceY() + 0.5f;
@@ -154,6 +192,9 @@ public class GridManager : MonoBehaviour
                 continue;
 
             if (landTransform != null && (c.transform == landTransform || c.transform.IsChildOf(landTransform)))
+                continue;
+
+            if (ignoredTransform != null && (c.transform == ignoredTransform || c.transform.IsChildOf(ignoredTransform)))
                 continue;
 
             return true;

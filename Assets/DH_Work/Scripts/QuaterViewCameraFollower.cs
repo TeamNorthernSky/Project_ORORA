@@ -52,6 +52,12 @@ public class QuarterViewCameraFollower : MonoBehaviour
         followEnabled = enabled;
     }
 
+    public void RecenterOnFollowTarget()
+    {
+        panOffset = Vector3.zero;
+        edgeScrollVelocity = Vector3.zero;
+    }
+
     private void Awake()
     {
         positionOffset.x = 0f;
@@ -137,8 +143,7 @@ public class QuarterViewCameraFollower : MonoBehaviour
         if (!Input.GetKeyDown(resetKey))
             return;
 
-        panOffset = Vector3.zero;
-        edgeScrollVelocity = Vector3.zero;
+        RecenterOnFollowTarget();
         positionOffset = new Vector3(0f, defaultZoomY, positionOffset.z);
     }
 
