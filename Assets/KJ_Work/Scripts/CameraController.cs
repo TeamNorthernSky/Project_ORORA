@@ -50,8 +50,10 @@ public class CameraController : MonoBehaviour
     {
         float horizontal = Input.GetAxisRaw("Horizontal"); // A, D, Left, Right
         float vertical = Input.GetAxisRaw("Vertical");     // W, S, Up, Down
+        bool IsUp   = Input.GetKey(KeyCode.E);
+        bool IsDown = Input.GetKey(KeyCode.Q);
 
-        if (horizontal != 0 || vertical != 0)
+        if (horizontal != 0 || vertical != 0 || IsUp || IsDown)
         {
             // Left Shift 키를 누르면 더 빠르게 이동하도록
             float currentSpeed = Input.GetKey(KeyCode.LeftShift) ? moveSpeed * fastMoveMultiplier : moveSpeed;
@@ -59,6 +61,9 @@ public class CameraController : MonoBehaviour
             // 카메라가 쳐다보고 있는 방향(forward, right)을 기준으로 이동 벡터 계산
             Vector3 forward = transform.forward;
             Vector3 right = transform.right;
+            
+            Vector3 up = (IsUp?1:0)*transform.up;
+            Vector3 down = (IsDown ? -1 : 0) * transform.up;
 
             if (freezeYAxis)
             {
@@ -69,7 +74,7 @@ public class CameraController : MonoBehaviour
                 right.Normalize();
             }
 
-            Vector3 moveDirection = (forward * vertical) + (right * horizontal);
+            Vector3 moveDirection = (forward * vertical) + (right * horizontal) + up + down;
 
             // Time.deltaTime을 곱해 프레임과 상관없이 일정한 속도로 이동
             transform.position += moveDirection.normalized * (currentSpeed * Time.deltaTime);
