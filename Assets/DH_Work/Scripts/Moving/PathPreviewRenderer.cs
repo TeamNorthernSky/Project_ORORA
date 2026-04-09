@@ -6,7 +6,8 @@ public class PathPreviewRenderer : MonoBehaviour
 {
     [SerializeField] private LineRenderer lineRenderer;
     [SerializeField] private float width = 0.08f;
-    [SerializeField] private Color color = new Color(1f, 0.7f, 0f, 1f);
+    [SerializeField] private Color reachableColor = Color.green;
+    [SerializeField] private Color unreachableColor = Color.red;
     [SerializeField] private bool drawWhenPathValid = true;
 
     private void Awake()
@@ -26,12 +27,11 @@ public class PathPreviewRenderer : MonoBehaviour
             if (shader != null)
                 lineRenderer.material = new Material(shader);
         }
-        lineRenderer.startColor = color;
-        lineRenderer.endColor = color;
+        ApplySegmentColors(0, 0);
         Hide();
     }
 
-    public void RenderPath(List<Vector2Int> path, GridManager gridManager)
+    public void RenderPath(List<Vector2Int> path, GridManager gridManager, int reachableSegments)
     {
         if (!drawWhenPathValid)
         {
@@ -55,10 +55,11 @@ public class PathPreviewRenderer : MonoBehaviour
             lineRenderer.SetPosition(i, p);
         }
 
+        ApplySegmentColors(path.Count - 1, reachableSegments);
         lineRenderer.enabled = true;
     }
 
-    public void RenderPathFromWorld(Vector3 startWorldPosition, List<Vector2Int> remainingPath, GridManager gridManager)
+    public void RenderPathFromWorld(Vector3 startWorldPosition, List<Vector2Int> remainingPath, GridManager gridManager, int reachableSegments)
     {
         if (!drawWhenPathValid)
         {
@@ -85,6 +86,7 @@ public class PathPreviewRenderer : MonoBehaviour
             lineRenderer.SetPosition(i + 1, p);
         }
 
+        ApplySegmentColors(remainingPath.Count, reachableSegments);
         lineRenderer.enabled = true;
     }
 
@@ -92,6 +94,68 @@ public class PathPreviewRenderer : MonoBehaviour
     {
         if (lineRenderer != null)
             lineRenderer.enabled = false;
+    }
+
+    private void ApplySegmentColors(int totalSegments, int reachableSegments)
+    {
+        if (lineRenderer == null)
+            return;
+
+        if (totalSegments <= 0)
+        {
+            lineRenderer.colorGradient = BuildSolidGradient(reachableColor);
+            return;
+        }
+
+        int clampedReachableSegments = Mathf.Clamp(reachableSegments, 0, totalSegments);
+        float split = (float)clampedReachableSegments / totalSegments;
+
+        if (clampedReachableSegments == 0)
+        {
+            lineRenderer.colorGradient = BuildSolidGradient(unreachableColor);
+            return;
+        }
+
+        if (clampedReachableSegments == totalSegments)
+        {
+            lineRenderer.colorGradient = BuildSolidGradient(reachableColor);
+            return;
+        }
+
+        Gradient gradient = new Gradient();
+        gradient.SetKeys(
+            new[]
+            {
+                new GradientColorKey(reachableColor, 0f),
+                new GradientColorKey(reachableColor, split),
+                new GradientColorKey(unreachableColor, split),
+                new GradientColorKey(unreachableColor, 1f)
+            },
+            new[]
+            {
+                new GradientAlphaKey(reachableColor.a, 0f),
+                new GradientAlphaKey(reachableColor.a, split),
+                new GradientAlphaKey(unreachableColor.a, split),
+                new GradientAlphaKey(unreachableColor.a, 1f)
+            });
+        lineRenderer.colorGradient = gradient;
+    }
+
+    private Gradient BuildSolidGradient(Color color)
+    {
+        Gradient gradient = new Gradient();
+        gradient.SetKeys(
+            new[]
+            {
+                new GradientColorKey(color, 0f),
+                new GradientColorKey(color, 1f)
+            },
+            new[]
+            {
+                new GradientAlphaKey(color.a, 0f),
+                new GradientAlphaKey(color.a, 1f)
+            });
+        return gradient;
     }
 }
 
