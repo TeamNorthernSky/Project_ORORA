@@ -99,7 +99,7 @@ public class PlayFogManager : MonoBehaviour
 
     /// <summary>
     /// 플레이어 위치 기반 시야 갱신.
-    /// PlayerController에서 이동 완료 시 호출.
+    /// PlayerControllerJC에서 이동 완료 시 호출.
     /// </summary>
     public void UpdatePlayerVisibility(Vector2Int playerPos, int sightRadius)
     {

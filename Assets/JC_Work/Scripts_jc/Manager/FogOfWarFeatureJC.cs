@@ -5,7 +5,7 @@ using UnityEngine.Rendering.Universal;
 /// <summary>
 /// URP Renderer Feature: 전장의 안개를 후처리 패스로 삽입.
 /// </summary>
-public class FogOfWarFeature : ScriptableRendererFeature
+public class FogOfWarFeatureJC : ScriptableRendererFeature
 {
     [System.Serializable]
     public class Settings

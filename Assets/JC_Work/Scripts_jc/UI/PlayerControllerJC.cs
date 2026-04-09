@@ -4,7 +4,7 @@ using UnityEngine;
 /// 임시 플레이어 컨트롤러.
 /// 우클릭(누르기/드래그) 위치로 이동, 시야 반경 속성 보유.
 /// </summary>
-public class PlayerController : MonoBehaviour
+public class PlayerControllerJC : MonoBehaviour
 {
     [Header("Player Settings")]
     [SerializeField] private int sightRadius = 5;
@@ -24,7 +24,7 @@ public class PlayerController : MonoBehaviour
         grid = GameManager.Instance?.Grid;
         if (grid == null)
         {
-            Debug.LogError("[PlayerController] PlayGridManager를 찾을 수 없습니다");
+            Debug.LogError("[PlayerControllerJC] PlayGridManager를 찾을 수 없습니다");
             return;
         }
 

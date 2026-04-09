@@ -1,4 +1,4 @@
-Shader "Custom/FogOfWar"
+Shader "Custom/JC/FogOfWar"
 {
     Properties
     {
