@@ -58,22 +58,28 @@ public class FogOfWarManager : MonoBehaviour
         _cb.SetRenderTarget(_fogCurrentRT);
         _cb.ClearRenderTarget(false, true, Color.black);
         
-        // 2. 위에서 바닥을 내려다보는 카메라 직교 매트릭스 설정
-        Vector3 camPos = new Vector3(mapCenter.x, 100f, mapCenter.y);
-        Matrix4x4 view = Matrix4x4.Inverse(Matrix4x4.TRS(camPos, Quaternion.LookRotation(Vector3.down, Vector3.up), Vector3.one));
-        Matrix4x4 proj = Matrix4x4.Ortho(-mapSize.x * 0.5f, mapSize.x * 0.5f, -mapSize.y * 0.5f, mapSize.y * 0.5f, 0.1f, 200f);
-        _cb.SetViewProjectionMatrices(view, proj);
+        // 2. GPU Projection 보정 제거, 순수 identity 사용 (NDC 직접 매핑)
+        _cb.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
         
+        float mapMinX = mapCenter.x - mapSize.x * 0.5f;
+        float mapMinZ = mapCenter.y - mapSize.y * 0.5f;
+
         // 3. 등록된 모든 시야 보유 유닛에 대해 Quad(마스크) 그리기
         foreach(var unit in FogOfWarUnit.AllUnits)
         {
             float r = unit.visionRadius;
             Vector3 pos = unit.transform.position;
-            // Quad 메시는 Z=0, XY 평면 기준이므로 XZ 평면상으로 그리기위해 회전 적용
+            
+            // 월드 XZ 좌표 → NDC (-1 ~ 1)로 직접 매핑
+            float ndcX = (pos.x - mapMinX) / mapSize.x * 2f - 1f;
+            float ndcY = (pos.z - mapMinZ) / mapSize.y * 2f - 1f;
+            float ndcScaleX = (r * 2f) / mapSize.x * 2f;
+            float ndcScaleY = (r * 2f) / mapSize.y * 2f;
+
             Matrix4x4 trs = Matrix4x4.TRS(
-                new Vector3(pos.x, 0f, pos.z), 
-                Quaternion.Euler(90f, 0f, 0f), 
-                new Vector3(r * 2f, r * 2f, 1f)
+                new Vector3(ndcX, ndcY, 0f),
+                Quaternion.identity,
+                new Vector3(ndcScaleX, ndcScaleY, 1f)
             );
             _cb.DrawMesh(_quadMesh, trs, visionMaskMaterial);
         }
