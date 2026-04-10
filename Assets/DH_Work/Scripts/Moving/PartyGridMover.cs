@@ -2,22 +2,24 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerGridMover : MonoBehaviour
+public class PartyGridMover : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private GridManager gridManager;
+    [SerializeField] private ResourceManager resourceManager;
 
     [Header("Move Settings")]
     [SerializeField] private float moveSpeed = 4f;
     [SerializeField] private float arriveThreshold = 0.01f;
     [SerializeField] private float itemPickupDelay = 0.5f;
+    [SerializeField] private int maxMovePoints = 20;
 
     private readonly Queue<Vector2Int> pathQueue = new Queue<Vector2Int>();
     private bool isMoving;
-    private bool isInputLocked;
     private Vector2Int currentGrid;
     private float fixedY;
-    private Coroutine pendingItemPickupCoroutine;
+    private PartyMovePointController movePointController;
+    private PartyInteractionController interactionController;
 
     public event Action<List<Vector2Int>> PathUpdated;
     public event Action<Vector2Int> AdjacentItemCellEntered;
@@ -28,6 +30,26 @@ public class PlayerGridMover : MonoBehaviour
     {
         fixedY = transform.position.y;
         currentGrid = gridManager != null ? gridManager.WorldToGrid(transform.position) : Vector2Int.zero;
+        movePointController = new PartyMovePointController(maxMovePoints);
+        interactionController = new PartyInteractionController(
+            gridManager,
+            resourceManager,
+            itemPickupDelay,
+            this,
+            GetCurrentGrid);
+
+        interactionController.AdjacentItemCellEntered += HandleAdjacentItemCellEntered;
+        interactionController.AdjacentMineCellEntered += HandleAdjacentMineCellEntered;
+    }
+
+    private void OnDestroy()
+    {
+        if (interactionController == null)
+            return;
+
+        interactionController.AdjacentItemCellEntered -= HandleAdjacentItemCellEntered;
+        interactionController.AdjacentMineCellEntered -= HandleAdjacentMineCellEntered;
+        interactionController.Dispose();
     }
 
     private void Update()
@@ -45,9 +67,10 @@ public class PlayerGridMover : MonoBehaviour
             transform.position = target;
             pathQueue.Dequeue();
             currentGrid = nextGrid;
+            movePointController?.SpendStep();
             bool reachedPathEnd = pathQueue.Count == 0;
 
-            HandleAdjacentInteractableProximity(currentGrid);
+            interactionController?.HandleGridEntered(currentGrid);
             NotifyPathUpdated();
 
             if (reachedPathEnd && pathQueue.Count == 0)
@@ -64,7 +87,19 @@ public class PlayerGridMover : MonoBehaviour
     }
 
     public bool IsMoving => isMoving;
-    public bool IsInputLocked => isInputLocked;
+    public bool IsInputLocked => interactionController != null && interactionController.IsInputLocked;
+    public int RemainingMovePoints => movePointController != null ? movePointController.RemainingMovePoints : 0;
+    public int MaxMovePoints => maxMovePoints;
+
+    public bool CanSpendMovePoints(int amount)
+    {
+        return movePointController != null && movePointController.CanSpend(amount);
+    }
+
+    public void ResetMovePointsToMax()
+    {
+        movePointController?.ResetToMax();
+    }
 
     public List<Vector2Int> GetRemainingPath()
     {
@@ -89,6 +124,13 @@ public class PlayerGridMover : MonoBehaviour
         }
 
         // path[0]는 현재 위치이므로 제외하고 enqueue
+        int moveCost = GetPathMoveCost(fullPath);
+        if (!CanSpendMovePoints(moveCost))
+        {
+            NotifyPathUpdated();
+            return;
+        }
+
         for (int i = 1; i < fullPath.Count; i++)
             pathQueue.Enqueue(fullPath[i]);
 
@@ -103,80 +145,19 @@ public class PlayerGridMover : MonoBehaviour
         PathUpdated?.Invoke(remainingPath);
     }
 
-    private void HandleAdjacentInteractableProximity(Vector2Int enteredGrid)
+    private void HandleAdjacentItemCellEntered(Vector2Int itemGrid)
     {
-        if (gridManager == null)
-            return;
-
-        HandleAdjacentItemProximity(enteredGrid);
-        HandleAdjacentMineProximity(enteredGrid);
-    }
-
-    private void HandleAdjacentItemProximity(Vector2Int enteredGrid)
-    {
-        if (!gridManager.TryGetAdjacentItemGrid(enteredGrid, out Vector2Int itemGrid))
-            return;
-
-        OnAdjacentItemCellEntered(itemGrid);
-    }
-
-    private void HandleAdjacentMineProximity(Vector2Int enteredGrid)
-    {
-        if (!gridManager.TryGetAdjacentMineGrid(enteredGrid, out Vector2Int mineGrid))
-            return;
-
-        OnAdjacentMineCellEntered(mineGrid);
-    }
-
-    private void OnAdjacentItemCellEntered(Vector2Int itemGrid)
-    {
-        if (pendingItemPickupCoroutine != null)
-            StopCoroutine(pendingItemPickupCoroutine);
-
-        isInputLocked = true;
-        pendingItemPickupCoroutine = StartCoroutine(InvokeDelayedItemPickup(itemGrid));
         AdjacentItemCellEntered?.Invoke(itemGrid);
     }
 
-    private void OnAdjacentMineCellEntered(Vector2Int mineGrid)
+    private void HandleAdjacentMineCellEntered(Vector2Int mineGrid)
     {
-        // TODO: Enter your mine-adjacent command here when needed.
         AdjacentMineCellEntered?.Invoke(mineGrid);
     }
 
-    private System.Collections.IEnumerator InvokeDelayedItemPickup(Vector2Int itemGrid)
+    private static int GetPathMoveCost(List<Vector2Int> path)
     {
-        yield return new WaitForSeconds(itemPickupDelay);
-
-        pendingItemPickupCoroutine = null;
-
-        if (gridManager == null)
-        {
-            isInputLocked = false;
-            yield break;
-        }
-
-        if (!IsAdjacentOrSame(currentGrid, itemGrid))
-        {
-            isInputLocked = false;
-            yield break;
-        }
-
-        if (!gridManager.TryGetItemObjectAtGrid(itemGrid, out ItemObject itemObject))
-        {
-            isInputLocked = false;
-            yield break;
-        }
-
-        itemObject.GetItem();
-        isInputLocked = false;
-    }
-
-    private static bool IsAdjacentOrSame(Vector2Int a, Vector2Int b)
-    {
-        int dx = Mathf.Abs(a.x - b.x);
-        int dy = Mathf.Abs(a.y - b.y);
-        return dx <= 1 && dy <= 1;
+        return path == null ? 0 : Mathf.Max(0, path.Count - 1);
     }
 }
 

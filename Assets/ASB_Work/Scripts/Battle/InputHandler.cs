@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -7,6 +8,14 @@ using UnityEngine.EventSystems;
 [DisallowMultipleComponent]
 public class InputHandler : MonoBehaviour
 {
+    //클릭시 작동할 함수 저장소
+    public static event Action<IUnitIdentifier> UnitClicked;
+
+    /// <summary>
+    /// 레이캐스트 실패·비유닛 레이어 등으로 유닛 선택 클릭으로 이어지지 않을 때(더블클릭 체인 초기화용).
+    /// </summary>
+    public static event Action EnemyDoubleClickChainInterrupted;
+
     [Header("Raycast")]
     [SerializeField] private Camera raycastCamera;
     [Tooltip("레이캐스트에 포함할 모든 레이어(바닥 등). 비어 있으면 모든 레이어")]
@@ -61,18 +70,23 @@ public class InputHandler : MonoBehaviour
         var ray = raycastCamera.ScreenPointToRay(Input.mousePosition);
         Debug.DrawRay(ray.origin, ray.direction * 100f, Color.red, 1f);
 
-        if (Physics.Raycast(ray, out RaycastHit hit1, maxRayDistance))
-        {
-            Debug.Log($"무마스크 히트: {hit1.collider.name}");
-            Debug.Log($"히트 레이어: {LayerMask.LayerToName(hit1.collider.gameObject.layer)}");
-            Debug.Log($"레이어 번호: {hit1.collider.gameObject.layer}");
-            Debug.Log($"raycastMask 값: {raycastMask.value}");
-        }
+
+
+        //if (Physics.Raycast(ray, out RaycastHit hit1, maxRayDistance))
+        //{
+
+        //    // 디버그: 레이어 마스크가 제대로 적용되고 있는지 확인
+        //    Debug.Log($"무마스크 히트: {hit1.collider.name}");
+        //    Debug.Log($"히트 레이어: {LayerMask.LayerToName(hit1.collider.gameObject.layer)}");
+        //    Debug.Log($"레이어 번호: {hit1.collider.gameObject.layer}");
+        //    Debug.Log($"raycastMask 값: {raycastMask.value}");
+        //}
 
 
         if (!Physics.Raycast(ray, out RaycastHit hit, maxRayDistance, raycastMask))
         {
             DeselectUnit(logDeselect: true);
+            EnemyDoubleClickChainInterrupted?.Invoke();
             return;
         }
 
@@ -80,11 +94,13 @@ public class InputHandler : MonoBehaviour
         if (!IsLayerInMask(layer, unitMask))
         {
             DeselectUnit(logDeselect: true);
+            EnemyDoubleClickChainInterrupted?.Invoke();
             return;
         }
 
-        if (!TryGetUnitComponents(hit.collider, out Outline outline))
+        if (!TryGetUnitComponents(hit.collider, out Outline outline, out IUnitIdentifier unit))
         {
+            EnemyDoubleClickChainInterrupted?.Invoke();
             return;
         }
 
@@ -94,6 +110,7 @@ public class InputHandler : MonoBehaviour
             if (selectedPlayerOutline == outline)
             {
                 outline.OutlineMode = Outline.Mode.OutlineVisible;
+                UnitClicked?.Invoke(unit);
                 return;
             }
 
@@ -104,6 +121,7 @@ public class InputHandler : MonoBehaviour
 
             selectedPlayerOutline = outline;
             selectedPlayerOutline.OutlineMode = Outline.Mode.OutlineVisible;
+            UnitClicked?.Invoke(unit);
             return;
         }
 
@@ -113,6 +131,7 @@ public class InputHandler : MonoBehaviour
             if (selectedEnemyOutline == outline)
             {
                 outline.OutlineMode = Outline.Mode.OutlineVisible;
+                UnitClicked?.Invoke(unit);
                 return;
             }
 
@@ -123,10 +142,12 @@ public class InputHandler : MonoBehaviour
 
             selectedEnemyOutline = outline;
             selectedEnemyOutline.OutlineMode = Outline.Mode.OutlineVisible;
+            UnitClicked?.Invoke(unit);
             return;
         }
 
-        //LogSelection(layer, unit.UnitID);
+        EnemyDoubleClickChainInterrupted?.Invoke();
+        LogSelection(layer, unit.UnitID);
     }
 
     private void OnDisable()
@@ -157,28 +178,70 @@ public class InputHandler : MonoBehaviour
         }
     }
 
-    // 추후에 데이터 사용 시에 함수 매개변수 추가하기
-    // out BattleCharactorUnit unit
-    private static bool TryGetUnitComponents(Collider collider, out Outline outline)
+    /// <summary>
+    /// 클릭된 콜라이더 기준 상향 탐색: 가까운 Outline과 루트 식별자(IUnitIdentifier)를 찾고,
+    /// 둘이 동일 유닛 서브트리(루트 데이터 오브젝트 하위)에 속하는지 검증한다.
+    /// </summary>
+    private static bool TryGetUnitComponents(
+        Collider collider,
+        out Outline outline,
+        out IUnitIdentifier identifier)
     {
         outline = collider.GetComponent<Outline>() ?? collider.GetComponentInParent<Outline>();
-        //unit = collider.GetComponent<BattleCharactorUnit>() ?? collider.GetComponentInParent<BattleCharactorUnit>();
+
+        identifier = collider.GetComponentInParent<IUnitIdentifier>(true);
+        if (identifier == null)
+        {
+            foreach (var mb in collider.GetComponentsInParent<MonoBehaviour>(true))
+            {
+                if (mb is IUnitIdentifier uid)
+                {
+                    identifier = uid;
+                    break;
+                }
+            }
+        }
 
         if (outline == null)
         {
             Debug.LogWarning("[InputHandler] Outline을 찾을 수 없습니다: " + collider.name);
-            //unit = null;
+            identifier = null;
             return false;
         }
 
-        //if (unit == null)
-        //{
-        //    Debug.LogWarning("[InputHandler] BattleCharactorUnit이 없는 유닛입니다: " + collider.name);
-        //    outline = null;
-        //    return false;
-        //}
+        if (identifier == null)
+        {
+            Debug.LogWarning("[InputHandler] IUnitIdentifier가 없는 유닛입니다: " + collider.name);
+            outline = null;
+            return false;
+        }
+
+        var idComp = identifier as Component;
+        if (idComp == null || !IsOutlineUnderUnitRoot(idComp, outline))
+        {
+            Debug.LogWarning(
+                "[InputHandler] Outline과 IUnitIdentifier가 동일 유닛 계층에 있지 않습니다: " + collider.name);
+            outline = null;
+            identifier = null;
+            return false;
+        }
 
         return true;
+    }
+
+    /// <summary>
+    /// 루트(데이터 스크립트) 트랜스폼을 기준으로, Outline이 그 서브트리 안에만 있는지 확인한다.
+    /// </summary>
+    private static bool IsOutlineUnderUnitRoot(Component unitRoot, Outline outline)
+    {
+        if (unitRoot == null || outline == null)
+        {
+            return false;
+        }
+
+        Transform r = unitRoot.transform;
+        Transform o = outline.transform;
+        return o == r || o.IsChildOf(r);
     }
 
     private static bool IsLayerInMask(int layer, LayerMask mask)
@@ -202,53 +265,4 @@ public class InputHandler : MonoBehaviour
 
         Debug.Log($"유닛 선택됨 (기타 레이어) — ID: {unitId}");
     }
-}
-
-/// <summary>
-/// 전투 유닛 프리팹에 부착. UnitID로 식별합니다.
-/// </summary>
-[DisallowMultipleComponent]
-public class BattleCharactorUnit : MonoBehaviour
-{
-    [SerializeField] private string unitID;
-
-    /// <summary>비어 있으면 <see cref="CharactorScript"/>의 UnitData.Index를 사용합니다.</summary>
-    public string UnitID
-    {
-        get
-        {
-            if (!string.IsNullOrWhiteSpace(unitID))
-            {
-                return unitID;
-            }
-
-            var cs = GetComponent<CharactorScript>();
-            if (cs != null && cs.Data != null && !string.IsNullOrWhiteSpace(cs.Data.Index))
-            {
-                return cs.Data.Index;
-            }
-
-            var es = GetComponent<EnemyScript>();
-            if (es != null && es.Data != null && !string.IsNullOrWhiteSpace(es.Data.Index))
-            {
-                return es.Data.Index;
-            }
-
-            return string.Empty;
-        }
-    }
-
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        if (string.IsNullOrWhiteSpace(unitID))
-        {
-            var cs = GetComponent<CharactorScript>();
-            if (cs != null && cs.Data != null && !string.IsNullOrWhiteSpace(cs.Data.Index))
-            {
-                unitID = cs.Data.Index;
-            }
-        }
-    }
-#endif
 }

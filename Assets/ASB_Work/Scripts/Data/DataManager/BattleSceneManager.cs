@@ -10,7 +10,7 @@ public class BattleSceneManager : MonoBehaviour
     [SerializeField] private EnemySpawner enemySpawner;
     [SerializeField] private EquipmentManager equipmentManager;
     [SerializeField] private SkillManager skillManager;
-    [SerializeField] private TurnScheduler turnScheduler;
+    [SerializeField] private BattleFlowManager battleFlowManager;
 
     [Header("Boot Option")]
     [SerializeField] private bool createOnStart = true;
@@ -35,7 +35,7 @@ public class BattleSceneManager : MonoBehaviour
 
     private void Awake()
     {
-        int errorCount = 0;
+
     }
 
 
@@ -131,15 +131,17 @@ public class BattleSceneManager : MonoBehaviour
             Debug.LogWarning("[BattleSceneManager] EnemySpawner 또는 debugSpawnRequests가 없어 적 디버그 스폰을 건너뜁니다.");
         }
 
-        if (turnScheduler != null)
+        if (battleFlowManager != null)
         {
             var allUnits = new List<BattleCharactor>(playerBattleCharactors.Count + enemyBattleCharactors.Count);
             allUnits.AddRange(playerBattleCharactors);
             allUnits.AddRange(enemyBattleCharactors);
-            turnScheduler.Initialize(allUnits);
+            battleFlowManager.Initialize(allUnits);
         }
     }
 
+
+    //처음 생성은 레벨 1, 유닛 1로 고정하여 생성, 이후 레벨업 추가시 추후 변경
     public BattleCharactor CreateBattleCharactor(
         string charactorId)
     {
@@ -157,7 +159,10 @@ public class BattleSceneManager : MonoBehaviour
 
         UnitData unitData = null;
         int level = 1;
+        int unitNum = 1;
 
+
+        // 유닛도 추후에 추가하기
         if (charactorManager != null)
         {
             unitData = charactorManager.GetCharactorData(charactorId);
@@ -185,7 +190,7 @@ public class BattleSceneManager : MonoBehaviour
             return null;
         }
 
-        var battleCharactor = new BattleCharactor(unitData, level);
+        var battleCharactor = new BattleCharactor(unitData, level, unitNum);
         battleCharactor.InitializeCurrentHpToMax();
 
         Debug.Log($"[BattleSceneManager] BattleCharactor 생성: {unitData.Name}, Lv.{level}, MaxHp={battleCharactor.FinalStats.HP}");

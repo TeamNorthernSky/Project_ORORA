@@ -597,6 +597,7 @@ GameObject:
   - component: {fileID: 621159267}
   - component: {fileID: 621159266}
   - component: {fileID: 621159268}
+  - component: {fileID: 621159269}
   m_Layer: 0
   m_Name: BattleSceneManager
   m_TagString: Untagged
@@ -622,7 +623,7 @@ MonoBehaviour:
   enemySpawner: {fileID: 912453334}
   equipmentManager: {fileID: 0}
   skillManager: {fileID: 0}
-  turnScheduler: {fileID: 621159268}
+  battleFlowManager: {fileID: 621159268}
   createOnStart: 1
   fallbackCharactorId: 
   enemyUnitIds: []
@@ -651,7 +652,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 621159265}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3954398d19837649a551ddabe4f5e49, type: 3}
+  m_Script: {fileID: 11500000, guid: a83f2ca1934e82f429da88cba041f70c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoStartOnInitialize: 1
+  enemyThinkSeconds: 3
+  doubleClickWindow: 0.3
+  verboseLog: 1
+  includeInactiveUnitRootsInOutlineLookup: 1
+  battleManager: {fileID: 621159269}
+--- !u!114 &621159269
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 621159265}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53194c5e2822cc44993d83d47a0fc12b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &701032531

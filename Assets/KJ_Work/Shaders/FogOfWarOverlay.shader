@@ -64,8 +64,8 @@ Shader "Custom/FogOfWarOverlay"
                 }
 
                 // RT에서 시야 정보 샘플링
-                float currentVis = SAMPLE_TEXTURE2D(_FogCurrentRT, sampler_FogCurrentRT, fogUV).r;
-                float visitedVis = SAMPLE_TEXTURE2D(_FogVisitedRT, sampler_FogVisitedRT, fogUV).r;
+                float currentVis = saturate(SAMPLE_TEXTURE2D(_FogCurrentRT, sampler_FogCurrentRT, fogUV).r);
+                float visitedVis = saturate(SAMPLE_TEXTURE2D(_FogVisitedRT, sampler_FogVisitedRT, fogUV).r);
 
                 // 누적 시야 상태 기준 컬러 혼합
                 half4 baseFog = lerp(_FogUnexploredColor, _FogVisitedColor, visitedVis);

@@ -1,37 +1,30 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(LineRenderer))]
 public class PathPreviewRenderer : MonoBehaviour
 {
-    [SerializeField] private LineRenderer lineRenderer;
+    [Header("Line Renderers")]
+    [SerializeField] private LineRenderer reachableLineRenderer;
+    [SerializeField] private LineRenderer unreachableLineRenderer;
+
+    [Header("Style")]
     [SerializeField] private float width = 0.08f;
-    [SerializeField] private Color color = new Color(1f, 0.7f, 0f, 1f);
+    [SerializeField] private Color reachableColor = Color.green;
+    [SerializeField] private Color unreachableColor = Color.red;
     [SerializeField] private bool drawWhenPathValid = true;
+
+    private const string ReachableChildName = "ReachablePath";
+    private const string UnreachableChildName = "UnreachablePath";
 
     private void Awake()
     {
-        if (lineRenderer == null)
-            lineRenderer = GetComponent<LineRenderer>();
-
-        lineRenderer.useWorldSpace = true;
-        lineRenderer.loop = false;
-        lineRenderer.startWidth = width;
-        lineRenderer.endWidth = width;
-
-        if (lineRenderer.material == null)
-        {
-            // URP에서도 보이도록 Unlit 기본 셰이더 사용
-            var shader = Shader.Find("Unlit/Color");
-            if (shader != null)
-                lineRenderer.material = new Material(shader);
-        }
-        lineRenderer.startColor = color;
-        lineRenderer.endColor = color;
+        ResolveLineRenderers();
+        SetupLineRenderer(reachableLineRenderer, reachableColor);
+        SetupLineRenderer(unreachableLineRenderer, unreachableColor);
         Hide();
     }
 
-    public void RenderPath(List<Vector2Int> path, GridManager gridManager)
+    public void RenderPath(List<Vector2Int> path, GridManager gridManager, int reachableSegments)
     {
         if (!drawWhenPathValid)
         {
@@ -45,20 +38,20 @@ public class PathPreviewRenderer : MonoBehaviour
             return;
         }
 
-        lineRenderer.positionCount = path.Count;
-        float y = gridManager.GetLandSurfaceY();
+        float y = gridManager.GetLandSurfaceY() + 0.02f;
+        List<Vector3> points = new List<Vector3>(path.Count);
 
         for (int i = 0; i < path.Count; i++)
         {
             Vector3 p = gridManager.GridToWorldCenter(path[i]);
-            p.y = y + 0.02f; // 바닥에 살짝 띄워서 Z-fighting 방지
-            lineRenderer.SetPosition(i, p);
+            p.y = y;
+            points.Add(p);
         }
 
-        lineRenderer.enabled = true;
+        RenderSplitPath(points, reachableSegments);
     }
 
-    public void RenderPathFromWorld(Vector3 startWorldPosition, List<Vector2Int> remainingPath, GridManager gridManager)
+    public void RenderPathFromWorld(Vector3 startWorldPosition, List<Vector2Int> remainingPath, GridManager gridManager, int reachableSegments)
     {
         if (!drawWhenPathValid)
         {
@@ -73,25 +66,98 @@ public class PathPreviewRenderer : MonoBehaviour
         }
 
         float y = gridManager.GetLandSurfaceY() + 0.02f;
-        lineRenderer.positionCount = remainingPath.Count + 1;
+        List<Vector3> points = new List<Vector3>(remainingPath.Count + 1);
 
         startWorldPosition.y = y;
-        lineRenderer.SetPosition(0, startWorldPosition);
+        points.Add(startWorldPosition);
 
         for (int i = 0; i < remainingPath.Count; i++)
         {
             Vector3 p = gridManager.GridToWorldCenter(remainingPath[i]);
             p.y = y;
-            lineRenderer.SetPosition(i + 1, p);
+            points.Add(p);
         }
 
-        lineRenderer.enabled = true;
+        RenderSplitPath(points, reachableSegments);
     }
 
     public void Hide()
     {
-        if (lineRenderer != null)
-            lineRenderer.enabled = false;
+        if (reachableLineRenderer != null)
+            reachableLineRenderer.enabled = false;
+
+        if (unreachableLineRenderer != null)
+            unreachableLineRenderer.enabled = false;
+    }
+
+    private void ResolveLineRenderers()
+    {
+        if (reachableLineRenderer == null)
+            reachableLineRenderer = FindChildLineRenderer(ReachableChildName);
+
+        if (unreachableLineRenderer == null)
+            unreachableLineRenderer = FindChildLineRenderer(UnreachableChildName);
+    }
+
+    private LineRenderer FindChildLineRenderer(string childName)
+    {
+        Transform child = transform.Find(childName);
+        return child != null ? child.GetComponent<LineRenderer>() : null;
+    }
+
+    private void RenderSplitPath(List<Vector3> points, int reachableSegments)
+    {
+        if (points == null || points.Count < 2)
+        {
+            Hide();
+            return;
+        }
+
+        int totalSegments = points.Count - 1;
+        int clampedReachableSegments = Mathf.Clamp(reachableSegments, 0, totalSegments);
+        int unreachableSegments = totalSegments - clampedReachableSegments;
+
+        if (clampedReachableSegments > 0)
+            SetLinePoints(reachableLineRenderer, points.GetRange(0, clampedReachableSegments + 1));
+        else if (reachableLineRenderer != null)
+            reachableLineRenderer.enabled = false;
+
+        if (unreachableSegments > 0)
+            SetLinePoints(unreachableLineRenderer, points.GetRange(clampedReachableSegments, unreachableSegments + 1));
+        else if (unreachableLineRenderer != null)
+            unreachableLineRenderer.enabled = false;
+    }
+
+    private void SetLinePoints(LineRenderer targetLineRenderer, List<Vector3> points)
+    {
+        if (targetLineRenderer == null)
+            return;
+
+        targetLineRenderer.positionCount = points.Count;
+        targetLineRenderer.SetPositions(points.ToArray());
+        targetLineRenderer.enabled = true;
+    }
+
+    private void SetupLineRenderer(LineRenderer targetLineRenderer, Color color)
+    {
+        if (targetLineRenderer == null)
+            return;
+
+        targetLineRenderer.useWorldSpace = true;
+        targetLineRenderer.loop = false;
+        targetLineRenderer.startWidth = width;
+        targetLineRenderer.endWidth = width;
+        targetLineRenderer.startColor = color;
+        targetLineRenderer.endColor = color;
+
+        if (targetLineRenderer.material == null)
+        {
+            Shader shader = Shader.Find("Unlit/Color");
+            if (shader != null)
+                targetLineRenderer.material = new Material(shader);
+        }
+
+        if (targetLineRenderer.material != null)
+            targetLineRenderer.material.color = color;
     }
 }
-

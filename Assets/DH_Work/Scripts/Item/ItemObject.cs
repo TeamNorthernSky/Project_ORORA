@@ -7,12 +7,9 @@ public class ItemObject : MonoBehaviour
     public ResourceType resourceType;
     public int amount;
 
-    public void GetItem()
+    public void GetItem(ResourceManager resourceManager)
     {
-        Debug.Log($"Get {resourceType} : {amount}");
-
-        // 나중에 여기서 PlayerResourceManager 연결
-        // party.Owner.ResourceManager.Add(resourceType, amount);
+        resourceManager.AddResource(resourceType, amount);
 
         Destroy(gameObject);
     }

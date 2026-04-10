@@ -3,23 +3,23 @@ using System;
 [Serializable]
 public struct StatBlock
 {
-    // int stats
-    public int HP;
-    public int Atk;
-    public int DEF;
-    public int Luck;
+    // scalar stats
+    public float HP;
+    public float Atk;
+    public float DEF;
+    public float Luck;
 
-    // float stats
+    // rate/speed stats
     public float Speed;
     public float CriticalRate;
     public float CounterRate;
     public float AvoidRate;
 
     public StatBlock(
-        int hp,
-        int atk,
-        int def,
-        int luck,
+        float hp,
+        float atk,
+        float def,
+        float luck,
         float speed,
         float criticalRate,
         float counterRate,
@@ -49,12 +49,13 @@ public struct StatBlock
         );
     }
 
+
     public void ClampToMinimumOne()
     {
        
-        Atk = Math.Max(1, Atk);
-        DEF = Math.Max(0, DEF);
-        HP = Math.Max(1, HP);
+        Atk = Math.Max(1f, Atk);
+        DEF = Math.Max(0f, DEF);
+        HP = Math.Max(1f, HP);
 
         
         CriticalRate = Math.Max(0f, CriticalRate);
@@ -62,6 +63,6 @@ public struct StatBlock
         AvoidRate = Math.Max(0f, AvoidRate);
 
         Speed = Math.Max(0f, Speed);
-        Luck = Math.Max(0, Luck);
+        Luck = Math.Max(0f, Luck);
     }
 }

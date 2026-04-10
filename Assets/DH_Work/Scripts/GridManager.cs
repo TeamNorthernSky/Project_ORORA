@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class GridManager : MonoBehaviour
 {
@@ -18,7 +19,8 @@ public class GridManager : MonoBehaviour
     [SerializeField] private Transform landTransform;
 
     [Header("Grid Settings")]
-    [SerializeField] private float hexRadius = 1f;
+    [FormerlySerializedAs("hexRadius")]
+    [SerializeField] private float cellSize = 1f;
 
     [Header("Obstacle Settings")]
     [Tooltip("이 레이어에 있는 콜라이더는 장애물로 간주합니다.")]
@@ -40,14 +42,14 @@ public class GridManager : MonoBehaviour
     // 필요 시 인스펙터에서 원점 오프셋 확장 가능
     private Vector3 gridOrigin = Vector3.zero;
 
-    public float HexRadius => hexRadius;
+    public float CellSize => cellSize;
     public Transform LandTransform => landTransform;
     public static Vector2Int[] Directions8 => directions8;
 
     private void Awake()
     {
-        if (hexRadius <= 0f)
-            hexRadius = 1f;
+        if (cellSize <= 0f)
+            cellSize = 1f;
     }
 
     public Vector2Int WorldToGrid(Vector3 worldPosition)
@@ -55,15 +57,15 @@ public class GridManager : MonoBehaviour
         float localX = worldPosition.x - gridOrigin.x;
         float localZ = worldPosition.z - gridOrigin.z;
 
-        int x = Mathf.RoundToInt(localX / hexRadius);
-        int y = Mathf.RoundToInt(localZ / hexRadius);
+        int x = Mathf.RoundToInt(localX / cellSize);
+        int y = Mathf.RoundToInt(localZ / cellSize);
         return new Vector2Int(x, y);
     }
 
     public Vector3 GridToWorldCenter(Vector2Int grid)
     {
-        float x = gridOrigin.x + hexRadius * grid.x;
-        float z = gridOrigin.z + hexRadius * grid.y;
+        float x = gridOrigin.x + cellSize * grid.x;
+        float z = gridOrigin.z + cellSize * grid.y;
 
         return new Vector3(x, 0f, z);
     }
@@ -71,11 +73,6 @@ public class GridManager : MonoBehaviour
     public static int GridDistance(Vector2Int a, Vector2Int b)
     {
         return Mathf.Max(Mathf.Abs(a.x - b.x), Mathf.Abs(a.y - b.y));
-    }
-
-    public bool IsWalkable(Vector2Int grid)
-    {
-        return !HasObstacle(grid) && !HasItem(grid) && !HasMine(grid);
     }
 
     public bool HasObstacle(Vector2Int grid)
@@ -100,7 +97,7 @@ public class GridManager : MonoBehaviour
         Vector3 center = GridToWorldCenter(grid);
         center.y = GetLandSurfaceY() + 0.5f;
 
-        Vector3 halfExtents = new Vector3(hexRadius * 0.5f * obstacleCheckFill, 0.5f, hexRadius * 0.5f * obstacleCheckFill);
+        Vector3 halfExtents = new Vector3(cellSize * 0.5f * obstacleCheckFill, 0.5f, cellSize * 0.5f * obstacleCheckFill);
         Collider[] cols = Physics.OverlapBox(center, halfExtents, Quaternion.identity, itemLayerMask);
 
         for (int i = 0; i < cols.Length; i++)
@@ -120,6 +117,30 @@ public class GridManager : MonoBehaviour
     public bool HasMine(Vector2Int grid)
     {
         return HasBlockingCollider(grid, mineLayerMask);
+    }
+
+    public bool TryGetMineObjectAtGrid(Vector2Int grid, out Mine mine)
+    {
+        mine = null;
+
+        Vector3 center = GridToWorldCenter(grid);
+        center.y = GetLandSurfaceY() + 0.5f;
+
+        Vector3 halfExtents = new Vector3(cellSize * 0.5f * obstacleCheckFill, 0.5f, cellSize * 0.5f * obstacleCheckFill);
+        Collider[] cols = Physics.OverlapBox(center, halfExtents, Quaternion.identity, mineLayerMask);
+
+        for (int i = 0; i < cols.Length; i++)
+        {
+            Collider col = cols[i];
+            if (col == null)
+                continue;
+
+            mine = col.GetComponentInParent<Mine>();
+            if (mine != null)
+                return true;
+        }
+
+        return false;
     }
 
     public bool HasItemOrMine(Vector2Int grid)
@@ -182,7 +203,7 @@ public class GridManager : MonoBehaviour
         Vector3 center = GridToWorldCenter(grid);
         center.y = GetLandSurfaceY() + 0.5f;
 
-        Vector3 halfExtents = new Vector3(hexRadius * 0.5f * obstacleCheckFill, 0.5f, hexRadius * 0.5f * obstacleCheckFill);
+        Vector3 halfExtents = new Vector3(cellSize * 0.5f * obstacleCheckFill, 0.5f, cellSize * 0.5f * obstacleCheckFill);
         Collider[] cols = Physics.OverlapBox(center, halfExtents, Quaternion.identity, layerMask);
 
         for (int i = 0; i < cols.Length; i++)
@@ -218,7 +239,7 @@ public class GridManager : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (hexRadius <= 0f)
+        if (cellSize <= 0f)
             return;
 
         float y = GetLandSurfaceY();
@@ -241,7 +262,7 @@ public class GridManager : MonoBehaviour
     private void DrawSquareOutlineGizmo(Vector3 center)
     {
         Gizmos.color = Color.cyan;
-        float half = hexRadius * 0.5f;
+        float half = cellSize * 0.5f;
         Vector3 a = new Vector3(center.x - half, center.y, center.z - half);
         Vector3 b = new Vector3(center.x + half, center.y, center.z - half);
         Vector3 c = new Vector3(center.x + half, center.y, center.z + half);

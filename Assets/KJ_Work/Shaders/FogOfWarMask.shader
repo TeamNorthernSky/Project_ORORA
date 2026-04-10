@@ -37,6 +37,8 @@ Shader "Hidden/FogOfWarMask"
                 return o;
             }
 
+            float _FogRemainBonus;
+
             fixed4 frag (v2f i) : SV_Target
             {
                 // 중심(0.5, 0.5)에서의 거리 산출 (가장자리 1.0)
@@ -46,7 +48,7 @@ Shader "Hidden/FogOfWarMask"
                 float alpha = saturate(1.0 - dist); 
                 alpha = smoothstep(0.0, 0.5, alpha); 
                 
-                return fixed4(alpha, 0, 0, 1);
+                return fixed4(alpha + (alpha * _FogRemainBonus), 0, 0, 1);
             }
             ENDCG
         }

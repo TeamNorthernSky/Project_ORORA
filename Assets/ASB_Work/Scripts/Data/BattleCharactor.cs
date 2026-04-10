@@ -7,7 +7,7 @@ public class BattleCharactor
     public UnitData UnitData { get; private set; }
     public int Level { get; private set; }
     public StatBlock FinalStats { get; private set; }
-    public int CurrentHp { get; private set; }
+    public float CurrentHp { get; private set; }
     public List<EquipmentData> EquippedEquipments { get; private set; }
     public List<SkillData> EquippedSkills { get; private set; }
     public bool IsPlayer { get; set; }
@@ -15,7 +15,8 @@ public class BattleCharactor
 
     public BattleCharactor(
         UnitData charactorData,
-        int level
+        int level,
+        int unitNum
         //List<EquipmentData> equippedEquipments,
         //List<SkillData> equippedSkills
         )
@@ -32,7 +33,7 @@ public class BattleCharactor
     public void RecalculateStats()
     {
         FinalStats = StatCalculator.CalculateFinalStats(UnitData, Level, EquippedEquipments);
-        CurrentHp = Mathf.Clamp(CurrentHp, 0, FinalStats.HP);
+        CurrentHp = Mathf.Clamp(CurrentHp, 0f, FinalStats.HP);
     }
 
     public void InitializeCurrentHpToMax()
@@ -46,10 +47,10 @@ public class BattleCharactor
         RecalculateStats();
     }
 
-    public void TakeDamage(int amount)
+    public void TakeDamage(float amount)
     {
-        int damage = Mathf.Max(0, amount);
-        CurrentHp = Mathf.Max(0, CurrentHp - damage);
+        float damage = Mathf.Max(0f, amount);
+        CurrentHp = Mathf.Max(0f, CurrentHp - damage);
         if (CurrentHp <= 0)
         {
             IsDead = true;
