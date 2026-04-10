@@ -21,6 +21,7 @@ public class FogOfWarManager : MonoBehaviour
     
     private RenderTexture _fogCurrentRT;
     private RenderTexture _fogVisitedRT;
+    public RenderTexture FogVisitedRT => _fogVisitedRT;
     private CommandBuffer _cb;
     private Mesh _quadMesh;
 
@@ -33,10 +34,10 @@ public class FogOfWarManager : MonoBehaviour
     private void InitializeFog()
     {
         // 1. 실시간 시야와 누적 시야 RT 생성
-        _fogCurrentRT = new RenderTexture(resolution, resolution, 0, RenderTextureFormat.R8);
+        _fogCurrentRT = new RenderTexture(resolution, resolution, 0, RenderTextureFormat.RHalf);
         _fogCurrentRT.name = "_FogCurrentRT";
         
-        _fogVisitedRT = new RenderTexture(resolution, resolution, 0, RenderTextureFormat.R8);
+        _fogVisitedRT = new RenderTexture(resolution, resolution, 0, RenderTextureFormat.RHalf);
         _fogVisitedRT.name = "_FogVisitedRT";
         
         // 2. 누적 기억 RT 검은색(0, 안보임)으로 초기화 
