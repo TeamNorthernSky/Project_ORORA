@@ -15,7 +15,6 @@ public class PartyInteractionController
     public bool IsInputLocked { get; private set; }
 
     public event Action<Vector2Int> AdjacentItemCellEntered;
-    public event Action<Vector2Int> AdjacentMineCellEntered;
 
     public PartyInteractionController(
         GridManager gridManager,
@@ -59,8 +58,13 @@ public class PartyInteractionController
         if (!gridManager.TryGetAdjacentMineGrid(enteredGrid, out Vector2Int mineGrid))
             return;
 
-        OnAdjacentMineCellEntered(mineGrid);
-        AdjacentMineCellEntered?.Invoke(mineGrid);
+        if (!gridManager.TryGetMineObjectAtGrid(mineGrid, out Mine mine))
+            return;
+
+        if (mine.mineState != MineState.Unclaimed)
+            return;
+
+        BeginAdjacentMineClaim(mineGrid);
     }
 
     private void OnAdjacentItemCellEntered(Vector2Int itemGrid)
@@ -72,7 +76,7 @@ public class PartyInteractionController
         AdjacentItemCellEntered?.Invoke(itemGrid);
     }
 
-    private void OnAdjacentMineCellEntered(Vector2Int mineGrid)
+    private void BeginAdjacentMineClaim(Vector2Int mineGrid)
     {
         CancelPendingInteraction();
 
@@ -134,7 +138,9 @@ public class PartyInteractionController
             yield break;
         }
 
-        mine.MineClaim();
+        if (mine.mineState == MineState.Unclaimed)
+            mine.MineClaim();
+
         IsInputLocked = false;
     }
 

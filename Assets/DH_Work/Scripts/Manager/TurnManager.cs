@@ -4,6 +4,7 @@ public class TurnManager : MonoBehaviour
 {
     [SerializeField] private int day = 1;
     [SerializeField] private PartyRegistry partyRegistry;
+    [SerializeField] private ResourceManager resourceManager;
 
     public void EndPlayerTurn()
     {
@@ -19,6 +20,7 @@ public class TurnManager : MonoBehaviour
     private void EndEnemyTurn()
     {
         AdvanceDay();
+        ProduceClaimedMines();
         StartPlayerTurn();
     }
 
@@ -41,5 +43,23 @@ public class TurnManager : MonoBehaviour
     private void AdvanceDay()
     {
         day++;
+    }
+
+    private void ProduceClaimedMines()
+    {
+        Mine[] mines = FindObjectsByType<Mine>(FindObjectsSortMode.None);
+        for (int i = 0; i < mines.Length; i++)
+        {
+            Mine mine = mines[i];
+            if (mine == null)
+                continue;
+
+            mine.ProduceForTurn(resourceManager);
+        }
+    }
+
+    public int GetDay()
+    {
+        return day;
     }
 }

@@ -12,7 +12,7 @@ public class PartyGridMover : MonoBehaviour
     [SerializeField] private float moveSpeed = 4f;
     [SerializeField] private float arriveThreshold = 0.01f;
     [SerializeField] private float itemPickupDelay = 0.5f;
-    [SerializeField] private int maxMovePoints = 20;
+    [SerializeField] private int maxMovePoints = 10;
 
     private readonly Queue<Vector2Int> pathQueue = new Queue<Vector2Int>();
     private bool isMoving;
@@ -23,7 +23,6 @@ public class PartyGridMover : MonoBehaviour
 
     public event Action<List<Vector2Int>> PathUpdated;
     public event Action<Vector2Int> AdjacentItemCellEntered;
-    public event Action<Vector2Int> AdjacentMineCellEntered;
     public event Action MoveCompleted;
 
     private void Awake()
@@ -39,7 +38,6 @@ public class PartyGridMover : MonoBehaviour
             GetCurrentGrid);
 
         interactionController.AdjacentItemCellEntered += HandleAdjacentItemCellEntered;
-        interactionController.AdjacentMineCellEntered += HandleAdjacentMineCellEntered;
     }
 
     private void OnDestroy()
@@ -48,7 +46,6 @@ public class PartyGridMover : MonoBehaviour
             return;
 
         interactionController.AdjacentItemCellEntered -= HandleAdjacentItemCellEntered;
-        interactionController.AdjacentMineCellEntered -= HandleAdjacentMineCellEntered;
         interactionController.Dispose();
     }
 
@@ -148,11 +145,6 @@ public class PartyGridMover : MonoBehaviour
     private void HandleAdjacentItemCellEntered(Vector2Int itemGrid)
     {
         AdjacentItemCellEntered?.Invoke(itemGrid);
-    }
-
-    private void HandleAdjacentMineCellEntered(Vector2Int mineGrid)
-    {
-        AdjacentMineCellEntered?.Invoke(mineGrid);
     }
 
     private static int GetPathMoveCost(List<Vector2Int> path)

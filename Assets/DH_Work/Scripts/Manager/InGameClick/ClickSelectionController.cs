@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class ClickSelectionController : MonoBehaviour
 {
@@ -18,6 +19,9 @@ public class ClickSelectionController : MonoBehaviour
 
     [Header("Path Preview")]
     [SerializeField] private PathPreviewRenderer pathPreviewRenderer;
+
+    [Header("UI Input")]
+    [SerializeField] private UIInputBlocker uiInputBlocker;
 
     [Header("Marker Visual")]
     [SerializeField] private Color validMarkerColor = Color.green;
@@ -65,6 +69,8 @@ public class ClickSelectionController : MonoBehaviour
 
     private void Update()
     {
+        RefreshUILockState();
+
         if (Input.GetMouseButtonDown(0))
             TryHandleClick();
 
@@ -77,6 +83,9 @@ public class ClickSelectionController : MonoBehaviour
     {
         PartyGridMover activeMover = partySelectionController != null ? partySelectionController.ActiveMover : null;
         if (mainCamera == null || gridManager == null || activeMover == null || pathfinder == null || marker == null)
+            return;
+
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             return;
 
         if (activeMover.IsMoving || activeMover.IsInputLocked)
@@ -150,5 +159,15 @@ public class ClickSelectionController : MonoBehaviour
     private void HandleActiveMoverMoveCompleted()
     {
         moveCommandPreviewController?.HandleMoveCompleted();
+    }
+
+    private void RefreshUILockState()
+    {
+        if (uiInputBlocker == null)
+            return;
+
+        PartyGridMover activeMover = partySelectionController != null ? partySelectionController.ActiveMover : null;
+        bool shouldLockUI = activeMover != null && (activeMover.IsMoving || activeMover.IsInputLocked);
+        uiInputBlocker.SetLocked(shouldLockUI);
     }
 }
