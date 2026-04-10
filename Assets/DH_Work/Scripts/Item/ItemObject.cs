@@ -9,8 +9,6 @@ public class ItemObject : MonoBehaviour
 
     public void GetItem(ResourceManager resourceManager)
     {
-        Debug.Log($"Get {resourceType} : {amount}");
-
         resourceManager.AddResource(resourceType, amount);
 
         Destroy(gameObject);

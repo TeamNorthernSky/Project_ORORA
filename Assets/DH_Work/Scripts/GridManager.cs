@@ -119,6 +119,30 @@ public class GridManager : MonoBehaviour
         return HasBlockingCollider(grid, mineLayerMask);
     }
 
+    public bool TryGetMineObjectAtGrid(Vector2Int grid, out Mine mine)
+    {
+        mine = null;
+
+        Vector3 center = GridToWorldCenter(grid);
+        center.y = GetLandSurfaceY() + 0.5f;
+
+        Vector3 halfExtents = new Vector3(cellSize * 0.5f * obstacleCheckFill, 0.5f, cellSize * 0.5f * obstacleCheckFill);
+        Collider[] cols = Physics.OverlapBox(center, halfExtents, Quaternion.identity, mineLayerMask);
+
+        for (int i = 0; i < cols.Length; i++)
+        {
+            Collider col = cols[i];
+            if (col == null)
+                continue;
+
+            mine = col.GetComponentInParent<Mine>();
+            if (mine != null)
+                return true;
+        }
+
+        return false;
+    }
+
     public bool HasItemOrMine(Vector2Int grid)
     {
         return HasItem(grid) || HasMine(grid);

@@ -10,7 +10,7 @@ public class PartyInteractionController
     private readonly MonoBehaviour coroutineOwner;
     private readonly Func<Vector2Int> currentGridProvider;
 
-    private Coroutine pendingItemPickupCoroutine;
+    private Coroutine pendingInteractionCoroutine;
 
     public bool IsInputLocked { get; private set; }
 
@@ -42,7 +42,7 @@ public class PartyInteractionController
 
     public void Dispose()
     {
-        CancelPendingItemPickup();
+        CancelPendingInteraction();
         IsInputLocked = false;
     }
 
@@ -59,23 +59,32 @@ public class PartyInteractionController
         if (!gridManager.TryGetAdjacentMineGrid(enteredGrid, out Vector2Int mineGrid))
             return;
 
+        OnAdjacentMineCellEntered(mineGrid);
         AdjacentMineCellEntered?.Invoke(mineGrid);
     }
 
     private void OnAdjacentItemCellEntered(Vector2Int itemGrid)
     {
-        CancelPendingItemPickup();
+        CancelPendingInteraction();
 
         IsInputLocked = true;
-        pendingItemPickupCoroutine = coroutineOwner.StartCoroutine(InvokeDelayedItemPickup(itemGrid));
+        pendingInteractionCoroutine = coroutineOwner.StartCoroutine(InvokeDelayedItemPickup(itemGrid));
         AdjacentItemCellEntered?.Invoke(itemGrid);
+    }
+
+    private void OnAdjacentMineCellEntered(Vector2Int mineGrid)
+    {
+        CancelPendingInteraction();
+
+        IsInputLocked = true;
+        pendingInteractionCoroutine = coroutineOwner.StartCoroutine(InvokeDelayedMineClaim(mineGrid));
     }
 
     private IEnumerator InvokeDelayedItemPickup(Vector2Int itemGrid)
     {
         yield return new WaitForSeconds(itemPickupDelay);
 
-        pendingItemPickupCoroutine = null;
+        pendingInteractionCoroutine = null;
 
         if (gridManager == null)
         {
@@ -100,13 +109,42 @@ public class PartyInteractionController
         IsInputLocked = false;
     }
 
-    private void CancelPendingItemPickup()
+    private IEnumerator InvokeDelayedMineClaim(Vector2Int mineGrid)
     {
-        if (pendingItemPickupCoroutine == null)
+        yield return new WaitForSeconds(itemPickupDelay);
+
+        pendingInteractionCoroutine = null;
+
+        if (gridManager == null)
+        {
+            IsInputLocked = false;
+            yield break;
+        }
+
+        Vector2Int currentGrid = currentGridProvider != null ? currentGridProvider() : mineGrid;
+        if (!IsAdjacentOrSame(currentGrid, mineGrid))
+        {
+            IsInputLocked = false;
+            yield break;
+        }
+
+        if (!gridManager.TryGetMineObjectAtGrid(mineGrid, out Mine mine))
+        {
+            IsInputLocked = false;
+            yield break;
+        }
+
+        mine.MineClaim();
+        IsInputLocked = false;
+    }
+
+    private void CancelPendingInteraction()
+    {
+        if (pendingInteractionCoroutine == null)
             return;
 
-        coroutineOwner.StopCoroutine(pendingItemPickupCoroutine);
-        pendingItemPickupCoroutine = null;
+        coroutineOwner.StopCoroutine(pendingInteractionCoroutine);
+        pendingInteractionCoroutine = null;
     }
 
     private static bool IsAdjacentOrSame(Vector2Int a, Vector2Int b)
