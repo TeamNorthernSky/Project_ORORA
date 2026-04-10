@@ -114,7 +114,8 @@ public class EnemySpawner : MonoBehaviour
         EnemyData data = enemyManager.GetEnemyData(enemyId);
         if (data == null)
         {
-            Debug.LogError($"[EnemySpawner] EnemyData를 찾지 못했습니다. enemyId={enemyId}");
+            Debug.LogError(
+                $"[EnemySpawner] EnemyManager에서 UnitData(EnemyData)를 찾지 못했습니다. enemyId='{enemyId}' — 스폰을 중단합니다.");
             return null;
         }
 
@@ -127,13 +128,25 @@ public class EnemySpawner : MonoBehaviour
         var go = Instantiate(prefab, worldPos, worldRot, unitParent);
         go.name = $"Enemy_{data.Index}";
 
-        var script = go.GetComponent<CharactorScript>();
-        if (script == null)
+        // 적 인스턴스에서는 IUnitIdentifier를 EnemyScript만 담당하도록 CharactorScript 제거(클릭 식별 모호 방지).
+        // 같은 프레임에 RebuildRuntimeLookup이 돌 수 있어 DestroyImmediate로 즉시 제거한다.
+        foreach (var legacy in go.GetComponentsInChildren<CharactorScript>(true))
         {
-            script = go.AddComponent<CharactorScript>();
+            DestroyImmediate(legacy);
         }
 
-        script.Initialize(data);
+        var enemyScript = go.GetComponent<EnemyScript>();
+        if (enemyScript == null)
+        {
+            enemyScript = go.AddComponent<EnemyScript>();
+        }
+
+        // 플레이어 스폰(PlayerSpawner → CharactorScript.Initialize)과 동일하게 루트에 UnitData 주입.
+        enemyScript.Initialize(data);
+
+        // 디버그 확인용, 이후 제거 — 스폰 직후 UnitID가 battleById 키와 일치하는지 확인
+        Debug.Log(
+            $"[EnemySpawner] 스폰 직후 EnemyScript.UnitID='{enemyScript.UnitID}' (enemyId={enemyId}, grid={gridNumber})");
 
         spawnedByGrid[gridNumber] = go;
         Debug.Log(
