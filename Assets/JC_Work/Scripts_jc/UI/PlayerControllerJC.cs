@@ -65,8 +65,8 @@ public class PlayerControllerJC : MonoBehaviour
         Vector2Int targetGrid = PlayGridManager.WorldToGrid(hitPoint);
 
         // 맵 경계 내로 클램프
-        targetGrid.x = Mathf.Clamp(targetGrid.x, 0, PlayGridManager.GridWidth - 1);
-        targetGrid.y = Mathf.Clamp(targetGrid.y, 0, PlayGridManager.GridHeight - 1);
+        targetGrid.x = Mathf.Clamp(targetGrid.x, 0, grid.Width - 1);
+        targetGrid.y = Mathf.Clamp(targetGrid.y, 0, grid.Height - 1);
 
         currentGridPos = targetGrid;
         targetWorldPos = PlayGridManager.GridToWorld(targetGrid);

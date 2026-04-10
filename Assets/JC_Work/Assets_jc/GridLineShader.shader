@@ -4,7 +4,7 @@ Shader "Custom/GridLine"
     {
         _BaseColor ("Base Color", Color) = (0.15, 0.15, 0.15, 1)
         _LineColor ("Line Color", Color) = (0.2, 1.0, 0.3, 0.15)
-        _GridSize ("Grid Size", Float) = 64
+        _GridSize ("Grid Size (x=width, y=height)", Vector) = (64, 64, 0, 0)
         _LineWidth ("Line Width", Range(0.001, 0.05)) = 0.02
     }
 
@@ -46,7 +46,7 @@ Shader "Custom/GridLine"
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseColor;
                 float4 _LineColor;
-                float _GridSize;
+                float4 _GridSize;
                 float _LineWidth;
             CBUFFER_END
 
@@ -60,7 +60,7 @@ Shader "Custom/GridLine"
 
             half4 frag(Varyings input) : SV_Target
             {
-                float2 gridUV = input.uv * _GridSize;
+                float2 gridUV = input.uv * _GridSize.xy;
                 float2 wrapped = frac(gridUV);
 
                 // 그리드 라인: 셀 경계에 가까울수록 1

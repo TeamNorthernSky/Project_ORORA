@@ -1,4 +1,4 @@
-public enum TerrainType
+public enum TerrainType : byte
 {
     Plain,      // 평지
     Forest,     // 숲

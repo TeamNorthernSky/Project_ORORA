@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: FogOfWarMaterial
+  m_Name: FogOfWarMaterialJC
   m_Shader: {fileID: 4800000, guid: ed441d876a5523e4f8050e3f01acd530, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -28,12 +28,13 @@ Material:
     - _DebugMode: 0
     - _DistortionStrength: 0.3
     - _EdgeSoftness: 0.05
-    - _FlowSpeed1: 0.02
-    - _FlowSpeed2: 0.035
-    - _FlowSpeed3: 0.01
-    - _FogDensityHigh: 0.3
-    - _FogDensityLow: 0.95
-    - _FogDensityMid: 0.65
+    - _FlowSpeed1: 0.15
+    - _FlowSpeed2: 0.25
+    - _FlowSpeed3: 0.08
+    - _FogCeilingY: 2
+    - _FogDensityHigh: 0
+    - _FogDensityLow: 1
+    - _FogDensityMid: 0.85
     - _HeightTransition: 0.5
     - _NoiseContrast: 3.5
     - _NoiseScale1: 6
