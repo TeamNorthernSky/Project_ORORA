@@ -25,6 +25,10 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _BrightnessHigh: 1.339
+    - _BrightnessLow: 0.602
+    - _BrightnessMid: 1
+    - _CloudContrast: 0.15
     - _DebugMode: 0
     - _DistortionStrength: 0.3
     - _EdgeSoftness: 0.05
@@ -36,7 +40,7 @@ Material:
     - _FogDensityLow: 1
     - _FogDensityMid: 0.85
     - _HeightTransition: 0.5
-    - _NoiseContrast: 3.5
+    - _NoiseContrast: 8
     - _NoiseScale1: 6
     - _NoiseScale2: 18
     - _NoiseScale3: 3

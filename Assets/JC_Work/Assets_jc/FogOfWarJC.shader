@@ -21,6 +21,11 @@ Shader "Custom/JC/FogOfWar"
         _HeightTransition ("Volume Ceiling Softness", Range(0.1, 2.0)) = 0.5
         _FogCeilingY ("Fog Ceiling Y (volume top height)", Float) = 2.0
 
+        _BrightnessLow ("Brightness - Low (volume interior)", Range(0.3, 1.5)) = 0.75
+        _BrightnessMid ("Brightness - Mid (volume surface)", Range(0.3, 1.5)) = 1.00
+        _BrightnessHigh ("Brightness - High (volume top)", Range(0.3, 1.5)) = 1.25
+        _CloudContrast ("Cloud Contrast (color modulation range)", Range(0.0, 0.5)) = 0.15
+
         [Toggle] _DebugMode ("Debug Mode (show visibility)", Float) = 0
     }
 
@@ -97,6 +102,11 @@ Shader "Custom/JC/FogOfWar"
 
                 float _HeightTransition;
                 float _FogCeilingY;
+
+                float _BrightnessLow;
+                float _BrightnessMid;
+                float _BrightnessHigh;
+                float _CloudContrast;
             CBUFFER_END
 
             // ========== 노이즈 ==========
@@ -229,17 +239,23 @@ Shader "Custom/JC/FogOfWar"
                 // 구름 밀도 (노이즈에 의한 두꺼움/얇음)
                 float cloud = lerp(0.2, 1.0, noise);
 
-                // ===== 최종 alpha 계산 =====
-                // low (볼륨 내부): cloud 변조 없이 완전 불투명
-                // mid (볼륨 표면): cloud 변조로 구름 상단 패턴
-                // high(볼륨 위)  : cloud 변조 (보통 _FogDensityHigh=0 → 완전 투명)
+                // ===== alpha 계산 =====
+                // alpha는 오직 "얼마나 가리는가"만 담당. cloud 변조는 color로 이동했음.
                 float lowFog  = lowFactor  * _FogDensityLow;
-                float midFog  = midFactor  * _FogDensityMid  * cloud;
-                float highFog = highFactor * _FogDensityHigh * cloud;
-
+                float midFog  = midFactor  * _FogDensityMid;
+                float highFog = highFactor * _FogDensityHigh;
                 float alpha = saturate((lowFog + midFog + highFog) * cellFog);
 
-                half3 result = lerp(sceneColor.rgb, _FogColor.rgb, alpha);
+                // ===== color 계산 =====
+                // 레이어별 명도(아래 어두움, 위 밝음) × cloud 노이즈 변조
+                // cloud 변조 범위 = (1 - contrast) ~ (1 + contrast)
+                float layerBrightness = lowFactor  * _BrightnessLow
+                                      + midFactor  * _BrightnessMid
+                                      + highFactor * _BrightnessHigh;
+                float cloudMod = lerp(1.0 - _CloudContrast, 1.0 + _CloudContrast, cloud);
+                half3 fogColorFinal = _FogColor.rgb * layerBrightness * cloudMod;
+
+                half3 result = lerp(sceneColor.rgb, fogColorFinal, alpha);
                 return half4(result, 1.0);
             }
             ENDHLSL
