@@ -41,7 +41,7 @@ public class FogOfWarNoiseManager : MonoBehaviour
             _instanceMat.SetTexture("_NoiseTex", noiseTexture);
         }
         
-        _instanceMat.SetVector("_NoiseScale", new Vector4(noiseScale.x, noiseScale.y, 0, 0));
+        _instanceMat.SetVector("_NoiseTextureScale", new Vector4(noiseScale.x, noiseScale.y, 0, 0));
         _instanceMat.SetFloat("_NoiseIntensity", noiseIntensity);
 
         // 매 프레임 스크롤 속도에 시간(DeltaTime)을 곱하여 오프셋 누적 (UV 스크롤링)

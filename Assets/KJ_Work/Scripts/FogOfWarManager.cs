@@ -1,29 +1,32 @@
 using UnityEngine;
-using UnityEngine.Rendering;
+using System.Collections.Generic;
 
 public class FogOfWarManager : MonoBehaviour
 {
     public static FogOfWarManager Instance { get; private set; }
 
-    [Header("Map Settings")]
+    [Header("Map & Grid Settings")]
     [Tooltip("지도의 중심 좌표 설정")]
     public Vector2 mapCenter = Vector2.zero;
+    
     [Tooltip("지도의 실제 크기 (World X, Z)")]
-    public Vector2 mapSize = new Vector2(100f, 100f);
-    [Tooltip("시야 렌더 타겟의 해상도")]
-    public int resolution = 1024;
+    public Vector2 mapSize = new Vector2(128f, 128f);
     
-    [Header("Dependencies")]
-    [Tooltip("원형 시야를 그릴 마스크 Material (FogOfWarMask.shader)")]
-    public Material visionMaskMaterial; 
-    [Tooltip("누적 메모리 블렌딩을 시킬 Material (FogOfWarAccumulate.shader)")]
-    public Material accumulateMaterial; 
-    
-    private RenderTexture _fogCurrentRT;
-    private RenderTexture _fogVisitedRT;
-    public RenderTexture FogVisitedRT => _fogVisitedRT;
-    private CommandBuffer _cb;
-    private Mesh _quadMesh;
+    [Tooltip("그리드의 해상도 (타일 개수, 128x128 맵이면 128)")]
+    public int gridResolution = 128;
+
+    [Header("Fog Settings")]
+    [Tooltip("시야가 넓어지는 칸 수 (1 = 자신 기준 상하좌우를 포함한 3x3 정사각형 형태)")]
+    public int visionRange = 1;
+
+    private Texture2D _currentTex;
+    private Texture2D _visitedTex;
+
+    private Color32[] _currentPixels;
+    private Color32[] _visitedPixels;
+
+    private readonly Color32 _clearColor = new Color32(0, 0, 0, 0);       // 안 보임
+    private readonly Color32 _fogColor = new Color32(255, 0, 0, 0);       // 보임 (셰이더가 r채널을 사용하므로 R=255)
 
     private void Awake()
     {
@@ -33,95 +36,86 @@ public class FogOfWarManager : MonoBehaviour
 
     private void InitializeFog()
     {
-        // 1. 실시간 시야와 누적 시야 RT 생성
-        _fogCurrentRT = new RenderTexture(resolution, resolution, 0, RenderTextureFormat.RHalf);
-        _fogCurrentRT.name = "_FogCurrentRT";
-        
-        _fogVisitedRT = new RenderTexture(resolution, resolution, 0, RenderTextureFormat.RHalf);
-        _fogVisitedRT.name = "_FogVisitedRT";
-        
-        // 2. 누적 기억 RT 검은색(0, 안보임)으로 초기화 
-        RenderTexture.active = _fogVisitedRT;
-        GL.Clear(false, true, Color.black);
-        RenderTexture.active = null;
+        // 실시간 시야를 담을 텍스처
+        _currentTex = new Texture2D(gridResolution, gridResolution, TextureFormat.RGBA32, false);
+        _currentTex.filterMode = FilterMode.Bilinear; // 타일 경계를 부드럽게. 완전히 깎아지른 네모를 원하면 Point로 변경하세요.
+        _currentTex.wrapMode = TextureWrapMode.Clamp;
 
-        _cb = new CommandBuffer { name = "FogOfWar_DrawVision" };
-        _quadMesh = CreateQuad();
+        // 방문한 시야를 누적할 텍스처 (시간이 지나도 사라지지 않음)
+        _visitedTex = new Texture2D(gridResolution, gridResolution, TextureFormat.RGBA32, false);
+        _visitedTex.filterMode = FilterMode.Bilinear;
+        _visitedTex.wrapMode = TextureWrapMode.Clamp;
+
+        int totalPixels = gridResolution * gridResolution;
+        _currentPixels = new Color32[totalPixels];
+        _visitedPixels = new Color32[totalPixels];
+
+        // 초기 방문 배열을 완전 어두운 상태로 초기화
+        for (int i = 0; i < totalPixels; i++)
+        {
+            _currentPixels[i] = _clearColor;
+            _visitedPixels[i] = _clearColor;
+        }
+
+        _visitedTex.SetPixels32(_visitedPixels);
+        _visitedTex.Apply();
     }
 
     private void LateUpdate()
     {
-        if (_cb == null) return;
-        
-        _cb.Clear();
-        
-        // 1. 매 프레임 Current 시야 RT 클리어 (현재 영역 초기화)
-        _cb.SetRenderTarget(_fogCurrentRT);
-        _cb.ClearRenderTarget(false, true, Color.black);
-        
-        // 2. GPU Projection 보정 제거, 순수 identity 사용 (NDC 직접 매핑)
-        _cb.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
-        
+        // 1. 현재 프레임의 시야(Current) 배열만 매번 어둡게 지우기
+        for (int i = 0; i < _currentPixels.Length; i++)
+        {
+            _currentPixels[i] = _clearColor;
+        }
+
+        // 월드 좌하단 시작점 (맵 중심축 기준)
         float mapMinX = mapCenter.x - mapSize.x * 0.5f;
         float mapMinZ = mapCenter.y - mapSize.y * 0.5f;
-
-        // 3. 등록된 모든 시야 보유 유닛에 대해 Quad(마스크) 그리기
-        foreach(var unit in FogOfWarUnit.AllUnits)
+        
+        // 2. 유닛(플레이어) 위치 기반으로 그리드 칠하기
+        foreach (var unit in FogOfWarUnit.AllUnits)
         {
-            float r = unit.visionRadius;
             Vector3 pos = unit.transform.position;
-            
-            // 월드 XZ 좌표 → NDC (-1 ~ 1)로 직접 매핑
-            float ndcX = (pos.x - mapMinX) / mapSize.x * 2f - 1f;
-            float ndcY = (pos.z - mapMinZ) / mapSize.y * 2f - 1f;
-            float ndcScaleX = (r * 2f) / mapSize.x * 2f;
-            float ndcScaleY = (r * 2f) / mapSize.y * 2f;
 
-            Matrix4x4 trs = Matrix4x4.TRS(
-                new Vector3(ndcX, ndcY, 0f),
-                Quaternion.identity,
-                new Vector3(ndcScaleX, ndcScaleY, 1f)
-            );
-            _cb.DrawMesh(_quadMesh, trs, visionMaskMaterial);
+            // 월드 좌표를 그리드의 2D 인덱스로 변환
+            int gridX = Mathf.FloorToInt((pos.x - mapMinX) / mapSize.x * gridResolution);
+            int gridY = Mathf.FloorToInt((pos.z - mapMinZ) / mapSize.y * gridResolution);
+
+            // 정사각형 영역 마스킹 (내 타일을 중심으로 visionRange 만큼의 칸수)
+            for (int y = -visionRange; y <= visionRange; y++)
+            {
+                for (int x = -visionRange; x <= visionRange; x++)
+                {
+                    int targetX = gridX + x;
+                    int targetY = gridY + y;
+
+                    // 마스킹 타일이 맵 테두리를 벗어나지 않았는지 안전 검사
+                    if (targetX >= 0 && targetX < gridResolution && targetY >= 0 && targetY < gridResolution)
+                    {
+                        // 1차원 배열 인덱스로 변환
+                        int index = targetY * gridResolution + targetX;
+                        
+                        _currentPixels[index] = _fogColor;
+                        _visitedPixels[index] = _fogColor; // 한 번이라도 밝혀지면 영구히 밝게 유지
+                    }
+                }
+            }
         }
-        
-        // 4. Current 시야를 Visited 누적 RT에 Max Blend 기법으로 덮어씌움
-        _cb.Blit(_fogCurrentRT, _fogVisitedRT, accumulateMaterial);
-        
-        // 커맨드 버퍼 실행 시점
-        Graphics.ExecuteCommandBuffer(_cb);
-        
-        // 5. 후처리 셰이더용 Global 변수 전달
-        Shader.SetGlobalTexture("_FogCurrentRT", _fogCurrentRT);
-        Shader.SetGlobalTexture("_FogVisitedRT", _fogVisitedRT);
-        
-        Vector4 mapBounds = new Vector4(mapCenter.x - mapSize.x * 0.5f, mapCenter.y - mapSize.y * 0.5f, mapSize.x, mapSize.y);
+
+        // 3. 텍스처에 픽셀 적용
+        _currentTex.SetPixels32(_currentPixels);
+        _currentTex.Apply();
+
+        _visitedTex.SetPixels32(_visitedPixels);
+        _visitedTex.Apply();
+
+        // 4. 전역 셰이더 변수로 전달 (기존 FogOfWarOverlay 및 Procedural 셰이더가 이 텍스처를 읽음)
+        Shader.SetGlobalTexture("_FogCurrentRT", _currentTex);
+        Shader.SetGlobalTexture("_FogVisitedRT", _visitedTex);
+
+        // 맵 바운더리 전달
+        Vector4 mapBounds = new Vector4(mapMinX, mapMinZ, mapSize.x, mapSize.y);
         Shader.SetGlobalVector("_FogMapBounds", mapBounds);
-    }
-
-    private Mesh CreateQuad()
-    {
-        Mesh mesh = new Mesh();
-        mesh.vertices = new Vector3[] {
-            new Vector3(-0.5f, -0.5f, 0),
-            new Vector3( 0.5f, -0.5f, 0),
-            new Vector3(-0.5f,  0.5f, 0),
-            new Vector3( 0.5f,  0.5f, 0)
-        };
-        mesh.uv = new Vector2[] {
-            new Vector2(0, 0),
-            new Vector2(1, 0),
-            new Vector2(0, 1),
-            new Vector2(1, 1)
-        };
-        mesh.triangles = new int[] { 0, 2, 1, 2, 3, 1 };
-        return mesh;
-    }
-
-    private void OnDestroy()
-    {
-        if (_fogCurrentRT) _fogCurrentRT.Release();
-        if (_fogVisitedRT) _fogVisitedRT.Release();
-        if (_cb != null) _cb.Release();
     }
 }
