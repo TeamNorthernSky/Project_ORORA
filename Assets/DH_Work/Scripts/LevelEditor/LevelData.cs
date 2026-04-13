@@ -1,0 +1,221 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+[CreateAssetMenu(
+    fileName = "LevelData",
+    menuName = "DH Work/Level Editor/Level Data")]
+public class LevelData : ScriptableObject
+{
+    [Header("Meta")]
+    [SerializeField] private string levelId = "level_001";
+    [SerializeField] private string displayName = "New Level";
+
+    [Header("Grid")]
+    [SerializeField] private Vector2Int gridSize = new Vector2Int(20, 20);
+
+    [Header("Placement")]
+    [SerializeField] private List<Vector2Int> obstacleCells = new List<Vector2Int>();
+    [SerializeField] private List<ItemPlacementData> itemPlacements = new List<ItemPlacementData>();
+    [SerializeField] private List<MinePlacementData> minePlacements = new List<MinePlacementData>();
+    [SerializeField] private List<PartySpawnData> partySpawns = new List<PartySpawnData>();
+
+    public string LevelId => levelId;
+    public string DisplayName => displayName;
+    public Vector2Int GridSize => gridSize;
+    public Vector2Int GridMin => new Vector2Int(-(gridSize.x / 2), -(gridSize.y / 2));
+    public Vector2Int GridMax => new Vector2Int(gridSize.x / 2, gridSize.y / 2);
+    public IReadOnlyList<Vector2Int> ObstacleCells => obstacleCells;
+    public IReadOnlyList<ItemPlacementData> ItemPlacements => itemPlacements;
+    public IReadOnlyList<MinePlacementData> MinePlacements => minePlacements;
+    public IReadOnlyList<PartySpawnData> PartySpawns => partySpawns;
+
+    public bool IsInsideGrid(Vector2Int grid)
+    {
+        Vector2Int min = GridMin;
+        Vector2Int max = GridMax;
+
+        return grid.x >= min.x
+            && grid.y >= min.y
+            && grid.x <= max.x
+            && grid.y <= max.y;
+    }
+
+    public bool HasObstacleAt(Vector2Int grid)
+    {
+        return obstacleCells.Contains(grid);
+    }
+
+    public bool HasItemAt(Vector2Int grid)
+    {
+        for (int i = 0; i < itemPlacements.Count; i++)
+        {
+            if (itemPlacements[i].GridPosition == grid)
+                return true;
+        }
+
+        return false;
+    }
+
+    public bool HasMineAt(Vector2Int grid)
+    {
+        for (int i = 0; i < minePlacements.Count; i++)
+        {
+            if (minePlacements[i].GridPosition == grid)
+                return true;
+        }
+
+        return false;
+    }
+
+    public bool HasPartySpawnAt(Vector2Int grid)
+    {
+        for (int i = 0; i < partySpawns.Count; i++)
+        {
+            if (partySpawns[i].GridPosition == grid)
+                return true;
+        }
+
+        return false;
+    }
+
+    public void SetObstacle(Vector2Int grid)
+    {
+        if (!IsInsideGrid(grid))
+            return;
+
+        RemoveNonObstaclePlacementsAt(grid);
+        if (!obstacleCells.Contains(grid))
+            obstacleCells.Add(grid);
+    }
+
+    public void SetItem(Vector2Int grid, ResourceType resourceType, int amount)
+    {
+        if (!IsInsideGrid(grid))
+            return;
+
+        RemoveAllPlacementsAt(grid);
+        itemPlacements.Add(new ItemPlacementData(grid, resourceType, amount));
+    }
+
+    public void SetMine(Vector2Int grid, ResourceType resourceType, int resourcePerTurn, MineState initialState)
+    {
+        if (!IsInsideGrid(grid))
+            return;
+
+        RemoveAllPlacementsAt(grid);
+        minePlacements.Add(new MinePlacementData(grid, resourceType, resourcePerTurn, initialState));
+    }
+
+    public void SetPartySpawn(Vector2Int grid, string partyId)
+    {
+        if (!IsInsideGrid(grid))
+            return;
+
+        RemoveAllPlacementsAt(grid);
+
+        if (!string.IsNullOrWhiteSpace(partyId))
+            partySpawns.RemoveAll(x => string.Equals(x.PartyId, partyId, StringComparison.Ordinal));
+
+        partySpawns.Add(new PartySpawnData(partyId, grid));
+    }
+
+    public void EraseAt(Vector2Int grid)
+    {
+        obstacleCells.Remove(grid);
+        itemPlacements.RemoveAll(x => x.GridPosition == grid);
+        minePlacements.RemoveAll(x => x.GridPosition == grid);
+        partySpawns.RemoveAll(x => x.GridPosition == grid);
+    }
+
+    private void RemoveNonObstaclePlacementsAt(Vector2Int grid)
+    {
+        itemPlacements.RemoveAll(x => x.GridPosition == grid);
+        minePlacements.RemoveAll(x => x.GridPosition == grid);
+        partySpawns.RemoveAll(x => x.GridPosition == grid);
+    }
+
+    private void RemoveAllPlacementsAt(Vector2Int grid)
+    {
+        obstacleCells.Remove(grid);
+        itemPlacements.RemoveAll(x => x.GridPosition == grid);
+        minePlacements.RemoveAll(x => x.GridPosition == grid);
+        partySpawns.RemoveAll(x => x.GridPosition == grid);
+    }
+
+    private void OnValidate()
+    {
+        gridSize = NormalizeGridSize(gridSize);
+    }
+
+    private static Vector2Int NormalizeGridSize(Vector2Int value)
+    {
+        int width = Mathf.Max(1, value.x);
+        int height = Mathf.Max(1, value.y);
+
+        if (width % 2 == 0)
+            width += 1;
+
+        if (height % 2 == 0)
+            height += 1;
+
+        return new Vector2Int(width, height);
+    }
+}
+
+[Serializable]
+public struct ItemPlacementData
+{
+    [SerializeField] private Vector2Int gridPosition;
+    [SerializeField] private ResourceType resourceType;
+    [SerializeField] private int amount;
+
+    public ItemPlacementData(Vector2Int gridPosition, ResourceType resourceType, int amount)
+    {
+        this.gridPosition = gridPosition;
+        this.resourceType = resourceType;
+        this.amount = amount;
+    }
+
+    public Vector2Int GridPosition => gridPosition;
+    public ResourceType ResourceType => resourceType;
+    public int Amount => amount;
+}
+
+[Serializable]
+public struct MinePlacementData
+{
+    [SerializeField] private Vector2Int gridPosition;
+    [SerializeField] private ResourceType resourceType;
+    [SerializeField] private int resourcePerTurn;
+    [SerializeField] private MineState initialState;
+
+    public MinePlacementData(Vector2Int gridPosition, ResourceType resourceType, int resourcePerTurn, MineState initialState)
+    {
+        this.gridPosition = gridPosition;
+        this.resourceType = resourceType;
+        this.resourcePerTurn = resourcePerTurn;
+        this.initialState = initialState;
+    }
+
+    public Vector2Int GridPosition => gridPosition;
+    public ResourceType ResourceType => resourceType;
+    public int ResourcePerTurn => resourcePerTurn;
+    public MineState InitialState => initialState;
+}
+
+[Serializable]
+public struct PartySpawnData
+{
+    [SerializeField] private string partyId;
+    [SerializeField] private Vector2Int gridPosition;
+
+    public PartySpawnData(string partyId, Vector2Int gridPosition)
+    {
+        this.partyId = partyId;
+        this.gridPosition = gridPosition;
+    }
+
+    public string PartyId => partyId;
+    public Vector2Int GridPosition => gridPosition;
+}

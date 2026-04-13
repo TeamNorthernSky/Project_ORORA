@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class PartyGridMover : MonoBehaviour
 {
+    [Header("Identity")]
+    [SerializeField] private string partyId = "party_001";
+
     [Header("References")]
     [SerializeField] private GridManager gridManager;
     [SerializeField] private ResourceManager resourceManager;
@@ -87,6 +90,7 @@ public class PartyGridMover : MonoBehaviour
     public bool IsInputLocked => interactionController != null && interactionController.IsInputLocked;
     public int RemainingMovePoints => movePointController != null ? movePointController.RemainingMovePoints : 0;
     public int MaxMovePoints => maxMovePoints;
+    public string PartyId => partyId;
 
     public bool CanSpendMovePoints(int amount)
     {

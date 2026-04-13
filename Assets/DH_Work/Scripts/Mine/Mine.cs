@@ -44,6 +44,14 @@ public class Mine : MonoBehaviour
         resourceManager.AddResource(resourceType, resourcePerTurn);
     }
 
+    public void ApplyInitialData(ResourceType nextResourceType, int nextResourcePerTurn, MineState nextState)
+    {
+        resourceType = nextResourceType;
+        resourcePerTurn = nextResourcePerTurn;
+        mineState = nextState;
+        ApplyStateMaterial();
+    }
+
     private void ApplyStateMaterial()
     {
         if (targetRenderer == null)
