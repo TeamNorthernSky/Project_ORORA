@@ -69,3 +69,7 @@ CLAUDE.md
 
 
 /.agent
+
+# JC 개인용 에셋/테스트 씬 (타 팀원과 공유 불필요)
+/Assets/JC_Work/_Personal/
+/Assets/JC_Work/_Personal.meta
