@@ -3,7 +3,8 @@ Shader "Custom/JC/FogOfWar"
     Properties
     {
         _FogColor ("Fog Color", Color) = (0.75, 0.78, 0.85, 1.0)
-        _FogDensityLow ("Fog Density - Low (Y<1)", Range(0, 1)) = 1.0
+        _FogDensityLow ("Fog Density - Low (Explored/Refogged)", Range(0, 1)) = 0.7
+        _FogDensityLowUnexplored ("Fog Density - Low (Unexplored)", Range(0, 1)) = 1.0
         _FogDensityMid ("Fog Density - Mid (Y 1~2)", Range(0, 1)) = 0.85
         _FogDensityHigh ("Fog Density - High (Y>2)", Range(0, 1)) = 0.50
 
@@ -86,6 +87,7 @@ Shader "Custom/JC/FogOfWar"
             CBUFFER_START(UnityPerMaterial)
                 float4 _FogColor;
                 float _FogDensityLow;
+                float _FogDensityLowUnexplored;
                 float _FogDensityMid;
                 float _FogDensityHigh;
 
@@ -184,7 +186,10 @@ Shader "Custom/JC/FogOfWar"
                 //   current : 현재 시야 (0~1, smoothstep 경계)
                 //   explored.rgb : 레이어별 탐색 누적 (R=low, G=mid, B=high)
                 float current = SAMPLE_TEXTURE2D(_VisibilityCurrentTex, sampler_VisibilityCurrentTex, gridUV).r;
-                float3 explored = SAMPLE_TEXTURE2D(_VisibilityExploredTex, sampler_VisibilityExploredTex, gridUV).rgb;
+                float4 exploredFull = SAMPLE_TEXTURE2D(_VisibilityExploredTex, sampler_VisibilityExploredTex, gridUV);
+                float3 explored = exploredFull.rgb;
+                // explored.a = elapsed time since last seen. >0 means "this cell was explored at least once".
+                float isExplored = step(0.001, exploredFull.a);
 
                 // 레이어별 visibility = max(current, explored[layer])
                 float visLow  = max(current, explored.r);
@@ -241,7 +246,11 @@ Shader "Custom/JC/FogOfWar"
 
                 // ===== alpha 계산 =====
                 // alpha는 오직 "얼마나 가리는가"만 담당. cloud 변조는 color로 이동했음.
-                float lowFog  = lowFactor  * _FogDensityLow;
+                // Low 레이어는 탐색 여부에 따라 다른 density 사용:
+                //   - Unexplored (한 번도 안 본 곳): 완전 불투명 (기본 1.0) → 지형 완전 은폐
+                //   - Explored (탐색 후 refog됨): 반투명 (기본 0.7) → 지형이 fog 너머로 비침
+                float effectiveLowDensity = lerp(_FogDensityLowUnexplored, _FogDensityLow, isExplored);
+                float lowFog  = lowFactor  * effectiveLowDensity;
                 float midFog  = midFactor  * _FogDensityMid;
                 float highFog = highFactor * _FogDensityHigh;
                 float alpha = saturate((lowFog + midFog + highFog) * cellFog);

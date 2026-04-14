@@ -37,7 +37,8 @@ Material:
     - _FlowSpeed3: 0.08
     - _FogCeilingY: 2
     - _FogDensityHigh: 0
-    - _FogDensityLow: 1
+    - _FogDensityLow: 0.7
+    - _FogDensityLowUnexplored: 1
     - _FogDensityMid: 0.85
     - _HeightTransition: 0.5
     - _NoiseContrast: 8

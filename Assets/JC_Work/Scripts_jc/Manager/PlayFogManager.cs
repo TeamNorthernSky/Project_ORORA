@@ -21,12 +21,16 @@ public class PlayFogManager : MonoBehaviour
     [Tooltip("최하단 레이어(평지)의 복원 시작 대기 시간")]
     [SerializeField, Min(0f)] private float lowLayerDelay = 5f;
     [Tooltip("중간 레이어의 복원 시작 대기 시간")]
-    [SerializeField, Min(0f)] private float midLayerDelay = 7f;
+    [SerializeField, Min(0f)] private float midLayerDelay = 5.5f;
     [Tooltip("최상단 레이어(높은 지형)의 복원 시작 대기 시간")]
-    [SerializeField, Min(0f)] private float highLayerDelay = 9f;
+    [SerializeField, Min(0f)] private float highLayerDelay = 6f;
 
     [Header("Restore Duration (복원 시작~완료 소요 시간 초, 모든 레이어 공통)")]
-    [SerializeField, Min(0.01f)] private float restoreDuration = 2f;
+    [SerializeField, Min(0.01f)] private float restoreDuration = 0.5f;
+
+    [Header("FogHidable Clip Threshold")]
+    [Tooltip("Low 레이어 visibility가 이 값 이하일 때 FogHidable 오브젝트를 stencil clip (완전 Fogged 판정)")]
+    [SerializeField, Range(0f, 1f)] private float fogHidableLowThreshold = 0.05f;
 
     [Header("Mask Rendering")]
     [Tooltip("시야 경계의 smoothstep 부드러움 너비 (월드 유닛)")]
@@ -59,6 +63,7 @@ public class PlayFogManager : MonoBehaviour
     private static readonly int RestoreDelaysId = Shader.PropertyToID("_RestoreDelays");
     private static readonly int RestoreDurationId = Shader.PropertyToID("_RestoreDuration");
     private static readonly int FogDeltaTimeId = Shader.PropertyToID("_FogDeltaTime");
+    private static readonly int FogHidableLowThresholdId = Shader.PropertyToID("_FogHidableLowThreshold");
 
     public bool FogEnabled
     {
@@ -77,6 +82,12 @@ public class PlayFogManager : MonoBehaviour
 
         int w = grid.Width;
         int h = grid.Height;
+
+        if (w <= 0 || h <= 0)
+        {
+            Debug.LogError($"[PlayFogManager] 잘못된 그리드 크기: {w}x{h}. 초기화 중단.");
+            return;
+        }
 
         // RT_Current: R8, 현재 시야 마스크 (0/1만 저장하므로 8bit로 충분)
         rtCurrent = CreateRT(w, h, RenderTextureFormat.R8, "FogRT_Current");
@@ -202,6 +213,7 @@ public class PlayFogManager : MonoBehaviour
 
         cmd.SetGlobalVector(RestoreDelaysId, new Vector4(lowLayerDelay, midLayerDelay, highLayerDelay, 0f));
         cmd.SetGlobalFloat(RestoreDurationId, restoreDuration);
+        cmd.SetGlobalFloat(FogHidableLowThresholdId, fogHidableLowThreshold);
         cmd.SetGlobalFloat(FogDeltaTimeId, dt);
         cmd.SetGlobalTexture(ExploredTexInputId, rtExplored);
         cmd.SetGlobalTexture(CurrentTexInputId, rtCurrent);
