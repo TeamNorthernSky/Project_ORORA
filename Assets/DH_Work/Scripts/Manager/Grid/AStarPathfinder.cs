@@ -12,7 +12,7 @@ public class AStarPathfinder : MonoBehaviour
 
         if (gridManager != null)
         {
-            if (!gridManager.CanEnterCell(start, goal, selfTransform) || !gridManager.CanEnterCell(goal, goal, selfTransform))
+            if (!gridManager.CanEnterCell(goal, goal, selfTransform))
                 return null;
         }
 

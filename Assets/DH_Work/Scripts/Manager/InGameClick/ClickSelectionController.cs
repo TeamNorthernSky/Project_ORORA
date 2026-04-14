@@ -112,6 +112,9 @@ public class ClickSelectionController : MonoBehaviour
         if (gridManager.HasOtherPlayer(clickedGrid, activeMover.transform))
             return;
 
+        if (!gridManager.IsVisibleCell(clickedGrid))
+            return;
+
         moveCommandPreviewController.PreviewMoveToGrid(activeMover, clickedGrid);
     }
 

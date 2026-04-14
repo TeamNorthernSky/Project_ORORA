@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class TurnManager : MonoBehaviour
 {
+    public event System.Action<int> DayAdvanced;
+
     [SerializeField] private int day = 1;
     [SerializeField] private PartyRegistry partyRegistry;
     [SerializeField] private ResourceManager resourceManager;
@@ -43,6 +45,7 @@ public class TurnManager : MonoBehaviour
     private void AdvanceDay()
     {
         day++;
+        DayAdvanced?.Invoke(day);
     }
 
     private void ProduceClaimedMines()

@@ -28,6 +28,8 @@ public class GridManager : MonoBehaviour
     [SerializeField] private LayerMask itemLayerMask;
     [SerializeField] private LayerMask mineLayerMask;
     [SerializeField] private LayerMask playerLayerMask;
+    [SerializeField] private FogGridManager fogGridManager;
+    [SerializeField] private bool restrictMovementToVisibleCells = true;
     [Tooltip("셀 워커블 검사 시, 셀 크기 대비 체크 박스 비율(너무 크면 오탐, 너무 작으면 통과).")]
     [SerializeField, Range(0.1f, 1f)] private float obstacleCheckFill = 0.9f;
 
@@ -50,6 +52,9 @@ public class GridManager : MonoBehaviour
     {
         if (cellSize <= 0f)
             cellSize = 1f;
+
+        if (fogGridManager == null)
+            fogGridManager = FindFirstObjectByType<FogGridManager>();
     }
 
     public Vector2Int WorldToGrid(Vector3 worldPosition)
@@ -147,6 +152,15 @@ public class GridManager : MonoBehaviour
     {
         return HasItem(grid) || HasMine(grid);
     }
+
+    public bool IsVisibleCell(Vector2Int grid)
+    {
+        if (!restrictMovementToVisibleCells || fogGridManager == null)
+            return true;
+
+        return fogGridManager.IsVisible(grid);
+    }
+
     public bool TryGetAdjacentItemGrid(Vector2Int grid, out Vector2Int itemGrid)
     {
         for (int i = 0; i < directions8.Length; i++)
@@ -185,6 +199,9 @@ public class GridManager : MonoBehaviour
             return false;
 
         if (HasOtherPlayer(grid, selfTransform))
+            return false;
+
+        if (!IsVisibleCell(grid))
             return false;
 
         if (grid == destination)

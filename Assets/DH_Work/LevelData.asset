@@ -26,4 +26,8 @@ MonoBehaviour:
     resourceType: 2
     resourcePerTurn: 1
     initialState: 0
-  partySpawns: []
+  partySpawns:
+  - partyId: party_001
+    gridPosition: {x: 0, y: 0}
+  - partyId: party_002
+    gridPosition: {x: 3, y: 0}

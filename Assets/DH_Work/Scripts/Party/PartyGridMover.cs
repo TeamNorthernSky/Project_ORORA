@@ -26,6 +26,7 @@ public class PartyGridMover : MonoBehaviour
 
     public event Action<List<Vector2Int>> PathUpdated;
     public event Action<Vector2Int> AdjacentItemCellEntered;
+    public event Action<Vector2Int> GridEntered;
     public event Action MoveCompleted;
 
     private void Awake()
@@ -70,6 +71,7 @@ public class PartyGridMover : MonoBehaviour
             movePointController?.SpendStep();
             bool reachedPathEnd = pathQueue.Count == 0;
 
+            GridEntered?.Invoke(currentGrid);
             interactionController?.HandleGridEntered(currentGrid);
             NotifyPathUpdated();
 
@@ -100,6 +102,22 @@ public class PartyGridMover : MonoBehaviour
     public void ResetMovePointsToMax()
     {
         movePointController?.ResetToMax();
+    }
+
+    public void SnapToGridPosition(Vector2Int grid)
+    {
+        pathQueue.Clear();
+        isMoving = false;
+        currentGrid = grid;
+
+        if (gridManager == null)
+            return;
+
+        Vector3 worldPosition = gridManager.GridToWorldCenter(grid);
+        worldPosition.y = fixedY;
+        transform.position = worldPosition;
+        GridEntered?.Invoke(currentGrid);
+        NotifyPathUpdated();
     }
 
     public List<Vector2Int> GetRemainingPath()

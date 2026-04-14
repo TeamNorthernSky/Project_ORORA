@@ -16,11 +16,8 @@ public class LevelEditorController : MonoBehaviour
 
     [Header("Brush")]
     [SerializeField] private LevelEditorBrushType brushType = LevelEditorBrushType.Obstacle;
-    [SerializeField] private ResourceType itemResourceType = ResourceType.Gold;
-    [SerializeField] private int itemAmount = 10;
-    [SerializeField] private ResourceType mineResourceType = ResourceType.Ore;
-    [SerializeField] private int mineResourcePerTurn = 5;
-    [SerializeField] private MineState mineInitialState = MineState.Unclaimed;
+    [SerializeField] private ItemPlacementPreset itemPreset;
+    [SerializeField] private MinePlacementPreset minePreset;
     [SerializeField] private string partyId = "party_001";
 
     [Header("Behaviour")]
@@ -97,10 +94,20 @@ public class LevelEditorController : MonoBehaviour
                 levelData.SetObstacle(grid);
                 break;
             case LevelEditorBrushType.Item:
-                levelData.SetItem(grid, itemResourceType, Mathf.Max(1, itemAmount));
+                if (itemPreset == null)
+                    return;
+
+                levelData.SetItem(grid, itemPreset.ResourceType, Mathf.Max(1, itemPreset.Amount));
                 break;
             case LevelEditorBrushType.Mine:
-                levelData.SetMine(grid, mineResourceType, Mathf.Max(1, mineResourcePerTurn), mineInitialState);
+                if (minePreset == null)
+                    return;
+
+                levelData.SetMine(
+                    grid,
+                    minePreset.ResourceType,
+                    Mathf.Max(1, minePreset.ResourcePerTurn),
+                    minePreset.InitialState);
                 break;
             case LevelEditorBrushType.PartySpawn:
                 levelData.SetPartySpawn(grid, partyId);

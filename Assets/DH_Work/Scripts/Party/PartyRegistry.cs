@@ -30,4 +30,30 @@ public class PartyRegistry : MonoBehaviour
 
         return false;
     }
+
+    private void OnValidate()
+    {
+        PartyGridMover[] movers = PartyMovers;
+        for (int i = 0; i < movers.Length; i++)
+        {
+            PartyGridMover current = movers[i];
+            if (current == null || string.IsNullOrWhiteSpace(current.PartyId))
+                continue;
+
+            for (int j = i + 1; j < movers.Length; j++)
+            {
+                PartyGridMover other = movers[j];
+                if (other == null)
+                    continue;
+
+                if (!string.Equals(current.PartyId, other.PartyId, StringComparison.Ordinal))
+                    continue;
+
+                Debug.LogWarning(
+                    $"PartyRegistry has duplicate partyId '{current.PartyId}'. " +
+                    $"Only the first matching party will be used for level spawn mapping.",
+                    this);
+            }
+        }
+    }
 }

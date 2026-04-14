@@ -123,14 +123,18 @@ public class LevelLoader : MonoBehaviour
         {
             ItemPlacementData placement = itemPlacements[i];
             if (!prefabRegistry.TryGetItemPrefab(placement.ResourceType, out ItemObject itemPrefab))
+            {
+                Debug.LogWarning(
+                    $"LevelLoader could not find an item prefab for resource type '{placement.ResourceType}'.",
+                    this);
                 continue;
+            }
 
             ItemObject item = SpawnComponent(itemPrefab, placement.GridPosition, itemRoot);
             if (item == null)
                 continue;
 
-            item.resourceType = placement.ResourceType;
-            item.amount = placement.Amount;
+            item.ApplyInitialAmount(placement.Amount);
         }
     }
 
@@ -144,14 +148,18 @@ public class LevelLoader : MonoBehaviour
         {
             MinePlacementData placement = minePlacements[i];
             if (!prefabRegistry.TryGetMinePrefab(placement.ResourceType, out Mine minePrefab))
+            {
+                Debug.LogWarning(
+                    $"LevelLoader could not find a mine prefab for resource type '{placement.ResourceType}'.",
+                    this);
                 continue;
+            }
 
             Mine mine = SpawnComponent(minePrefab, placement.GridPosition, mineRoot);
             if (mine == null)
                 continue;
 
             mine.ApplyInitialData(
-                placement.ResourceType,
                 placement.ResourcePerTurn,
                 placement.InitialState);
         }
@@ -166,12 +174,21 @@ public class LevelLoader : MonoBehaviour
         for (int i = 0; i < partySpawns.Count; i++)
         {
             PartySpawnData spawnData = partySpawns[i];
-            if (!partyRegistry.TryGetPartyById(spawnData.PartyId, out PartyGridMover partyMover))
+            if (string.IsNullOrWhiteSpace(spawnData.PartyId))
+            {
+                Debug.LogWarning("LevelLoader found a party spawn with an empty partyId.", this);
                 continue;
+            }
 
-            Vector3 worldPosition = GetWorldPosition(spawnData.GridPosition);
-            worldPosition.y = partyMover.transform.position.y;
-            partyMover.transform.position = worldPosition;
+            if (!partyRegistry.TryGetPartyById(spawnData.PartyId, out PartyGridMover partyMover))
+            {
+                Debug.LogWarning(
+                    $"LevelLoader could not find a registered party for partyId '{spawnData.PartyId}'.",
+                    this);
+                continue;
+            }
+
+            partyMover.SnapToGridPosition(spawnData.GridPosition);
         }
     }
 
