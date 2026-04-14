@@ -26,6 +26,8 @@ public class LevelLoader : MonoBehaviour
     [SerializeField] private bool applyInEditMode = true;
     [SerializeField] private bool autoReloadOnValidate = true;
 
+    public LevelData LevelData => levelData;
+
 #if UNITY_EDITOR
     private bool queuedEditorReload;
 #endif

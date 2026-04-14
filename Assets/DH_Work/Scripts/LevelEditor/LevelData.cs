@@ -23,8 +23,8 @@ public class LevelData : ScriptableObject
     public string LevelId => levelId;
     public string DisplayName => displayName;
     public Vector2Int GridSize => gridSize;
-    public Vector2Int GridMin => new Vector2Int(-(gridSize.x / 2), -(gridSize.y / 2));
-    public Vector2Int GridMax => new Vector2Int(gridSize.x / 2, gridSize.y / 2);
+    public Vector2Int GridMin => Vector2Int.zero;
+    public Vector2Int GridMax => new Vector2Int(gridSize.x - 1, gridSize.y - 1);
     public IReadOnlyList<Vector2Int> ObstacleCells => obstacleCells;
     public IReadOnlyList<ItemPlacementData> ItemPlacements => itemPlacements;
     public IReadOnlyList<MinePlacementData> MinePlacements => minePlacements;
@@ -150,16 +150,9 @@ public class LevelData : ScriptableObject
 
     private static Vector2Int NormalizeGridSize(Vector2Int value)
     {
-        int width = Mathf.Max(1, value.x);
-        int height = Mathf.Max(1, value.y);
-
-        if (width % 2 == 0)
-            width += 1;
-
-        if (height % 2 == 0)
-            height += 1;
-
-        return new Vector2Int(width, height);
+        return new Vector2Int(
+            Mathf.Max(1, value.x),
+            Mathf.Max(1, value.y));
     }
 }
 

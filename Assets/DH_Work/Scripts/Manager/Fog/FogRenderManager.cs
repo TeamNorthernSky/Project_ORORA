@@ -12,10 +12,12 @@ public class FogRenderManager : MonoBehaviour
     [Header("References")]
     [SerializeField] private FogGridManager fogGridManager;
     [SerializeField] private GridManager gridManager;
+    [SerializeField] private LevelData levelData;
 
     [Header("Render Bounds")]
-    [SerializeField] private Vector2Int gridSize = new Vector2Int(21, 21);
+    [SerializeField] private Vector2Int gridSize = new Vector2Int(20, 20);
     [SerializeField] private bool rebuildOnEnable = true;
+    [SerializeField] private bool syncGridSizeWithLevelData = true;
 
     [Header("Texture Values")]
     [SerializeField, Range(0f, 1f)] private float unexploredValue = 0f;
@@ -25,12 +27,14 @@ public class FogRenderManager : MonoBehaviour
     private Texture2D fogTexture;
     private bool isDirty = true;
 
-    public Vector2Int GridMin => new Vector2Int(-(gridSize.x / 2), -(gridSize.y / 2));
-    public Vector2Int GridMax => new Vector2Int(gridSize.x / 2, gridSize.y / 2);
+    public Vector2Int GridMin => Vector2Int.zero;
+    public Vector2Int GridMax => new Vector2Int(gridSize.x - 1, gridSize.y - 1);
     public Texture2D FogTexture => fogTexture;
 
     private void OnEnable()
     {
+        TryAutoAssignLevelData();
+        SyncGridSizeFromLevelData();
         EnsureValidGridSize();
         CreateTextureIfNeeded();
         SubscribeToFogChanges();
@@ -53,6 +57,8 @@ public class FogRenderManager : MonoBehaviour
 
     private void OnValidate()
     {
+        TryAutoAssignLevelData();
+        SyncGridSizeFromLevelData();
         EnsureValidGridSize();
         isDirty = true;
 
@@ -65,6 +71,9 @@ public class FogRenderManager : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (SyncGridSizeFromLevelData())
+            CreateTextureIfNeeded();
+
         if (!isDirty)
             return;
 
@@ -193,10 +202,30 @@ public class FogRenderManager : MonoBehaviour
         if (gridSize.y < 1)
             gridSize.y = 1;
 
-        if (gridSize.x % 2 == 0)
-            gridSize.x += 1;
+    }
 
-        if (gridSize.y % 2 == 0)
-            gridSize.y += 1;
+    private void TryAutoAssignLevelData()
+    {
+        if (levelData != null)
+            return;
+
+        LevelLoader levelLoader = FindFirstObjectByType<LevelLoader>();
+        if (levelLoader != null)
+            levelData = levelLoader.LevelData;
+    }
+
+    private bool SyncGridSizeFromLevelData()
+    {
+        if (!syncGridSizeWithLevelData || levelData == null)
+            return false;
+
+        Vector2Int nextGridSize = levelData.GridSize;
+        if (nextGridSize == gridSize)
+            return false;
+
+        gridSize = nextGridSize;
+        EnsureValidGridSize();
+        MarkDirty();
+        return true;
     }
 }

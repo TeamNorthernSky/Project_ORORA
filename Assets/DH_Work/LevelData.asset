@@ -14,20 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelId: level_001
   displayName: New Level
-  gridSize: {x: 31, y: 31}
+  gridSize: {x: 50, y: 50}
   obstacleCells:
-  - {x: 6, y: 6}
+  - {x: 28, y: 28}
   itemPlacements:
-  - gridPosition: {x: -7, y: 5}
+  - gridPosition: {x: 10, y: 5}
     resourceType: 0
     amount: 3
   minePlacements:
-  - gridPosition: {x: -5, y: -5}
+  - gridPosition: {x: 20, y: 20}
     resourceType: 2
     resourcePerTurn: 1
     initialState: 0
   partySpawns:
   - partyId: party_001
-    gridPosition: {x: 0, y: 0}
+    gridPosition: {x: 24, y: 24}
   - partyId: party_002
-    gridPosition: {x: 3, y: 0}
+    gridPosition: {x: 27, y: 24}

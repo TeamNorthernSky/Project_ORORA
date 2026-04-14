@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,17 +10,24 @@ public class PartyFogRevealer : MonoBehaviour
     [SerializeField] private bool revealCurrentPositionsOnEnable = true;
 
     private readonly HashSet<PartyGridMover> subscribedMovers = new HashSet<PartyGridMover>();
+    private Coroutine initialRevealCoroutine;
 
     private void OnEnable()
     {
         SubscribeToRegisteredParties();
 
         if (revealCurrentPositionsOnEnable)
-            RevealAllCurrentPartyPositions();
+            QueueInitialReveal();
     }
 
     private void OnDisable()
     {
+        if (initialRevealCoroutine != null)
+        {
+            StopCoroutine(initialRevealCoroutine);
+            initialRevealCoroutine = null;
+        }
+
         UnsubscribeFromRegisteredParties();
     }
 
@@ -76,5 +84,26 @@ public class PartyFogRevealer : MonoBehaviour
             return;
 
         fogGridManager.RevealArea(currentGrid, revealRadius);
+    }
+
+    private void QueueInitialReveal()
+    {
+        if (!Application.isPlaying)
+        {
+            RevealAllCurrentPartyPositions();
+            return;
+        }
+
+        if (initialRevealCoroutine != null)
+            StopCoroutine(initialRevealCoroutine);
+
+        initialRevealCoroutine = StartCoroutine(RevealCurrentPositionsNextFrame());
+    }
+
+    private IEnumerator RevealCurrentPositionsNextFrame()
+    {
+        yield return null;
+        initialRevealCoroutine = null;
+        RevealAllCurrentPartyPositions();
     }
 }
