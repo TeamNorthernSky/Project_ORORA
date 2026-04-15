@@ -1,44 +1,48 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class SkillManager : MonoBehaviour
 {
-    [System.Serializable]
-    public class CharactorSkillLoadout
+    public static SkillManager Instance { get; private set; }
+
+    [SerializeField] private SkillDataLoader skillDataLoader;
+
+    private void Awake()
     {
-        public string charactorId;
-        public List<string> equippedSkillIds = new List<string>();
-    }
-
-    [Header("Master Data")]
-    [SerializeField] private List<SkillData> skillDatabase = new List<SkillData>();
-
-    [Header("Skill Equip State")]
-    [SerializeField] private List<CharactorSkillLoadout> loadouts = new List<CharactorSkillLoadout>();
-
-    public SkillData GetSkillData(string skillId)
-    {
-        return skillDatabase.Find(x => x != null && x.SkillId == skillId);
-    }
-
-    public List<SkillData> GetEquippedSkills(string charactorId)
-    {
-        var result = new List<SkillData>();
-        var loadout = loadouts.Find(x => x.charactorId == charactorId);
-        if (loadout == null)
+        if (Instance != null && Instance != this)
         {
-            return result;
+            Debug.LogWarning("[SkillManager] 중복 인스턴스가 감지되었습니다.");
         }
 
-        for (int i = 0; i < loadout.equippedSkillIds.Count; i++)
+        Instance = this;
+    }
+
+    public List<SkillData> GetSkillsForCharacter(string characterName)
+    {
+        if (skillDataLoader == null || string.IsNullOrWhiteSpace(characterName))
         {
-            string skillId = loadout.equippedSkillIds[i];
-            var data = GetSkillData(skillId);
-            if (data != null)
-            {
-                result.Add(data);
-            }
+            return new List<SkillData>();
         }
+
+        return skillDataLoader.GetSkillsByClass(characterName);
+    }
+
+    public List<SkillData> GetAvailableSkillsForCharacter(string characterName, int currentLevel)
+    {
+        var classSkills = GetSkillsForCharacter(characterName);
+        if (classSkills.Count == 0)
+        {
+            return classSkills;
+        }
+
+        int safeLevel = Mathf.Max(1, currentLevel);
+        var result = classSkills
+            .Where(x => x != null && x.acquireLevel <= safeLevel)
+            .OrderBy(x => x.acquireLevel)
+            .ThenBy(x => x.skillIndex)
+            .ToList();
 
         return result;
     }

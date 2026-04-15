@@ -1,24 +1,19 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using GridCellRef = ASB.Work.BattleGrid.GridCell;
 
 public class BattleSceneManager : MonoBehaviour
 {
-    [Header("Manager References")]
-    [SerializeField] private CharactorManager charactorManager;
-    [SerializeField] private EnemyManager enemyManager;
-    [SerializeField] private PlayerSpawner unitSpawner;
-    [SerializeField] private EnemySpawner enemySpawner;
-    [SerializeField] private EquipmentManager equipmentManager;
-    [SerializeField] private SkillManager skillManager;
+    [Header("Prototype Boot")]
+    [Tooltip("Prototype 전용: 씬에 배치된 BattleCharactor를 그대로 초기화해 전투를 시작합니다.")]
+    [SerializeField] private bool includeInactiveUnits = true;
+    [SerializeField] private Transform playerPlace;
+    [SerializeField] private Transform enemyPlace;
     [SerializeField] private BattleFlowManager battleFlowManager;
 
-    [Header("Boot Option")]
+    [Header("Boot")]
     [SerializeField] private bool createOnStart = true;
-    [SerializeField] private string fallbackCharactorId;
-
-    [Header("Enemy Spawn (Optional)")]
-    [SerializeField] private List<string> enemyUnitIds = new List<string>();
-    [SerializeField] private int enemyStartGridNumber = 2;
 
     private BattleCharactor playerBattleCharactor;
     private readonly List<BattleCharactor> playerBattleCharactors = new List<BattleCharactor>();
@@ -32,13 +27,6 @@ public class BattleSceneManager : MonoBehaviour
     /// <summary>소환된 적 전투체 목록.</summary>
     public IReadOnlyList<BattleCharactor> EnemyBattleCharactors => enemyBattleCharactors;
 
-
-    private void Awake()
-    {
-
-    }
-
-
     private void Start()
     {
         if (!createOnStart)
@@ -46,154 +34,147 @@ public class BattleSceneManager : MonoBehaviour
             return;
         }
 
-        // --- 기존 로직 보존 (디버그 리스트 기반 스폰으로 대체했을 때 참고용) ---
-        /*
-        string charactorId = fallbackCharactorId;
-        if (charactorManager != null && !string.IsNullOrEmpty(charactorManager.GetSelectedCharactorId()))
+        if (battleFlowManager == null)
         {
-            charactorId = charactorManager.GetSelectedCharactorId();
+            Debug.LogError("[BattleSceneManager] battleFlowManager가 할당되지 않았습니다.");
+            return;
         }
-
-        // 1) 유닛 소환(지휘권)
-        if (unitSpawner != null)
-        {
-            unitSpawner.SpawnUnit(charactorId, 1);
-
-            for (int i = 0; i < enemyUnitIds.Count; i++)
-            {
-                string enemyId = enemyUnitIds[i];
-                if (string.IsNullOrWhiteSpace(enemyId)) continue;
-
-                int gridNumber = enemyStartGridNumber + i;
-                unitSpawner.SpawnUnit(enemyId, gridNumber);
-            }
-        }
-
-        playerBattleCharactor = CreateBattleCharactor(charactorId);
-        */
 
         playerBattleCharactor = null;
         playerBattleCharactors.Clear();
         enemyBattleCharactors.Clear();
 
-        if (unitSpawner != null && unitSpawner.debugSpawnRequests != null)
+        var inactiveMode = includeInactiveUnits ? FindObjectsInactive.Include : FindObjectsInactive.Exclude;
+
+        // 2. 씬의 모든 BattleCharactor 수집
+        var sceneUnits = FindObjectsByType<BattleCharactor>(inactiveMode, FindObjectsSortMode.None).ToList();
+        if (sceneUnits.Count == 0)
         {
-            foreach (var req in unitSpawner.debugSpawnRequests)
+            Debug.LogWarning("[BattleSceneManager] 씬에서 BattleCharactor를 찾지 못했습니다.");
+            return;
+        }
+
+        // 1~4. 점유 해제 후 PlayerPlace/EnemyPlace 하위 GridCell 기준 AssignToCell로 동기화
+        SyncGridOccupancy(sceneUnits);
+
+        // 5~6. Initialize 및 참가자 등록 (OccupiedCell 필수)
+        for (int i = 0; i < sceneUnits.Count; i++)
+        {
+            var battle = sceneUnits[i];
+            if (battle == null)
             {
-                if (string.IsNullOrWhiteSpace(req.unitId))
-                {
-                    continue;
-                }
+                continue;
+            }
 
-                unitSpawner.SpawnUnit(req.unitId, req.gridNumber);
+            battle.Initialize();
+            if (battle.OccupiedCell == null)
+            {
+                Debug.LogWarning($"[BattleSceneManager] 셀 미연결 유닛은 참가 제외: {battle.UnitName} ({battle.name})");
+                continue;
+            }
 
-                if (req.isPlayer)
+            if (battle.TeamType == TeamType.Player)
+            {
+                playerBattleCharactors.Add(battle);
+                if (playerBattleCharactor == null)
                 {
-                    var battle = CreateBattleCharactor(req.unitId);
-                    if (battle != null)
-                    {
-                        battle.IsPlayer = true;
-                        playerBattleCharactors.Add(battle);
-                        if (playerBattleCharactor == null)
-                        {
-                            playerBattleCharactor = battle;
-                        }
-                    }
+                    playerBattleCharactor = battle;
                 }
             }
-        }
-        else
-        {
-            Debug.LogWarning("[BattleSceneManager] PlayerSpawner 또는 debugSpawnRequests가 없어 플레이어 디버그 스폰을 건너뜁니다.");
-        }
-
-        if (enemySpawner != null && enemySpawner.debugSpawnRequests != null)
-        {
-            foreach (var req in enemySpawner.debugSpawnRequests)
+            else
             {
-                if (string.IsNullOrWhiteSpace(req.unitId))
-                {
-                    continue;
-                }
-
-                enemySpawner.SpawnUnit(req.unitId, req.gridNumber);
-
-                var enemyBattle = CreateBattleCharactor(req.unitId);
-                if (enemyBattle != null)
-                {
-                    enemyBattle.IsPlayer = false;
-                    enemyBattleCharactors.Add(enemyBattle);
-                }
+                enemyBattleCharactors.Add(battle);
             }
         }
-        else
+
+        var allUnits = new List<BattleCharactor>(playerBattleCharactors.Count + enemyBattleCharactors.Count);
+        allUnits.AddRange(playerBattleCharactors);
+        allUnits.AddRange(enemyBattleCharactors);
+
+        // 7. 전투 흐름 시작
+        battleFlowManager.Initialize(allUnits);
+    }
+
+    /// <summary>
+    /// Prototype 전용: GridCell → BattleCharactor 하이어러키에 맞춰 OccupiedCell ↔ OccupyingUnit을 연결합니다.
+    /// </summary>
+    private void SyncGridOccupancy(List<BattleCharactor> sceneUnits)
+    {
+        // 1. 기존 점유 정보 해제
+        for (int i = 0; i < sceneUnits.Count; i++)
         {
-            Debug.LogWarning("[BattleSceneManager] EnemySpawner 또는 debugSpawnRequests가 없어 적 디버그 스폰을 건너뜁니다.");
+            if (sceneUnits[i] != null)
+            {
+                sceneUnits[i].ClearOccupiedCell();
+            }
         }
 
-        if (battleFlowManager != null)
+        // 3. playerPlace / enemyPlace 하위 GridCell 수집
+        var allCells = new List<GridCellRef>();
+        CollectCells(playerPlace, allCells);
+        CollectCells(enemyPlace, allCells);
+
+        // 4. 각 셀에 대해 자식 BattleCharactor를 찾아 AssignToCell
+        for (int i = 0; i < allCells.Count; i++)
         {
-            var allUnits = new List<BattleCharactor>(playerBattleCharactors.Count + enemyBattleCharactors.Count);
-            allUnits.AddRange(playerBattleCharactors);
-            allUnits.AddRange(enemyBattleCharactors);
-            battleFlowManager.Initialize(allUnits);
+            var cell = allCells[i];
+            if (cell == null)
+            {
+                continue;
+            }
+
+            BattleCharactor[] found = cell.GetComponentsInChildren<BattleCharactor>(includeInactiveUnits);
+            if (found.Length > 1)
+            {
+                Debug.LogError(
+                    $"[BattleSceneManager] GridCell 중복 점유 감지: cell={cell.name}, coords={cell.Coords}, units={found.Length}");
+            }
+
+            var unit = found.FirstOrDefault(x => x != null);
+            if (unit == null)
+            {
+                continue;
+            }
+
+            unit.AssignToCell(cell);
+        }
+
+        for (int i = 0; i < sceneUnits.Count; i++)
+        {
+            var unit = sceneUnits[i];
+            if (unit == null)
+            {
+                continue;
+            }
+
+            if (unit.OccupiedCell == null)
+            {
+                Debug.LogWarning(
+                    $"[BattleSceneManager] GridCell과 연결되지 않은 유닛: {unit.UnitName} ({unit.name})");
+            }
         }
     }
 
-
-    //처음 생성은 레벨 1, 유닛 1로 고정하여 생성, 이후 레벨업 추가시 추후 변경
-    public BattleCharactor CreateBattleCharactor(
-        string charactorId)
+    private void CollectCells(Transform root, List<GridCellRef> buffer)
     {
-        if (string.IsNullOrWhiteSpace(charactorId))
+        if (root == null)
         {
-            Debug.LogError("[BattleSceneManager] charactorId가 비어 있습니다.");
-            return null;
+            return;
         }
 
-        if (charactorManager == null && enemyManager == null)
+        var cells = root.GetComponentsInChildren<GridCellRef>(includeInactiveUnits);
+        for (int i = 0; i < cells.Length; i++)
         {
-            Debug.LogError("[BattleSceneManager] CharactorManager와 EnemyManager가 모두 없습니다.");
-            return null;
-        }
-
-        UnitData unitData = null;
-        int level = 1;
-        int unitNum = 1;
-
-
-        // 유닛도 추후에 추가하기
-        if (charactorManager != null)
-        {
-            unitData = charactorManager.GetCharactorData(charactorId);
-            if (unitData != null)
+            var c = cells[i];
+            if (c == null)
             {
-                level = charactorManager.GetCharactorLevel(charactorId);
-                Debug.Log($"[BattleSceneManager] 플레이어 데이터로 전투체 생성: id={charactorId}, Lv={level}");
+                continue;
+            }
+
+            if (!buffer.Contains(c))
+            {
+                buffer.Add(c);
             }
         }
-
-        if (unitData == null && enemyManager != null)
-        {
-            var enemyData = enemyManager.GetEnemyData(charactorId);
-            if (enemyData != null)
-            {
-                unitData = enemyData;
-                level = enemyManager.GetEnemyLevel(charactorId);
-                //Debug.Log($"[BattleSceneManager] 적 데이터로 전투체 생성: id={charactorId}, aiType={enemyData.aiType}");
-            }
-        }
-
-        if (unitData == null)
-        {
-            Debug.LogError($"[BattleSceneManager] UnitData를 찾을 수 없습니다. id={charactorId}");
-            return null;
-        }
-
-        var battleCharactor = new BattleCharactor(unitData, level, unitNum);
-        battleCharactor.InitializeCurrentHpToMax();
-
-        Debug.Log($"[BattleSceneManager] BattleCharactor 생성: {unitData.Name}, Lv.{level}, MaxHp={battleCharactor.FinalStats.HP}");
-        return battleCharactor;
     }
 }

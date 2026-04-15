@@ -1,35 +1,30 @@
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using GridCellRef = ASB.Work.BattleGrid.GridCell;
+using GridManagerRef = ASB.Work.BattleGrid.GridManager;
 
 /// <summary>
-/// 플레이어/적 유닛 클릭 선택. Quick Outline은 OutlineMode(Visible/Hidden)로 전환해 셰이더 유지.
+/// 적 타겟 선택(클릭), 타겟 아웃라인, 숫자키로 BattleManager 실행 요청. 데미지 계산은 하지 않습니다.
 /// </summary>
 [DisallowMultipleComponent]
 public class InputHandler : MonoBehaviour
 {
-    //클릭시 작동할 함수 저장소
-    public static event Action<IUnitIdentifier> UnitClicked;
-
-    /// <summary>
-    /// 레이캐스트 실패·비유닛 레이어 등으로 유닛 선택 클릭으로 이어지지 않을 때(더블클릭 체인 초기화용).
-    /// </summary>
-    public static event Action EnemyDoubleClickChainInterrupted;
+    public static event Action<BattleCharactor, BattleCharactor> PlayerSkillActionResolved;
 
     [Header("Raycast")]
     [SerializeField] private Camera raycastCamera;
-    [Tooltip("레이캐스트에 포함할 모든 레이어(바닥 등). 비어 있으면 모든 레이어")]
-    [SerializeField] private LayerMask raycastMask = ~0;
     [SerializeField] private float maxRayDistance = 200f;
 
-    [Header("Unit Masks")]
-    [Tooltip("플레이어 유닛 레이어(단일 레이어만 체크하려면 해당 레이어만 지정)")]
-    [SerializeField] private LayerMask playerMask;
-    [Tooltip("적 유닛 레이어")]
-    [SerializeField] private LayerMask enemyMask;
+    [Header("Target selection")]
+    [Tooltip("PlayerGrid, EnemyGrid, Player, Enemy 레이어를 포함한 마스크.")]
+    [SerializeField] private LayerMask selectionRaycastMask = ~0;
 
-    private Outline selectedPlayerOutline;
-    private Outline selectedEnemyOutline;
+    [SerializeField] private BattleFlowManager battleFlowManager;
+    [SerializeField] private BattleManager battleManager;
+
+    private BattleCharactor selectedTarget;
+    private Outline selectedTargetOutline;
 
     private void Awake()
     {
@@ -37,232 +32,296 @@ public class InputHandler : MonoBehaviour
         {
             raycastCamera = Camera.main;
         }
-
-        if (raycastMask.value == 0)
-        {
-            raycastMask = -1;
-        }
     }
 
     private void Update()
     {
-        if (!Input.GetMouseButtonDown(0))
-        {
-            return;
-        }
-
-       
-
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
             return;
         }
-       
 
+        PruneDeadSelection();
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            TrySelectEnemyByClick();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
+        {
+            TryExecuteBasicAttack();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
+        {
+            TryExecuteSkill();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
+        {
+            TryExecuteWeaponSkill();
+        }
+    }
+
+    /// <summary>BattleFlowManager가 턴 경계에서 호출해 선택 상태를 비웁니다.</summary>
+    public void ClearSelectionState()
+    {
+        SetTargetOutline(null);
+    }
+
+    private void PruneDeadSelection()
+    {
+        if (selectedTarget == null)
+        {
+            return;
+        }
+
+        if (selectedTarget.IsDead || selectedTarget.CurrentHp <= 0f)
+        {
+            ClearSelectionState();
+        }
+    }
+
+    private void TrySelectEnemyByClick()
+    {
         if (raycastCamera == null)
         {
             Debug.LogWarning("[InputHandler] Raycast용 Camera가 없습니다.");
             return;
         }
-        
-        LayerMask unitMask = playerMask | enemyMask;
+
+        BattleCharactor actor = battleFlowManager != null ? battleFlowManager.CurrentUnit : null;
+        if (actor == null || !actor.IsPlayer || actor.IsDead)
+        {
+            return;
+        }
 
         var ray = raycastCamera.ScreenPointToRay(Input.mousePosition);
-        Debug.DrawRay(ray.origin, ray.direction * 100f, Color.red, 1f);
+        RaycastHit[] hits = Physics.RaycastAll(ray, maxRayDistance, selectionRaycastMask);
+        if (hits == null || hits.Length == 0)
+        {
+            return;
+        }
 
+        Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
+        for (int i = 0; i < hits.Length; i++)
+        {
+            BattleCharactor hitUnit = hits[i].collider != null
+                ? hits[i].collider.GetComponentInParent<BattleCharactor>()
+                : null;
 
-        //if (Physics.Raycast(ray, out RaycastHit hit1, maxRayDistance))
+            if (hitUnit == null)
+            {
+                continue;
+            }
+
+            if (hitUnit.IsPlayer)
+            {
+                continue;
+            }
+
+            if (hitUnit.IsDead || hitUnit.CurrentHp <= 0f)
+            {
+                continue;
+            }
+
+            SetTargetOutline(hitUnit);
+            return;
+        }
+    }
+
+    private void TryExecuteBasicAttack()
+    {
+        BattleCharactor actor = battleFlowManager != null ? battleFlowManager.CurrentUnit : null;
+        if (actor == null || !actor.IsPlayer || actor.IsDead)
+        {
+            return;
+        }
+
+        if (selectedTarget == null || battleManager == null)
+        {
+            return;
+        }
+
+        if (selectedTarget.IsDead || selectedTarget.CurrentHp <= 0f)
+        {
+            ClearSelectionState();
+            return;
+        }
+
+        if (!TryResolveCell(actor, out _) || !TryResolveCell(selectedTarget, out _))
+        {
+            Debug.LogWarning("[InputHandler] actor 또는 target의 GridCell을 찾지 못했습니다.");
+            return;
+        }
+
+        //Vector2Int relative = targetCell.Coords - actorCell.Coords;
+        //if (!IsAdjacent4(relative))
         //{
-
-        //    // 디버그: 레이어 마스크가 제대로 적용되고 있는지 확인
-        //    Debug.Log($"무마스크 히트: {hit1.collider.name}");
-        //    Debug.Log($"히트 레이어: {LayerMask.LayerToName(hit1.collider.gameObject.layer)}");
-        //    Debug.Log($"레이어 번호: {hit1.collider.gameObject.layer}");
-        //    Debug.Log($"raycastMask 값: {raycastMask.value}");
+        //    return;
         //}
 
-
-        if (!Physics.Raycast(ray, out RaycastHit hit, maxRayDistance, raycastMask))
+        if (battleManager.ExecuteBasicAttack(actor, selectedTarget))
         {
-            DeselectUnit(logDeselect: true);
-            EnemyDoubleClickChainInterrupted?.Invoke();
-            return;
-        }
-
-        int layer = hit.collider.gameObject.layer;
-        if (!IsLayerInMask(layer, unitMask))
-        {
-            DeselectUnit(logDeselect: true);
-            EnemyDoubleClickChainInterrupted?.Invoke();
-            return;
-        }
-
-        if (!TryGetUnitComponents(hit.collider, out Outline outline, out IUnitIdentifier unit))
-        {
-            EnemyDoubleClickChainInterrupted?.Invoke();
-            return;
-        }
-
-        // Player 선택 (독립)
-        if (IsLayerInMask(layer, playerMask))
-        {
-            if (selectedPlayerOutline == outline)
-            {
-                outline.OutlineMode = Outline.Mode.OutlineVisible;
-                UnitClicked?.Invoke(unit);
-                return;
-            }
-
-            if (selectedPlayerOutline != null)
-            {
-                selectedPlayerOutline.OutlineMode = Outline.Mode.OutlineHidden;
-            }
-
-            selectedPlayerOutline = outline;
-            selectedPlayerOutline.OutlineMode = Outline.Mode.OutlineVisible;
-            UnitClicked?.Invoke(unit);
-            return;
-        }
-
-        // Enemy 선택 (독립)
-        if (IsLayerInMask(layer, enemyMask))
-        {
-            if (selectedEnemyOutline == outline)
-            {
-                outline.OutlineMode = Outline.Mode.OutlineVisible;
-                UnitClicked?.Invoke(unit);
-                return;
-            }
-
-            if (selectedEnemyOutline != null)
-            {
-                selectedEnemyOutline.OutlineMode = Outline.Mode.OutlineHidden;
-            }
-
-            selectedEnemyOutline = outline;
-            selectedEnemyOutline.OutlineMode = Outline.Mode.OutlineVisible;
-            UnitClicked?.Invoke(unit);
-            return;
-        }
-
-        EnemyDoubleClickChainInterrupted?.Invoke();
-        LogSelection(layer, unit.UnitID);
-    }
-
-    private void OnDisable()
-    {
-        DeselectUnit(logDeselect: false);
-    }
-
-    /// <param name="logDeselect">빈 공간/비유닛 클릭 등으로 선택이 해제될 때만 로그</param>
-    private void DeselectUnit(bool logDeselect)
-    {
-        bool hadSelection = selectedPlayerOutline != null || selectedEnemyOutline != null;
-
-        if (selectedPlayerOutline != null)
-        {
-            selectedPlayerOutline.OutlineMode = Outline.Mode.OutlineHidden;
-            selectedPlayerOutline = null;
-        }
-
-        if (selectedEnemyOutline != null)
-        {
-            selectedEnemyOutline.OutlineMode = Outline.Mode.OutlineHidden;
-            selectedEnemyOutline = null;
-        }
-
-        if (logDeselect && hadSelection)
-        {
-            Debug.Log("선택 해제됨");
+            PlayerSkillActionResolved?.Invoke(actor, selectedTarget);
+            ClearSelectionState();
         }
     }
 
-    /// <summary>
-    /// 클릭된 콜라이더 기준 상향 탐색: 가까운 Outline과 루트 식별자(IUnitIdentifier)를 찾고,
-    /// 둘이 동일 유닛 서브트리(루트 데이터 오브젝트 하위)에 속하는지 검증한다.
-    /// </summary>
-    private static bool TryGetUnitComponents(
-        Collider collider,
-        out Outline outline,
-        out IUnitIdentifier identifier)
+    private void TryExecuteSkill()
     {
-        outline = collider.GetComponent<Outline>() ?? collider.GetComponentInParent<Outline>();
-
-        identifier = collider.GetComponentInParent<IUnitIdentifier>(true);
-        if (identifier == null)
+        BattleCharactor actor = battleFlowManager != null ? battleFlowManager.CurrentUnit : null;
+        if (actor == null || !actor.IsPlayer || actor.IsDead)
         {
-            foreach (var mb in collider.GetComponentsInParent<MonoBehaviour>(true))
-            {
-                if (mb is IUnitIdentifier uid)
-                {
-                    identifier = uid;
-                    break;
-                }
-            }
+            return;
         }
 
-        if (outline == null)
+        if (!TryGetSelectedSkill(actor, out SkillData skillData))
         {
-            Debug.LogWarning("[InputHandler] Outline을 찾을 수 없습니다: " + collider.name);
-            identifier = null;
-            return false;
+            Debug.LogWarning($"[InputHandler] 선택된 CSV 스킬이 없습니다: actor={actor.UnitName}");
+            return;
         }
 
-        if (identifier == null)
+        if (selectedTarget == null || battleManager == null)
         {
-            Debug.LogWarning("[InputHandler] IUnitIdentifier가 없는 유닛입니다: " + collider.name);
-            outline = null;
-            return false;
+            return;
         }
 
-        var idComp = identifier as Component;
-        if (idComp == null || !IsOutlineUnderUnitRoot(idComp, outline))
+        if (selectedTarget.IsDead || selectedTarget.CurrentHp <= 0f)
         {
-            Debug.LogWarning(
-                "[InputHandler] Outline과 IUnitIdentifier가 동일 유닛 계층에 있지 않습니다: " + collider.name);
-            outline = null;
-            identifier = null;
-            return false;
+            ClearSelectionState();
+            return;
         }
 
-        return true;
+        if (!TryResolveCell(actor, out GridCellRef actorCell) || !TryResolveCell(selectedTarget, out GridCellRef targetCell))
+        {
+            Debug.LogWarning("[InputHandler] actor 또는 target의 GridCell을 찾지 못했습니다.");
+            return;
+        }
+
+        // 이번 단계에서는 단일 타겟 + 데미지형 스킬만 연결하고 boundary 판정은 제외합니다.
+
+        if (battleManager.ExecuteGridSkill(actor, selectedTarget, skillData))
+        {
+            PlayerSkillActionResolved?.Invoke(actor, selectedTarget);
+            ClearSelectionState();
+        }
     }
 
-    /// <summary>
-    /// 루트(데이터 스크립트) 트랜스폼을 기준으로, Outline이 그 서브트리 안에만 있는지 확인한다.
-    /// </summary>
-    private static bool IsOutlineUnderUnitRoot(Component unitRoot, Outline outline)
+    private void TryExecuteWeaponSkill()
     {
-        if (unitRoot == null || outline == null)
+        BattleCharactor actor = battleFlowManager != null ? battleFlowManager.CurrentUnit : null;
+        if (actor == null || !actor.IsPlayer || actor.IsDead)
+        {
+            return;
+        }
+
+        if (selectedTarget == null || battleManager == null)
+        {
+            return;
+        }
+
+        if (selectedTarget.IsDead || selectedTarget.CurrentHp <= 0f)
+        {
+            ClearSelectionState();
+            return;
+        }
+
+        WeaponData weapon = actor.EquippedWeaponData;
+        if (weapon == null)
+        {
+            Debug.LogWarning($"[InputHandler] 장착 무기가 없어 무기 스킬을 사용할 수 없습니다: actor={actor.UnitName}");
+            return;
+        }
+
+        SkillData convertedSkill = weapon.ToSkillData();
+        if (convertedSkill == null)
+        {
+            Debug.LogWarning($"[InputHandler] 무기 스킬 변환 실패: weapon={weapon.WeaponName}");
+            return;
+        }
+
+        if (!TryResolveCell(actor, out GridCellRef actorCell) || !TryResolveCell(selectedTarget, out GridCellRef targetCell))
+        {
+            Debug.LogWarning("[InputHandler] actor 또는 target의 GridCell을 찾지 못했습니다.");
+            return;
+        }
+
+        Vector2Int relative = targetCell.Coords - actorCell.Coords;
+        if (convertedSkill.boundary != null && convertedSkill.boundary.Count > 0 && !convertedSkill.boundary.Contains(relative))
+        {
+            return;
+        }
+
+        if (battleManager.ExecuteGridSkill(actor, selectedTarget, convertedSkill))
+        {
+            PlayerSkillActionResolved?.Invoke(actor, selectedTarget);
+            ClearSelectionState();
+        }
+    }
+
+    private static bool IsAdjacent4(Vector2Int relative)
+    {
+        return Mathf.Abs(relative.x) + Mathf.Abs(relative.y) == 1;
+    }
+
+    private static bool TryResolveCell(BattleCharactor unit, out GridCellRef cell)
+    {
+        cell = null;
+        if (unit == null)
         {
             return false;
         }
 
-        Transform r = unitRoot.transform;
-        Transform o = outline.transform;
-        return o == r || o.IsChildOf(r);
-    }
-
-    private static bool IsLayerInMask(int layer, LayerMask mask)
-    {
-        return (mask.value & (1 << layer)) != 0;
-    }
-
-    private void LogSelection(int gameObjectLayer, string unitId)
-    {
-        if (IsLayerInMask(gameObjectLayer, playerMask))
+        cell = unit.OccupiedCell;
+        if (cell == null && GridManagerRef.Instance != null)
         {
-            Debug.Log($"플레이어 선택됨 — ID: {unitId}");
+            cell = GridManagerRef.Instance.FindCellByUnit(unit);
+        }
+
+        return cell != null;
+    }
+
+    private void SetTargetOutline(BattleCharactor newTarget)
+    {
+        if (selectedTargetOutline != null)
+        {
+            selectedTargetOutline.OutlineMode = Outline.Mode.OutlineHidden;
+            selectedTargetOutline = null;
+        }
+
+        selectedTarget = newTarget;
+        if (selectedTarget == null)
+        {
             return;
         }
 
-        if (IsLayerInMask(gameObjectLayer, enemyMask))
+        selectedTargetOutline = selectedTarget.GetComponentInChildren<Outline>(true);
+        if (selectedTargetOutline != null)
         {
-            Debug.Log($"적 선택됨 — ID: {unitId}");
-            return;
+            selectedTargetOutline.OutlineMode = Outline.Mode.OutlineVisible;
+        }
+    }
+
+    // 인스펙터에서 선택된 CSV 스킬 조회.
+    private bool TryGetSelectedSkill(BattleCharactor actor, out SkillData skillData)
+    {
+        skillData = null;
+        if (actor == null)
+        {
+            return false;
         }
 
-        Debug.Log($"유닛 선택됨 (기타 레이어) — ID: {unitId}");
+        actor.ResolveSelectedSkill();
+        skillData = actor.SelectedSkillData;
+        return skillData != null;
     }
+
+    // TODO: 적 스킬 인스펙터 선택 미구현
+    // 적 스킬 저장 방식이 플레이어와 달라 추후 별도 추가 예정
+    // TODO: 적 AI 스킬 연결 미구현
+    // SelectedSkillData 또는 스킬 슬롯 조회 후
+    // 범위 내 타겟 탐색 -> ExecuteGridSkill 호출 경로 추가 필요
 }

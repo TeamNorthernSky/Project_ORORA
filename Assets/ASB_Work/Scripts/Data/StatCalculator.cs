@@ -1,50 +1,50 @@
 using System.Collections.Generic;
+using UnityEngine;
 
+/// <summary>
+/// ìˆœìˆ˜ ìŠ¤íƒ¯ ê³„ì‚°. BattleCharactorì™€ ê²°í•©í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.
+/// ê³µì‹: baseStats * unitCount * unitWeight + (levelWeight + classWeight) * level + ì¥ë¹„ StatBonus í•©ì‚° í›„ HP/Atk/DEF í´ë¨í”„.
+/// </summary>
 public static class StatCalculator
 {
-
-
     public static StatBlock CalculateFinalStats(
-        UnitData charactorData,
+        StatBlock baseStats,
         int level,
-        List<EquipmentData> equippedEquipments)
+        int unitCount,
+        StatWeights unitWeight,
+        StatWeights levelWeight,
+        StatWeights classWeight,
+        List<EquipmentData> equippedEquipments,
+        StatBlock weaponBonus)
     {
-        if (charactorData == null)
+        if (equippedEquipments == null)
         {
-            return new StatBlock(
-                hp: 1f,
-                atk: 1f,
-                def: 0f,
-                luck: 0f,
-                speed: 0f,
-                criticalRate: 0.01f,
-                counterRate: 0.01f,
-                avoidRate: 0f);
+            equippedEquipments = new List<EquipmentData>();
         }
 
-        StatBlock total =  charactorData.baseStats;
+        level = Mathf.Max(1, level);
+        unitCount = Mathf.Max(1, unitCount);
 
-        // ÃßÈÄ¿¡ ÀÎ½ºÆåÅÍ Ã¢À» º¸Á¤Ä¡ Á¶ÀıÇÒ ¼ö ÀÖµµ·Ï º¯°æÇÏ±â
-        total.Atk *= 1.1f;
-        total.DEF *= 0.5f;
-        total.HP *= 1.0f;
+        StatBlock groupStat = baseStats * unitCount;
+        groupStat = groupStat * unitWeight;
 
+        StatBlock totalStat = groupStat + (levelWeight + classWeight) * level;
 
-        if (equippedEquipments != null)
+        for (int i = 0; i < equippedEquipments.Count; i++)
         {
-            for (int i = 0; i < equippedEquipments.Count; i++)
+            var equipment = equippedEquipments[i];
+            if (equipment != null)
             {
-                var equipment = equippedEquipments[i];
-                if (equipment != null)
-                {
-                    total += equipment.StatBonus;
-                }
+                totalStat += equipment.StatBonus;
             }
         }
 
-        total.ClampToMinimumOne();
-        return total;
+        totalStat += weaponBonus;
+
+        totalStat.HP = Mathf.Max(1f, totalStat.HP);
+        totalStat.Atk = Mathf.Max(1f, totalStat.Atk);
+        totalStat.DEF = Mathf.Max(1f, totalStat.DEF);
+
+        return totalStat;
     }
-
-
 }

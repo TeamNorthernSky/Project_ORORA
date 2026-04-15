@@ -1,5 +1,7 @@
 using System;
 
+
+
 [Serializable]
 public struct StatBlock
 {
@@ -50,6 +52,35 @@ public struct StatBlock
     }
 
 
+    public static StatBlock operator *(StatBlock a, StatBlock b)
+    {
+        return new StatBlock(
+            a.HP * b.HP,
+            a.Atk * b.Atk,
+            a.DEF * b.DEF,
+            a.Luck ,
+            a.Speed,
+            a.CriticalRate,
+            a.CounterRate,
+            a.AvoidRate
+        );
+    }
+
+    public static StatBlock operator *(StatBlock a, int b)
+    {
+        return new StatBlock(
+            a.HP * b,
+            a.Atk * b,
+            a.DEF * b,
+            a.Luck,
+            a.Speed,
+            a.CriticalRate,
+            a.CounterRate,
+            a.AvoidRate
+        );
+    }
+
+
     public void ClampToMinimumOne()
     {
        
@@ -65,4 +96,72 @@ public struct StatBlock
         Speed = Math.Max(0f, Speed);
         Luck = Math.Max(0f, Luck);
     }
+}
+
+
+// HP / Atk / DEF �� ���� ����ġ 
+[Serializable]
+public struct StatWeights
+{
+    public float HP;
+
+    public float Atk;
+
+    public float DEF;
+
+    public StatWeights(float hp, float atk, float def)
+    {
+        HP = hp;
+        Atk = atk;
+        DEF = def;
+    }
+
+    public static StatWeights One => new StatWeights(1f, 1f, 1f);
+
+    public static StatBlock operator *(StatBlock a, StatWeights b)
+    {
+        return new StatBlock(
+            a.HP * b.HP,
+            a.Atk * b.Atk,
+            a.DEF * b.DEF,
+            a.Luck,
+            a.Speed,
+            a.CriticalRate,
+            a.CounterRate,
+            a.AvoidRate
+        );
+    }
+
+    public static StatWeights operator *(StatWeights a, int b)
+    {
+        return new StatWeights(
+            a.HP * b,
+            a.Atk * b,
+            a.DEF * b
+        );
+    }
+
+    public static StatWeights operator+(StatWeights a, StatWeights b)
+    {
+        return new StatWeights(
+            a.HP + b.HP,
+            a.Atk + b.Atk,
+            a.DEF + b.DEF
+        );
+    }
+
+    public static StatBlock operator +(StatBlock a, StatWeights b)
+    {
+        return new StatBlock(
+            a.HP + b.HP,
+            a.Atk + b.Atk,
+            a.DEF + b.DEF,
+            a.Luck,
+            a.Speed,
+            a.CriticalRate,
+            a.CounterRate,
+            a.AvoidRate
+        );
+    }
+
 }

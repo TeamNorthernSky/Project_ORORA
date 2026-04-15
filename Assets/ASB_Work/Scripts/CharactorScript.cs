@@ -1,16 +1,31 @@
-using JetBrains.Annotations;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// CSV ê¸°ë°˜ ìœ ë‹› ë°ì´í„° ë³´ê´€. Combat tuningì€ BattleCharactorì—ë§Œ ë°˜ì˜í•˜ê³ ,
+/// ì—ë””í„° OnValidateì—ì„œ BattleCharactorë¥¼ ë®ì–´ì“°ì§€ ì•ŠìŠµë‹ˆë‹¤.
+/// </summary>
 public class CharactorScript : MonoBehaviour, IUnitIdentifier
 {
-    //Åø »ç¿ë ÇÏÁö ¾ÊÀ» ¶§, private·Î º¯°æ
     public UnitData charactorData;
-    public StatBlock currentStats;
-   [SerializeField] public int Level;
-   [SerializeField] public int UnitNumber;
 
+    public StatBlock currentStats;
+
+    [Header("Stat Weights (CSV Initialize ì‹œ BattleCharactorë¡œ ì „ë‹¬)")]
+    [SerializeField] private StatWeights unitWeight = new StatWeights(1f, 1f, 1f);
+
+    [SerializeField] private StatWeights levelWeight = new StatWeights(1f, 1f, 1f);
+
+    [SerializeField] private StatWeights classWeight = new StatWeights(1f, 1f, 1f);
+
+    [Range(1, 15)] public int level = 1;
+
+    [Range(1, 100)] public int unitCount = 1;
+
+    public StatWeights UnitWeight => unitWeight;
+
+    public StatWeights LevelWeight => levelWeight;
+
+    public StatWeights ClassWeight => classWeight;
 
     public UnitData Data
     {
@@ -35,17 +50,29 @@ public class CharactorScript : MonoBehaviour, IUnitIdentifier
     {
         charactorData = data;
         currentStats = data != null ? data.baseStats : default;
+
+        var battle = GetComponent<BattleCharactor>();
+        if (battle == null)
+        {
+            return;
+        }
+
+        if (data != null)
+        {
+            battle.SetBaseStats(data.baseStats);
+            battle.SetUnitNameForSkillMatching(data.Name);
+        }
+
+        battle.ApplyCombatTuning(level, unitCount, unitWeight, levelWeight, classWeight);
+        battle.RecalculateStats();
+        battle.ResolveSelectedSkill();
+        battle.InitializeCurrentHpToMax();
+        battle.MarkInitializedFromDataPipeline();
     }
 
-    void Start()
+    private void OnValidate()
     {
-        
+        level = Mathf.Clamp(level, 1, 15);
+        unitCount = Mathf.Clamp(unitCount, 1, 100);
     }
-
-    
-    void Update()
-    {
-        
-    }
-
 }

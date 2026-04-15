@@ -136,6 +136,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2900768675364931409}
   - component: {fileID: 9086622956196106429}
+  - component: {fileID: -881707880648396494}
   m_Layer: 0
   m_Name: Unit_Cleric
   m_TagString: Untagged
@@ -171,3 +172,55 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 370dce82887efb340a0b7bd7d0ae1674, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  charactorData:
+    Index: 
+    UnitType: 
+    Name: 
+    baseStats:
+      HP: 0
+      Atk: 0
+      DEF: 0
+      Luck: 0
+      Speed: 0
+      CriticalRate: 0
+      CounterRate: 0
+      AvoidRate: 0
+    IsEnemyRow: 0
+  currentStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CounterRate: 0
+    AvoidRate: 0
+  unitWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  levelWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  classWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  level: 1
+  unitCount: 1
+--- !u!114 &-881707880648396494
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6290960558266015020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f58462792aaac5488cd265933320c4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  unitDataAsset: {fileID: 0}
+  teamType: 0
+  gridNumber: 1

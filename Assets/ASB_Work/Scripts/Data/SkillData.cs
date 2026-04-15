@@ -1,41 +1,34 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// ClassSkillSheet CSV 행 데이터. skillIndex를 키로 SkillDataLoader에 보관합니다.
+/// </summary>
+/// 
 
 
-public enum SkillTargetType
+
+//public class MappingSkill
+
+
+
+
+
+[Serializable]
+public class SkillData
 {
-    EnemySingle,
-    EnemyFrontSingle,
-    EnemyBackSingle,
-    EnemyAll,
-    AllySingle,
-    AllyAll,
-    Self,
-    SameColumnEnemy,
-    FrontRowEnemies,
-    BackRowEnemies
-}
-
-public enum SkillEffectType
-{
-    Damage,
-    Heal,
-    BuffAttack
-}
-
-[CreateAssetMenu(fileName = "SkillData", menuName = "ASB/Data/SkillData")]
-public class SkillData : ScriptableObject
-{
-    [SerializeField] private string skillId;
-    [SerializeField] private string displayName;
-    [TextArea]
-    [SerializeField] private string description;
-    [SerializeField] private int power;
-    [SerializeField] private float coolTime;
-
-    public string SkillId => skillId;
-    public string DisplayName => displayName;
-    public string Description => description;
-    public int Power => power;
-    public float CoolTime => coolTime;
+    public int skillIndex;
+    public string skillClass;
+    public int acquireLevel;
+    public string skillName;
+    public string description;
+    public int classSkillEffect;
+    public int classSkillRange;
+    public int classSkillTarget;
+    public List<Vector2Int> boundary = new List<Vector2Int>();
+    public int multiTargetType;
+    public int multiTargetCount;
+    public float skillValue;
+    public float skillSubValue;
 }
