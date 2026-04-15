@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eac3a55b02d95ea4a993cdd0e9c04167, type: 3}
+  m_Name: TMLevelData_Default
+  m_EditorClassIdentifier: 
+  levelId: tm_default
+  displayName: Test Merge Default
+  gridSize: {x: 20, y: 20}
+  obstacleCells:
+  - {x: 5, y: 8}
+  - {x: 6, y: 8}
+  - {x: 7, y: 8}
+  - {x: 12, y: 12}
+  - {x: 13, y: 12}
+  itemPlacements:
+  - gridPosition: {x: 4, y: 4}
+    resourceType: 0
+    amount: 100
+  - gridPosition: {x: 15, y: 10}
+    resourceType: 1
+    amount: 50
+  minePlacements:
+  - gridPosition: {x: 10, y: 15}
+    resourceType: 2
+    resourcePerTurn: 5
+    initialState: 0
+  partySpawns:
+  - partyId: party_001
+    gridPosition: {x: 2, y: 2}
+  - partyId: party_002
+    gridPosition: {x: 17, y: 17}

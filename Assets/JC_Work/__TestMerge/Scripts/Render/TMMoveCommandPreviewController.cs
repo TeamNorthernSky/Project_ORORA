@@ -1,0 +1,231 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Orora.TestMerge
+{
+    public class TMMoveCommandPreviewController
+    {
+        private readonly TMGridManager gridManager;
+        private readonly TMAStarPathfinder pathfinder;
+        private readonly Transform marker;
+        private readonly TMPathPreviewRenderer pathPreviewRenderer;
+        private readonly Color validMarkerColor;
+        private readonly Color invalidMarkerColor;
+        private readonly float rayDistance;
+
+        private Vector2Int markerGrid;
+        private bool hasMarkerGrid;
+        private List<Vector2Int> previewPath;
+        private List<Vector2Int> movePath;
+        private bool hasPreviewPath;
+        private bool keepMarkerTailWhileMoving;
+        private bool canMoveToMarker;
+        private bool isDestinationFullyReachable;
+        private bool hasOverLimitTail;
+        private Renderer[] markerRenderers;
+        private MaterialPropertyBlock markerPropertyBlock;
+
+        public TMMoveCommandPreviewController(
+            TMGridManager gridManager,
+            TMAStarPathfinder pathfinder,
+            Transform marker,
+            TMPathPreviewRenderer pathPreviewRenderer,
+            Color validMarkerColor,
+            Color invalidMarkerColor,
+            float rayDistance)
+        {
+            this.gridManager = gridManager;
+            this.pathfinder = pathfinder;
+            this.marker = marker;
+            this.pathPreviewRenderer = pathPreviewRenderer;
+            this.validMarkerColor = validMarkerColor;
+            this.invalidMarkerColor = invalidMarkerColor;
+            this.rayDistance = rayDistance;
+        }
+
+        public void Initialize()
+        {
+            if (marker != null)
+            {
+                markerRenderers = marker.GetComponentsInChildren<Renderer>(true);
+                markerPropertyBlock = new MaterialPropertyBlock();
+                ApplyMarkerColor(validMarkerColor);
+                marker.gameObject.SetActive(false);
+            }
+            pathPreviewRenderer?.Hide();
+        }
+
+        public void ClearPreview()
+        {
+            previewPath = null;
+            movePath = null;
+            hasPreviewPath = false;
+            hasMarkerGrid = false;
+            keepMarkerTailWhileMoving = false;
+            canMoveToMarker = false;
+            isDestinationFullyReachable = false;
+            hasOverLimitTail = false;
+
+            if (marker != null)
+            {
+                ApplyMarkerColor(validMarkerColor);
+                marker.gameObject.SetActive(false);
+            }
+            pathPreviewRenderer?.Hide();
+        }
+
+        public void PreviewMoveToGrid(TMPartyGridMover activeMover, Vector2Int clickedGrid)
+        {
+            if (activeMover == null || gridManager == null || pathfinder == null || marker == null) return;
+
+            Vector3 markerWorld = gridManager.GridToWorldCenter(clickedGrid);
+            markerWorld.y = gridManager.GetLandSurfaceY();
+            PlaceMarker(clickedGrid, markerWorld);
+
+            Vector2Int partyGrid = activeMover.GetCurrentGrid();
+            var path = pathfinder.FindPath(partyGrid, markerGrid, activeMover.OccupantId);
+            previewPath = path;
+
+            var fullMoveCandidate = AdjustPathForSpecialDestination(ClonePath(path));
+            movePath = TrimPathToMovePoints(fullMoveCandidate, activeMover.RemainingMovePoints);
+            hasPreviewPath = previewPath != null && previewPath.Count > 1;
+            keepMarkerTailWhileMoving = ShouldKeepDestinationTailWhileMoving();
+
+            int selectedMoveCost = GetPathMoveCost(movePath);
+            int fullMoveCost = GetPathMoveCost(fullMoveCandidate);
+
+            canMoveToMarker = selectedMoveCost > 0;
+            isDestinationFullyReachable = hasPreviewPath && activeMover.CanSpendMovePoints(fullMoveCost);
+            hasOverLimitTail = hasPreviewPath && fullMoveCost > activeMover.RemainingMovePoints;
+
+            ApplyMarkerColor(isDestinationFullyReachable ? validMarkerColor : invalidMarkerColor);
+
+            pathPreviewRenderer?.RenderPath(previewPath, gridManager,
+                GetDisplayReachableSegmentCount(previewPath, GetPathMoveCost(movePath)));
+        }
+
+        public bool TryConfirmMove(Ray ray, TMPartyGridMover activeMover)
+        {
+            if (activeMover == null) return false;
+            if (!TryHandleMarkerClick(ray)) return false;
+            activeMover.MoveByGridPath(movePath);
+            return true;
+        }
+
+        public void HandlePathUpdated(List<Vector2Int> remainingPath)
+        {
+            if (pathPreviewRenderer == null) return;
+            var rendered = GetRenderedPathWithMarkerTail(remainingPath);
+            pathPreviewRenderer.RenderPath(rendered, gridManager,
+                GetDisplayReachableSegmentCount(rendered, GetPathMoveCost(remainingPath)));
+        }
+
+        public void HandleMoveCompleted() => ClearPreview();
+
+        public void UpdateRealtimePathPreview(TMPartyGridMover activeMover)
+        {
+            if (pathPreviewRenderer == null || activeMover == null || gridManager == null) return;
+            var remainingPath = activeMover.GetRemainingPath();
+            var rendered = GetRenderedPathWithMarkerTail(remainingPath);
+            pathPreviewRenderer.RenderPathFromWorld(
+                activeMover.transform.position, rendered, gridManager,
+                GetDisplayReachableSegmentCount(rendered, remainingPath.Count, true));
+        }
+
+        private bool TryHandleMarkerClick(Ray ray)
+        {
+            if (marker == null || !marker.gameObject.activeInHierarchy || !hasMarkerGrid || !hasPreviewPath || !canMoveToMarker)
+                return false;
+
+            var hits = Physics.RaycastAll(ray, rayDistance);
+            float bestDist = float.PositiveInfinity;
+            bool hitMarker = false;
+            for (int i = 0; i < hits.Length; i++)
+            {
+                var t = hits[i].transform;
+                if (t == null) continue;
+                if (t == marker || t.IsChildOf(marker))
+                {
+                    if (hits[i].distance < bestDist) { bestDist = hits[i].distance; hitMarker = true; }
+                }
+            }
+            return hitMarker;
+        }
+
+        private void PlaceMarker(Vector2Int grid, Vector3 worldPosition)
+        {
+            markerGrid = grid;
+            hasMarkerGrid = true;
+            marker.position = worldPosition;
+            ApplyMarkerColor(validMarkerColor);
+            if (!marker.gameObject.activeSelf) marker.gameObject.SetActive(true);
+        }
+
+        private List<Vector2Int> AdjustPathForSpecialDestination(List<Vector2Int> path)
+        {
+            if (path == null || path.Count == 0 || gridManager == null || !hasMarkerGrid) return path;
+            if (!gridManager.HasEvent(markerGrid)) return path;
+            if (path[path.Count - 1] != markerGrid) return path;
+            if (path.Count <= 1) return path;
+            path.RemoveAt(path.Count - 1);
+            return path;
+        }
+
+        private List<Vector2Int> ClonePath(List<Vector2Int> path) => path == null ? null : new List<Vector2Int>(path);
+
+        private bool ShouldKeepDestinationTailWhileMoving()
+        {
+            if (previewPath == null || movePath == null) return false;
+            if (previewPath.Count <= movePath.Count) return false;
+            return hasMarkerGrid && previewPath[previewPath.Count - 1] == markerGrid;
+        }
+
+        private List<Vector2Int> GetRenderedPathWithMarkerTail(List<Vector2Int> basePath)
+        {
+            if (basePath == null || basePath.Count == 0) return basePath;
+            if (!keepMarkerTailWhileMoving || !hasMarkerGrid || previewPath == null || movePath == null) return basePath;
+
+            var rendered = new List<Vector2Int>(basePath);
+            int prefixCount = movePath.Count;
+            for (int i = prefixCount; i < previewPath.Count; i++)
+            {
+                if (rendered.Count == 0 || rendered[rendered.Count - 1] != previewPath[i])
+                    rendered.Add(previewPath[i]);
+            }
+            return rendered;
+        }
+
+        private int GetDisplayReachableSegmentCount(List<Vector2Int> rendered, int reachableSegmentCount, bool startsFromWorld = false)
+        {
+            if (rendered == null) return 0;
+            if (!hasOverLimitTail) return startsFromWorld ? rendered.Count : Mathf.Max(0, rendered.Count - 1);
+            return reachableSegmentCount;
+        }
+
+        private static List<Vector2Int> TrimPathToMovePoints(List<Vector2Int> path, int movePoints)
+        {
+            if (path == null || path.Count == 0) return path;
+            int clampedSteps = Mathf.Clamp(movePoints, 0, Mathf.Max(0, path.Count - 1));
+            int allowed = clampedSteps + 1;
+            if (allowed >= path.Count) return path;
+            return path.GetRange(0, allowed);
+        }
+
+        private static int GetPathMoveCost(List<Vector2Int> path)
+            => path == null ? 0 : Mathf.Max(0, path.Count - 1);
+
+        private void ApplyMarkerColor(Color color)
+        {
+            if (markerRenderers == null || markerPropertyBlock == null) return;
+            for (int i = 0; i < markerRenderers.Length; i++)
+            {
+                var r = markerRenderers[i];
+                if (r == null) continue;
+                r.GetPropertyBlock(markerPropertyBlock);
+                markerPropertyBlock.SetColor("_Color", color);
+                markerPropertyBlock.SetColor("_BaseColor", color);
+                r.SetPropertyBlock(markerPropertyBlock);
+            }
+        }
+    }
+}
