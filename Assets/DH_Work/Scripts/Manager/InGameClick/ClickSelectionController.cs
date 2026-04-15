@@ -121,7 +121,8 @@ public class ClickSelectionController : MonoBehaviour
     private bool TryGetClosestLandHit(Ray ray, out RaycastHit landHit)
     {
         landHit = default;
-        if (gridManager.LandTransform == null)
+        Transform groundTransform = gridManager.GroundRaycastTransform;
+        if (groundTransform == null)
             return false;
 
         float bestDist = float.PositiveInfinity;
@@ -135,7 +136,7 @@ public class ClickSelectionController : MonoBehaviour
             if (marker != null && (t == marker || t.IsChildOf(marker)))
                 continue;
 
-            if (t == gridManager.LandTransform || (t != null && t.IsChildOf(gridManager.LandTransform)))
+            if (t == groundTransform || (t != null && t.IsChildOf(groundTransform)))
             {
                 if (h.distance < bestDist)
                 {

@@ -200,7 +200,7 @@ public class MoveCommandPreviewController
         if (path == null || path.Count == 0 || gridManager == null || !hasMarkerGrid)
             return path;
 
-        if (!gridManager.HasItemOrMine(markerGrid))
+        if (!gridManager.HasInteractionTarget(markerGrid))
             return path;
 
         if (path[path.Count - 1] != markerGrid)

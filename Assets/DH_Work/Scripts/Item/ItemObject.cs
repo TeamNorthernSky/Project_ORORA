@@ -18,4 +18,9 @@ public class ItemObject : MonoBehaviour
 
         Destroy(gameObject);
     }
+
+    public void RemoveWithoutReward()
+    {
+        Destroy(gameObject);
+    }
 }

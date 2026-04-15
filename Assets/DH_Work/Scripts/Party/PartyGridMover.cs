@@ -10,6 +10,7 @@ public class PartyGridMover : MonoBehaviour
     [Header("References")]
     [SerializeField] private GridManager gridManager;
     [SerializeField] private ResourceManager resourceManager;
+    [SerializeField] private CombatEncounterManager combatEncounterManager;
 
     [Header("Move Settings")]
     [SerializeField] private float moveSpeed = 4f;
@@ -37,6 +38,8 @@ public class PartyGridMover : MonoBehaviour
         interactionController = new PartyInteractionController(
             gridManager,
             resourceManager,
+            combatEncounterManager,
+            this,
             itemPickupDelay,
             this,
             GetCurrentGrid);

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class TurnManager : MonoBehaviour
 {
@@ -7,6 +8,15 @@ public class TurnManager : MonoBehaviour
     [SerializeField] private int day = 1;
     [SerializeField] private PartyRegistry partyRegistry;
     [SerializeField] private ResourceManager resourceManager;
+    [SerializeField] private EnemyTurnController enemyTurnController;
+
+    private bool enemyTurnRunning;
+
+    private void Awake()
+    {
+        if (enemyTurnController == null)
+            enemyTurnController = FindFirstObjectByType<EnemyTurnController>();
+    }
 
     public void EndPlayerTurn()
     {
@@ -15,8 +25,16 @@ public class TurnManager : MonoBehaviour
 
     private void StartEnemyTurn()
     {
-        // AI action
-        EndEnemyTurn();
+        if (enemyTurnRunning)
+            return;
+
+        if (enemyTurnController == null)
+        {
+            EndEnemyTurn();
+            return;
+        }
+
+        StartCoroutine(RunEnemyTurn());
     }
 
     private void EndEnemyTurn()
@@ -64,5 +82,13 @@ public class TurnManager : MonoBehaviour
     public int GetDay()
     {
         return day;
+    }
+
+    private IEnumerator RunEnemyTurn()
+    {
+        enemyTurnRunning = true;
+        yield return enemyTurnController.ExecuteEnemyTurn();
+        enemyTurnRunning = false;
+        EndEnemyTurn();
     }
 }

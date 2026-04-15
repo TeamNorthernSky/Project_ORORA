@@ -13,7 +13,12 @@ public class Mine : MonoBehaviour
     [Header("Visual")]
     [SerializeField] private Renderer targetRenderer;
     [SerializeField] private Material unclaimedMaterial;
+    [SerializeField] private Material enemyClaimedMaterial;
     [SerializeField] private Material claimedMaterial;
+
+    public bool IsClaimableByPlayer => mineState == MineState.Unclaimed || mineState == MineState.EnemyClaimed;
+    public bool IsPlayerClaimed => mineState == MineState.Claimed;
+    public bool IsEnemyClaimed => mineState == MineState.EnemyClaimed;
 
     private void Awake()
     {
@@ -25,7 +30,7 @@ public class Mine : MonoBehaviour
 
     public void MineClaim()
     {
-        if(mineState == MineState.Unclaimed)
+        if (IsClaimableByPlayer)
         {
             mineState = MineState.Claimed;
             ApplyStateMaterial();
@@ -33,9 +38,18 @@ public class Mine : MonoBehaviour
         }
     }
 
+    public void EnemyClaim()
+    {
+        if (mineState == MineState.EnemyClaimed)
+            return;
+
+        mineState = MineState.EnemyClaimed;
+        ApplyStateMaterial();
+    }
+
     public void ProduceForTurn(ResourceManager resourceManager)
     {
-        if (mineState != MineState.Claimed)
+        if (!IsPlayerClaimed)
             return;
 
         if (resourceManager == null || resourcePerTurn <= 0)
@@ -56,7 +70,12 @@ public class Mine : MonoBehaviour
         if (targetRenderer == null)
             return;
 
-        Material nextMaterial = mineState == MineState.Claimed ? claimedMaterial : unclaimedMaterial;
+        Material nextMaterial = mineState switch
+        {
+            MineState.Claimed => claimedMaterial,
+            MineState.EnemyClaimed => enemyClaimedMaterial,
+            _ => unclaimedMaterial
+        };
         if (nextMaterial == null)
             return;
 
