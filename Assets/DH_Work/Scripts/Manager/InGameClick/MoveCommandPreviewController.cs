@@ -79,9 +79,10 @@ public class MoveCommandPreviewController
         if (activeMover == null || gridManager == null || pathfinder == null || marker == null)
             return;
 
-        Vector3 markerWorld = gridManager.GridToWorldCenter(clickedGrid);
+        Vector2Int destinationGrid = ResolveDestinationGrid(activeMover, clickedGrid);
+        Vector3 markerWorld = gridManager.GridToWorldCenter(destinationGrid);
         markerWorld.y = gridManager.GetLandSurfaceY();
-        PlaceMarker(clickedGrid, markerWorld);
+        PlaceMarker(destinationGrid, markerWorld);
 
         Vector2Int partyGrid = activeMover.GetCurrentGrid();
         List<Vector2Int> path = pathfinder.FindPath(partyGrid, markerGrid, activeMover.transform);
@@ -195,6 +196,52 @@ public class MoveCommandPreviewController
             marker.gameObject.SetActive(true);
     }
 
+    private Vector2Int ResolveDestinationGrid(PartyGridMover activeMover, Vector2Int clickedGrid)
+    {
+        if (activeMover == null || gridManager == null)
+            return clickedGrid;
+
+        if (!gridManager.TryGetCastleObjectAtGrid(clickedGrid, out CastleUnit castle))
+            return clickedGrid;
+
+        MultiGridOccupant occupant = castle.GetComponent<MultiGridOccupant>();
+        if (occupant == null)
+            return clickedGrid;
+
+        Vector2Int moverGrid = activeMover.GetCurrentGrid();
+        if (occupant.IsAdjacentOuterCell(moverGrid))
+            return moverGrid;
+
+        IReadOnlyList<Vector2Int> approachCandidates = occupant.GetAdjacentOuterCells();
+        Vector2Int bestGrid = clickedGrid;
+        List<Vector2Int> bestPath = null;
+
+        for (int i = 0; i < approachCandidates.Count; i++)
+        {
+            Vector2Int candidate = approachCandidates[i];
+            List<Vector2Int> candidatePath = pathfinder.FindPath(moverGrid, candidate, activeMover.transform);
+            if (candidatePath == null || candidatePath.Count == 0)
+                continue;
+
+            if (bestPath == null || candidatePath.Count < bestPath.Count)
+            {
+                bestPath = candidatePath;
+                bestGrid = candidate;
+                continue;
+            }
+
+            if (bestPath != null
+                && candidatePath.Count == bestPath.Count
+                && IsBetterCastleApproach(moverGrid, castle.GetCurrentGrid(), candidate, bestGrid))
+            {
+                bestPath = candidatePath;
+                bestGrid = candidate;
+            }
+        }
+
+        return bestPath != null ? bestGrid : clickedGrid;
+    }
+
     private List<Vector2Int> AdjustPathForSpecialDestination(List<Vector2Int> path)
     {
         if (path == null || path.Count == 0 || gridManager == null || !hasMarkerGrid)
@@ -275,6 +322,39 @@ public class MoveCommandPreviewController
     private static int GetPathMoveCost(List<Vector2Int> path)
     {
         return path == null ? 0 : Mathf.Max(0, path.Count - 1);
+    }
+
+    private static bool IsBetterCastleApproach(
+        Vector2Int moverGrid,
+        Vector2Int castleGrid,
+        Vector2Int candidateApproachGrid,
+        Vector2Int currentBestApproachGrid)
+    {
+        int candidateAlignment = GetApproachAlignmentScore(moverGrid, castleGrid, candidateApproachGrid);
+        int currentAlignment = GetApproachAlignmentScore(moverGrid, castleGrid, currentBestApproachGrid);
+        if (candidateAlignment != currentAlignment)
+            return candidateAlignment > currentAlignment;
+
+        int candidateDistance = GridManager.GridDistance(moverGrid, candidateApproachGrid);
+        int currentDistance = GridManager.GridDistance(moverGrid, currentBestApproachGrid);
+        return candidateDistance < currentDistance;
+    }
+
+    private static int GetApproachAlignmentScore(Vector2Int originGrid, Vector2Int targetGrid, Vector2Int approachGrid)
+    {
+        Vector2Int toTarget = targetGrid - originGrid;
+        Vector2Int toApproach = approachGrid - originGrid;
+
+        int dot = toTarget.x * toApproach.x + toTarget.y * toApproach.y;
+        int axisMatch = 0;
+
+        if (toTarget.x != 0 && toApproach.x != 0 && Mathf.Sign(toTarget.x) == Mathf.Sign(toApproach.x))
+            axisMatch++;
+
+        if (toTarget.y != 0 && toApproach.y != 0 && Mathf.Sign(toTarget.y) == Mathf.Sign(toApproach.y))
+            axisMatch++;
+
+        return dot * 10 + axisMatch;
     }
 
     private void ApplyMarkerColor(Color color)

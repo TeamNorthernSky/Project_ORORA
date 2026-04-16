@@ -18,8 +18,7 @@ public class EnemyUnit : MonoBehaviour
 
     [Header("Targeting")]
     [SerializeField] private int detectionRange = 10;
-    [SerializeField, Range(0, 100)] private int resourceGroupWeight = 50;
-    [SerializeField, Range(0, 100)] private int strategicGroupWeight = 50;
+    [SerializeField] private EnemyTargetingProfile targetingProfile = EnemyTargetingProfile.Balanced;
 
     private Vector2Int currentGrid;
     private float fixedY;
@@ -29,8 +28,9 @@ public class EnemyUnit : MonoBehaviour
     public string EnemyId => enemyId;
     public int MovePointsPerTurn => Mathf.Max(0, movePointsPerTurn);
     public int DetectionRange => Mathf.Max(0, detectionRange);
-    public int ResourceGroupWeight => Mathf.Clamp(resourceGroupWeight, 0, 100);
-    public int StrategicGroupWeight => Mathf.Clamp(strategicGroupWeight, 0, 100);
+    public EnemyTargetingProfile TargetingProfile => targetingProfile;
+    public int ResourceGroupWeight => GetResourceGroupWeight(targetingProfile);
+    public int StrategicGroupWeight => GetStrategicGroupWeight(targetingProfile);
     public EnemyTargetType CurrentTargetType => currentTargetType;
     public Component CurrentTarget => currentTarget;
 
@@ -114,5 +114,33 @@ public class EnemyUnit : MonoBehaviour
     {
         if (enemyRegistry == null)
             enemyRegistry = FindFirstObjectByType<EnemyRegistry>();
+    }
+
+    private static int GetResourceGroupWeight(EnemyTargetingProfile profile)
+    {
+        switch (profile)
+        {
+            case EnemyTargetingProfile.Aggressive:
+                return 20;
+            case EnemyTargetingProfile.Stable:
+                return 70;
+            case EnemyTargetingProfile.Balanced:
+            default:
+                return 50;
+        }
+    }
+
+    private static int GetStrategicGroupWeight(EnemyTargetingProfile profile)
+    {
+        switch (profile)
+        {
+            case EnemyTargetingProfile.Aggressive:
+                return 80;
+            case EnemyTargetingProfile.Stable:
+                return 30;
+            case EnemyTargetingProfile.Balanced:
+            default:
+                return 50;
+        }
     }
 }

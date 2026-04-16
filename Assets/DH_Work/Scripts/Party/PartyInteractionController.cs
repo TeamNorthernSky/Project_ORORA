@@ -17,6 +17,7 @@ public class PartyInteractionController
     public bool IsInputLocked { get; private set; }
 
     public event Action<Vector2Int> AdjacentItemCellEntered;
+    public event Action<CastleUnit> AdjacentCastleDetected;
 
     public PartyInteractionController(
         GridManager gridManager,
@@ -44,6 +45,7 @@ public class PartyInteractionController
         if (HandleAdjacentEnemyProximity(enteredGrid))
             return;
 
+        HandleAdjacentCastleProximity(enteredGrid);
         HandleAdjacentItemProximity(enteredGrid);
         HandleAdjacentMineProximity(enteredGrid);
     }
@@ -91,6 +93,14 @@ public class PartyInteractionController
         bool combatStarted = combatEncounterManager.BeginCombat(ownerParty, enemy);
         IsInputLocked = combatStarted;
         return combatStarted;
+    }
+
+    private void HandleAdjacentCastleProximity(Vector2Int enteredGrid)
+    {
+        if (!gridManager.TryGetAdjacentCastleObject(enteredGrid, out CastleUnit castle))
+            return;
+
+        AdjacentCastleDetected?.Invoke(castle);
     }
 
     private void OnAdjacentItemCellEntered(Vector2Int itemGrid)

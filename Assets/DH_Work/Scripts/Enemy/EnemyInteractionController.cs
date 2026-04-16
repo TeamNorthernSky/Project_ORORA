@@ -89,15 +89,10 @@ public class EnemyInteractionController
 
     private void HandleAdjacentCastleProximity(Vector2Int enteredGrid)
     {
-        for (int i = 0; i < GridManager.Directions8.Length; i++)
-        {
-            Vector2Int candidate = enteredGrid + GridManager.Directions8[i];
-            if (!gridManager.TryGetCastleObjectAtGrid(candidate, out CastleUnit castle))
-                continue;
-
-            AdjacentCastleDetected?.Invoke(castle, ownerEnemy);
+        if (!gridManager.TryGetAdjacentCastleObject(enteredGrid, out CastleUnit castle))
             return;
-        }
+
+        AdjacentCastleDetected?.Invoke(castle, ownerEnemy);
     }
 
     private static bool IsAdjacentOrSame(Vector2Int a, Vector2Int b)

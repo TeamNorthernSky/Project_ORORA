@@ -62,7 +62,11 @@ public class EnemyTurnController : MonoBehaviour
                 yield break;
 
             Vector2Int targetGrid = GetTargetGrid(enemy.CurrentTargetType, enemy.CurrentTarget);
-            List<Vector2Int> fullPath = FindApproachPath(enemy, targetGrid);
+            List<Vector2Int> fullPath = FindApproachPath(
+                enemy,
+                enemy.CurrentTargetType,
+                enemy.CurrentTarget,
+                targetGrid);
             List<Vector2Int> movePath = TrimPathToMovePoints(fullPath, enemy.MovePointsPerTurn);
 
             if (movePath != null && movePath.Count > 1)
@@ -85,16 +89,16 @@ public class EnemyTurnController : MonoBehaviour
         if (enemy == null || !enemy.HasTarget())
             return;
 
-        Vector2Int enemyGrid = enemy.GetCurrentGrid();
-        Vector2Int targetGrid = GetTargetGrid(enemy.CurrentTargetType, enemy.CurrentTarget);
-
         if (enemy.CurrentTarget == null)
         {
             enemy.ClearTarget();
             return;
         }
 
-        if (IsAdjacent(enemyGrid, targetGrid))
+        Vector2Int enemyGrid = enemy.GetCurrentGrid();
+        Vector2Int targetGrid = GetTargetGrid(enemy.CurrentTargetType, enemy.CurrentTarget);
+
+        if (IsTargetReached(enemyGrid, enemy.CurrentTargetType, enemy.CurrentTarget, targetGrid))
         {
             enemy.ClearTarget();
             return;
@@ -228,7 +232,8 @@ public class EnemyTurnController : MonoBehaviour
                     continue;
 
                 Vector2Int targetGrid = castle.GetCurrentGrid();
-                if (!IsWithinDetectionRange(enemyGrid, targetGrid, detectionRange) || IsAdjacent(enemyGrid, targetGrid))
+                if (!IsWithinDetectionRange(enemyGrid, targetGrid, detectionRange)
+                    || (gridManager != null && gridManager.IsAdjacentToCastle(enemyGrid, castle)))
                     continue;
 
                 strategicCandidates.Add(new TargetCandidate(EnemyTargetType.Castle, castle, targetGrid));
@@ -277,15 +282,20 @@ public class EnemyTurnController : MonoBehaviour
         return combatEncounterManager.BeginCombat(party, enemy);
     }
 
-    private List<Vector2Int> FindApproachPath(EnemyUnit enemy, Vector2Int targetGrid)
+    private List<Vector2Int> FindApproachPath(
+        EnemyUnit enemy,
+        EnemyTargetType targetType,
+        Component target,
+        Vector2Int targetGrid)
     {
         Vector2Int enemyGrid = enemy.GetCurrentGrid();
         List<Vector2Int> bestPath = null;
         Vector2Int bestApproachGrid = enemyGrid;
 
-        for (int i = 0; i < GridManager.Directions8.Length; i++)
+        List<Vector2Int> approachCandidates = GetApproachCandidates(targetType, target, targetGrid);
+        for (int i = 0; i < approachCandidates.Count; i++)
         {
-            Vector2Int candidateApproachGrid = targetGrid + GridManager.Directions8[i];
+            Vector2Int candidateApproachGrid = approachCandidates[i];
             List<Vector2Int> candidatePath = pathfinder.FindPath(
                 enemyGrid,
                 candidateApproachGrid,
@@ -311,6 +321,22 @@ public class EnemyTurnController : MonoBehaviour
         }
 
         return bestPath;
+    }
+
+    private List<Vector2Int> GetApproachCandidates(EnemyTargetType targetType, Component target, Vector2Int targetGrid)
+    {
+        if (targetType == EnemyTargetType.Castle && target is CastleUnit castle && gridManager != null)
+        {
+            MultiGridOccupant occupant = castle.GetComponent<MultiGridOccupant>();
+            if (occupant != null)
+                return new List<Vector2Int>(occupant.GetAdjacentOuterCells());
+        }
+
+        List<Vector2Int> approachCandidates = new List<Vector2Int>(GridManager.Directions8.Length);
+        for (int i = 0; i < GridManager.Directions8.Length; i++)
+            approachCandidates.Add(targetGrid + GridManager.Directions8[i]);
+
+        return approachCandidates;
     }
 
     private Vector2Int GetTargetGrid(EnemyTargetType targetType, Component target)
@@ -350,6 +376,18 @@ public class EnemyTurnController : MonoBehaviour
         int dx = Mathf.Abs(a.x - b.x);
         int dy = Mathf.Abs(a.y - b.y);
         return dx <= 1 && dy <= 1;
+    }
+
+    private bool IsTargetReached(
+        Vector2Int enemyGrid,
+        EnemyTargetType targetType,
+        Component target,
+        Vector2Int targetGrid)
+    {
+        if (targetType == EnemyTargetType.Castle && target is CastleUnit castle && gridManager != null)
+            return gridManager.IsAdjacentToCastle(enemyGrid, castle);
+
+        return IsAdjacent(enemyGrid, targetGrid);
     }
 
     private static int GetPriority(EnemyTargetType targetType)
