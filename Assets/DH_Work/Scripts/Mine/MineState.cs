@@ -5,5 +5,6 @@ using UnityEngine;
 public enum MineState
 {
     Unclaimed,
+    EnemyClaimed,
     Claimed
 }

@@ -10,6 +10,7 @@ public class PartyGridMover : MonoBehaviour
     [Header("References")]
     [SerializeField] private GridManager gridManager;
     [SerializeField] private ResourceManager resourceManager;
+    [SerializeField] private CombatEncounterManager combatEncounterManager;
 
     [Header("Move Settings")]
     [SerializeField] private float moveSpeed = 4f;
@@ -26,6 +27,7 @@ public class PartyGridMover : MonoBehaviour
 
     public event Action<List<Vector2Int>> PathUpdated;
     public event Action<Vector2Int> AdjacentItemCellEntered;
+    public event Action<CastleUnit> AdjacentCastleDetected;
     public event Action<Vector2Int> GridEntered;
     public event Action MoveCompleted;
 
@@ -37,11 +39,14 @@ public class PartyGridMover : MonoBehaviour
         interactionController = new PartyInteractionController(
             gridManager,
             resourceManager,
+            combatEncounterManager,
+            this,
             itemPickupDelay,
             this,
             GetCurrentGrid);
 
         interactionController.AdjacentItemCellEntered += HandleAdjacentItemCellEntered;
+        interactionController.AdjacentCastleDetected += HandleAdjacentCastleDetected;
     }
 
     private void OnDestroy()
@@ -50,6 +55,7 @@ public class PartyGridMover : MonoBehaviour
             return;
 
         interactionController.AdjacentItemCellEntered -= HandleAdjacentItemCellEntered;
+        interactionController.AdjacentCastleDetected -= HandleAdjacentCastleDetected;
         interactionController.Dispose();
     }
 
@@ -167,6 +173,11 @@ public class PartyGridMover : MonoBehaviour
     private void HandleAdjacentItemCellEntered(Vector2Int itemGrid)
     {
         AdjacentItemCellEntered?.Invoke(itemGrid);
+    }
+
+    private void HandleAdjacentCastleDetected(CastleUnit castle)
+    {
+        AdjacentCastleDetected?.Invoke(castle);
     }
 
     private static int GetPathMoveCost(List<Vector2Int> path)

@@ -16,13 +16,13 @@ public sealed class BattleAction
     /// <summary>
     /// ActionType이 Skill일 때만 사용(선택)
     /// </summary>
-    public SkillData SkillData { get; }
+    public SkillDataAsset SkillData { get; }
 
     public BattleAction(
         BattleCharactor actor,
         BattleCharactor target,
         BattleActionType actionType,
-        SkillData skillData = null)
+        SkillDataAsset skillData = null)
     {
         Actor = actor;
         Target = target;

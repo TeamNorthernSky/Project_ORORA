@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 4420219336271616158}
   - component: {fileID: 4453878209957127326}
   - component: {fileID: 7078745925209123227}
+  - component: {fileID: 8341544712768745510}
   m_Layer: 9
   m_Name: Enemy
   m_TagString: Untagged
@@ -107,3 +108,24 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &8341544712768745510
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3482099803903542441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e3155cf2507c2a40a6cf6e5bb1720ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enemyId: enemy_001
+  gridManager: {fileID: 0}
+  enemyRegistry: {fileID: 0}
+  moveSpeed: 4
+  arriveThreshold: 0.01
+  movePointsPerTurn: 5
+  detectionRange: 10
+  resourceGroupWeight: 50
+  strategicGroupWeight: 50

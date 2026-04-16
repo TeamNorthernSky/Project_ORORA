@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.Tilemaps;
 
 public class GridManager : MonoBehaviour
 {
@@ -21,6 +23,10 @@ public class GridManager : MonoBehaviour
     [Header("Grid Settings")]
     [FormerlySerializedAs("hexRadius")]
     [SerializeField] private float cellSize = 1f;
+    [SerializeField] private bool useTilemapGrid;
+    [SerializeField] private GridLayout tilemapGridLayout;
+    [SerializeField] private Tilemap referenceTilemap;
+    [SerializeField] private bool tilemapUsesXZPlane = true;
 
     [Header("Obstacle Settings")]
     [Tooltip("이 레이어에 있는 콜라이더는 장애물로 간주합니다.")]
@@ -28,7 +34,11 @@ public class GridManager : MonoBehaviour
     [SerializeField] private LayerMask itemLayerMask;
     [SerializeField] private LayerMask mineLayerMask;
     [SerializeField] private LayerMask playerLayerMask;
+    [SerializeField] private LayerMask enemyLayerMask;
+    [SerializeField] private LayerMask castleLayerMask;
     [SerializeField] private FogGridManager fogGridManager;
+    [SerializeField] private CastleRegistry castleRegistry;
+    [SerializeField] private MultiGridOccupantRegistry multiGridOccupantRegistry;
     [SerializeField] private bool restrictMovementToVisibleCells = true;
     [Tooltip("셀 워커블 검사 시, 셀 크기 대비 체크 박스 비율(너무 크면 오탐, 너무 작으면 통과).")]
     [SerializeField, Range(0.1f, 1f)] private float obstacleCheckFill = 0.9f;
@@ -46,19 +56,58 @@ public class GridManager : MonoBehaviour
 
     public float CellSize => cellSize;
     public Transform LandTransform => landTransform;
+    public Transform GroundRaycastTransform
+        => landTransform != null
+            ? landTransform
+            : referenceTilemap != null
+                ? referenceTilemap.transform
+                : tilemapGridLayout != null
+                    ? tilemapGridLayout.transform
+                    : null;
+    public bool UsesTilemapGrid => useTilemapGrid && tilemapGridLayout != null;
     public static Vector2Int[] Directions8 => directions8;
 
     private void Awake()
     {
+        ResolveTilemapReferences();
+
         if (cellSize <= 0f)
             cellSize = 1f;
 
+        SyncCellSizeFromTilemap();
+
         if (fogGridManager == null)
             fogGridManager = FindFirstObjectByType<FogGridManager>();
+
+        if (castleRegistry == null)
+            castleRegistry = FindFirstObjectByType<CastleRegistry>();
+
+        if (multiGridOccupantRegistry == null)
+            multiGridOccupantRegistry = FindFirstObjectByType<MultiGridOccupantRegistry>();
+    }
+
+    private void OnValidate()
+    {
+        ResolveTilemapReferences();
+        SyncCellSizeFromTilemap();
+
+        if (castleRegistry == null)
+            castleRegistry = FindFirstObjectByType<CastleRegistry>();
+
+        if (multiGridOccupantRegistry == null)
+            multiGridOccupantRegistry = FindFirstObjectByType<MultiGridOccupantRegistry>();
     }
 
     public Vector2Int WorldToGrid(Vector3 worldPosition)
     {
+        if (UsesTilemapGrid)
+        {
+            Vector3Int cell = tilemapGridLayout.WorldToCell(worldPosition);
+            return tilemapUsesXZPlane
+                ? new Vector2Int(cell.x, cell.z)
+                : new Vector2Int(cell.x, cell.y);
+        }
+
         float localX = worldPosition.x - gridOrigin.x;
         float localZ = worldPosition.z - gridOrigin.z;
 
@@ -69,6 +118,16 @@ public class GridManager : MonoBehaviour
 
     public Vector3 GridToWorldCenter(Vector2Int grid)
     {
+        if (UsesTilemapGrid)
+        {
+            Vector3Int cell = tilemapUsesXZPlane
+                ? new Vector3Int(grid.x, 0, grid.y)
+                : new Vector3Int(grid.x, grid.y, 0);
+
+            if (referenceTilemap != null)
+                return referenceTilemap.GetCellCenterWorld(cell);
+        }
+
         float x = gridOrigin.x + cellSize * grid.x;
         float z = gridOrigin.z + cellSize * grid.y;
 
@@ -124,6 +183,22 @@ public class GridManager : MonoBehaviour
         return HasBlockingCollider(grid, mineLayerMask);
     }
 
+    public bool HasEnemy(Vector2Int grid, Transform selfTransform = null)
+    {
+        return HasBlockingCollider(grid, enemyLayerMask, selfTransform);
+    }
+
+    public bool HasMultiGridOccupant(Vector2Int grid, Transform selfTransform = null)
+    {
+        return TryGetMultiGridOccupantAtGrid(grid, out _, selfTransform);
+    }
+
+    public bool HasCastle(Vector2Int grid, Transform selfTransform = null)
+    {
+        return HasBlockingCollider(grid, castleLayerMask, selfTransform)
+            || TryGetCastleByMultiGrid(grid, out _, selfTransform);
+    }
+
     public bool TryGetMineObjectAtGrid(Vector2Int grid, out Mine mine)
     {
         mine = null;
@@ -148,9 +223,62 @@ public class GridManager : MonoBehaviour
         return false;
     }
 
+    public bool TryGetEnemyObjectAtGrid(Vector2Int grid, out EnemyUnit enemy)
+    {
+        enemy = null;
+
+        Vector3 center = GridToWorldCenter(grid);
+        center.y = GetLandSurfaceY() + 0.5f;
+
+        Vector3 halfExtents = new Vector3(cellSize * 0.5f * obstacleCheckFill, 0.5f, cellSize * 0.5f * obstacleCheckFill);
+        Collider[] cols = Physics.OverlapBox(center, halfExtents, Quaternion.identity, enemyLayerMask);
+
+        for (int i = 0; i < cols.Length; i++)
+        {
+            Collider col = cols[i];
+            if (col == null)
+                continue;
+
+            enemy = col.GetComponentInParent<EnemyUnit>();
+            if (enemy != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    public bool TryGetCastleObjectAtGrid(Vector2Int grid, out CastleUnit castle)
+    {
+        castle = null;
+
+        Vector3 center = GridToWorldCenter(grid);
+        center.y = GetLandSurfaceY() + 0.5f;
+
+        Vector3 halfExtents = new Vector3(cellSize * 0.5f * obstacleCheckFill, 0.5f, cellSize * 0.5f * obstacleCheckFill);
+        Collider[] cols = Physics.OverlapBox(center, halfExtents, Quaternion.identity, castleLayerMask);
+
+        for (int i = 0; i < cols.Length; i++)
+        {
+            Collider col = cols[i];
+            if (col == null)
+                continue;
+
+            castle = col.GetComponentInParent<CastleUnit>();
+            if (castle != null)
+                return true;
+        }
+
+        return TryGetCastleByMultiGrid(grid, out castle);
+    }
+
     public bool HasItemOrMine(Vector2Int grid)
     {
         return HasItem(grid) || HasMine(grid);
+    }
+
+    public bool HasInteractionTarget(Vector2Int grid)
+    {
+        return HasItem(grid) || HasMine(grid) || HasEnemy(grid) || HasCastle(grid);
     }
 
     public bool IsVisibleCell(Vector2Int grid)
@@ -193,7 +321,56 @@ public class GridManager : MonoBehaviour
         return false;
     }
 
-    public bool CanEnterCell(Vector2Int grid, Vector2Int destination, Transform selfTransform = null)
+    public bool TryGetAdjacentEnemyGrid(Vector2Int grid, out Vector2Int enemyGrid)
+    {
+        for (int i = 0; i < directions8.Length; i++)
+        {
+            Vector2Int candidate = grid + directions8[i];
+            if (HasEnemy(candidate))
+            {
+                enemyGrid = candidate;
+                return true;
+            }
+        }
+
+        enemyGrid = grid;
+        return false;
+    }
+
+    public bool TryGetAdjacentCastleObject(Vector2Int grid, out CastleUnit castle)
+    {
+        castle = null;
+
+        CastleUnit[] castles = FindObjectsByType<CastleUnit>(FindObjectsSortMode.None);
+        for (int i = 0; i < castles.Length; i++)
+        {
+            CastleUnit candidate = castles[i];
+            if (candidate == null)
+                continue;
+
+            if (!IsAdjacentToCastle(grid, candidate))
+                continue;
+
+            castle = candidate;
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool IsAdjacentToCastle(Vector2Int grid, CastleUnit castle)
+    {
+        if (castle == null)
+            return false;
+
+        MultiGridOccupant occupant = castle.GetComponent<MultiGridOccupant>();
+        if (occupant != null)
+            return occupant.IsAdjacentOuterCell(grid);
+
+        return IsAdjacentToSingleCell(grid, castle.GetCurrentGrid());
+    }
+
+    public bool CanEnterCell(Vector2Int grid, Vector2Int destination, Transform selfTransform = null, bool ignoreFogVisibility = false)
     {
         if (HasObstacle(grid))
             return false;
@@ -201,11 +378,20 @@ public class GridManager : MonoBehaviour
         if (HasOtherPlayer(grid, selfTransform))
             return false;
 
-        if (!IsVisibleCell(grid))
+        if (!ignoreFogVisibility && !IsVisibleCell(grid))
             return false;
 
         if (grid == destination)
             return true;
+
+        if (HasEnemy(grid, selfTransform))
+            return false;
+
+        if (HasMultiGridOccupant(grid, selfTransform))
+            return false;
+
+        if (HasCastle(grid, selfTransform))
+            return false;
 
         return !HasItemOrMine(grid);
     }
@@ -241,11 +427,95 @@ public class GridManager : MonoBehaviour
         return false;
     }
 
+    private bool TryGetMultiGridOccupantAtGrid(Vector2Int grid, out MultiGridOccupant occupant, Transform ignoredTransform = null)
+    {
+        occupant = null;
+
+        IReadOnlyList<MultiGridOccupant> occupants = multiGridOccupantRegistry != null
+            ? multiGridOccupantRegistry.Occupants
+            : FindObjectsByType<MultiGridOccupant>(FindObjectsSortMode.None);
+
+        for (int i = 0; i < occupants.Count; i++)
+        {
+            MultiGridOccupant candidate = occupants[i];
+            if (candidate == null)
+                continue;
+
+            Transform candidateTransform = candidate.transform;
+            if (ignoredTransform != null
+                && (candidateTransform == ignoredTransform || candidateTransform.IsChildOf(ignoredTransform)))
+            {
+                continue;
+            }
+
+            if (!candidate.OccupiesCell(grid))
+                continue;
+
+            occupant = candidate;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryGetCastleByMultiGrid(Vector2Int grid, out CastleUnit castle, Transform ignoredTransform = null)
+    {
+        castle = null;
+
+        IReadOnlyList<CastleUnit> castles = castleRegistry != null
+            ? castleRegistry.Castles
+            : FindObjectsByType<CastleUnit>(FindObjectsSortMode.None);
+
+        for (int i = 0; i < castles.Count; i++)
+        {
+            CastleUnit candidate = castles[i];
+            if (candidate == null)
+                continue;
+
+            Transform candidateTransform = candidate.transform;
+            if (ignoredTransform != null
+                && (candidateTransform == ignoredTransform || candidateTransform.IsChildOf(ignoredTransform)))
+            {
+                continue;
+            }
+
+            MultiGridOccupant occupant = candidate.GetComponent<MultiGridOccupant>();
+            if (occupant != null)
+            {
+                if (!occupant.OccupiesCell(grid))
+                    continue;
+
+                castle = candidate;
+                return true;
+            }
+
+            if (candidate.GetCurrentGrid() != grid)
+                continue;
+
+            castle = candidate;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsAdjacentToSingleCell(Vector2Int fromGrid, Vector2Int targetGrid)
+    {
+        int dx = Mathf.Abs(fromGrid.x - targetGrid.x);
+        int dy = Mathf.Abs(fromGrid.y - targetGrid.y);
+        return dx <= 1 && dy <= 1 && (dx != 0 || dy != 0);
+    }
+
     // Land의 y 높이에 맞춰 marker/player를 올려놓기 위한 헬퍼
     public float GetLandSurfaceY()
     {
         if (landTransform == null)
+        {
+            if (UsesTilemapGrid && tilemapGridLayout != null)
+                return tilemapGridLayout.transform.position.y + 0.01f;
+
             return 0.01f;
+        }
 
         // BoxCollider가 있으면 bounds 상단 사용
         if (landTransform.TryGetComponent<Collider>(out var col))
@@ -289,6 +559,31 @@ public class GridManager : MonoBehaviour
         Gizmos.DrawLine(b, c);
         Gizmos.DrawLine(c, d);
         Gizmos.DrawLine(d, a);
+    }
+
+    private void ResolveTilemapReferences()
+    {
+        if (tilemapGridLayout == null && referenceTilemap != null)
+            tilemapGridLayout = referenceTilemap.layoutGrid;
+
+        if (referenceTilemap == null && tilemapGridLayout != null)
+            referenceTilemap = tilemapGridLayout.GetComponentInChildren<Tilemap>();
+    }
+
+    private void SyncCellSizeFromTilemap()
+    {
+        if (!UsesTilemapGrid)
+            return;
+
+        Vector3 tilemapCellSize = tilemapGridLayout.cellSize;
+        float xSize = Mathf.Abs(tilemapCellSize.x);
+        float secondAxisSize = tilemapUsesXZPlane
+            ? Mathf.Abs(tilemapCellSize.y > 0f ? tilemapCellSize.y : tilemapCellSize.z)
+            : Mathf.Abs(tilemapCellSize.y);
+
+        float resolvedCellSize = Mathf.Max(xSize, secondAxisSize);
+        if (resolvedCellSize > 0f)
+            cellSize = resolvedCellSize;
     }
 }
 

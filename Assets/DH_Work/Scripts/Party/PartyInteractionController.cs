@@ -6,6 +6,8 @@ public class PartyInteractionController
 {
     private readonly GridManager gridManager;
     private readonly ResourceManager resourceManager;
+    private readonly CombatEncounterManager combatEncounterManager;
+    private readonly PartyGridMover ownerParty;
     private readonly float itemPickupDelay;
     private readonly MonoBehaviour coroutineOwner;
     private readonly Func<Vector2Int> currentGridProvider;
@@ -15,16 +17,21 @@ public class PartyInteractionController
     public bool IsInputLocked { get; private set; }
 
     public event Action<Vector2Int> AdjacentItemCellEntered;
+    public event Action<CastleUnit> AdjacentCastleDetected;
 
     public PartyInteractionController(
         GridManager gridManager,
         ResourceManager resourceManager,
+        CombatEncounterManager combatEncounterManager,
+        PartyGridMover ownerParty,
         float itemPickupDelay,
         MonoBehaviour coroutineOwner,
         Func<Vector2Int> currentGridProvider)
     {
         this.gridManager = gridManager;
         this.resourceManager = resourceManager;
+        this.combatEncounterManager = combatEncounterManager;
+        this.ownerParty = ownerParty;
         this.itemPickupDelay = itemPickupDelay;
         this.coroutineOwner = coroutineOwner;
         this.currentGridProvider = currentGridProvider;
@@ -35,6 +42,10 @@ public class PartyInteractionController
         if (gridManager == null)
             return;
 
+        if (HandleAdjacentEnemyProximity(enteredGrid))
+            return;
+
+        HandleAdjacentCastleProximity(enteredGrid);
         HandleAdjacentItemProximity(enteredGrid);
         HandleAdjacentMineProximity(enteredGrid);
     }
@@ -61,10 +72,35 @@ public class PartyInteractionController
         if (!gridManager.TryGetMineObjectAtGrid(mineGrid, out Mine mine))
             return;
 
-        if (mine.mineState != MineState.Unclaimed)
+        if (!mine.IsClaimableByPlayer)
             return;
 
         BeginAdjacentMineClaim(mineGrid);
+    }
+
+    private bool HandleAdjacentEnemyProximity(Vector2Int enteredGrid)
+    {
+        if (combatEncounterManager == null || ownerParty == null)
+            return false;
+
+        if (!gridManager.TryGetAdjacentEnemyGrid(enteredGrid, out Vector2Int enemyGrid))
+            return false;
+
+        if (!gridManager.TryGetEnemyObjectAtGrid(enemyGrid, out EnemyUnit enemy))
+            return false;
+
+        CancelPendingInteraction();
+        bool combatStarted = combatEncounterManager.BeginCombat(ownerParty, enemy);
+        IsInputLocked = combatStarted;
+        return combatStarted;
+    }
+
+    private void HandleAdjacentCastleProximity(Vector2Int enteredGrid)
+    {
+        if (!gridManager.TryGetAdjacentCastleObject(enteredGrid, out CastleUnit castle))
+            return;
+
+        AdjacentCastleDetected?.Invoke(castle);
     }
 
     private void OnAdjacentItemCellEntered(Vector2Int itemGrid)
@@ -138,7 +174,7 @@ public class PartyInteractionController
             yield break;
         }
 
-        if (mine.mineState == MineState.Unclaimed)
+        if (mine.IsClaimableByPlayer)
             mine.MineClaim();
 
         IsInputLocked = false;
