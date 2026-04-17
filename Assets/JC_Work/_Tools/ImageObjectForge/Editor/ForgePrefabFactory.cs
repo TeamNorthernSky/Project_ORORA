@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
 using TMPro;
+using Orora.UI.Extensions;
 
 namespace Orora.ImageObjectForge
 {
@@ -99,6 +100,32 @@ namespace Orora.ImageObjectForge
             var img = go.AddComponent<Image>();
             img.sprite = opts.SourceSprite;
             img.raycastTarget = true;
+
+            // 스프라이트 텍스처 Readable 보장 (런타임 alpha hit test에 필요).
+            if (opts.SourceSprite != null)
+            {
+                var spritePath = AssetDatabase.GetAssetPath(opts.SourceSprite);
+                if (!string.IsNullOrEmpty(spritePath))
+                {
+                    var importer = AssetImporter.GetAtPath(spritePath) as TextureImporter;
+                    if (importer != null && !importer.isReadable)
+                    {
+                        importer.isReadable = true;
+                        importer.SaveAndReimport();
+                        var reloaded = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+                        if (reloaded != null)
+                        {
+                            opts.SourceSprite = reloaded;
+                            img.sprite = reloaded;
+                        }
+                    }
+                }
+            }
+
+            // alphaHitTestMinimumThreshold는 직렬화 안됨.
+            // 런타임에 값을 재설정할 전용 컴포넌트를 부착.
+            var aht = go.AddComponent<AlphaHitThreshold>();
+            aht.threshold = 0.5f;
 
             var btn = go.AddComponent<Button>();
             btn.targetGraphic = img;

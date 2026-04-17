@@ -13,7 +13,7 @@ namespace Orora.ImageObjectForge
         const float ToolbarHeight = 28f;
         const float StatusHeight = 22f;
 
-        [MenuItem("Tools/JC/Image Object Forge")]
+        [MenuItem("Tools/JC/Image Object Forge/Open Editor", priority = 0)]
         public static void Open()
         {
             var w = GetWindow<ImageObjectForgeWindow>("Image Object Forge");
@@ -26,6 +26,7 @@ namespace Orora.ImageObjectForge
 
         ToolMode _tool = ToolMode.Brush;
         BrushMode _brushMode = BrushMode.Paint;
+        ForgeBrush.BrushShape _brushShape = ForgeBrush.BrushShape.Circle;
         float _brushRadius = 12f;
 
         // Pen 상태 (베지어)
@@ -152,6 +153,11 @@ namespace Orora.ImageObjectForge
                     if (ToggleButton(_brushMode == BrushMode.Paint, "Paint")) _brushMode = BrushMode.Paint;
                     if (ToggleButton(_brushMode == BrushMode.Erase, "Erase (E)")) _brushMode = BrushMode.Erase;
                 }
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (ToggleButton(_brushShape == ForgeBrush.BrushShape.Circle, "Circle")) _brushShape = ForgeBrush.BrushShape.Circle;
+                    if (ToggleButton(_brushShape == ForgeBrush.BrushShape.Square, "Square")) _brushShape = ForgeBrush.BrushShape.Square;
+                }
                 EditorGUILayout.LabelField("Size", Mathf.RoundToInt(_brushRadius * 2).ToString() + " px");
                 _brushRadius = EditorGUILayout.Slider(_brushRadius, 1f, 256f);
                 EditorGUILayout.LabelField("[ ]  키: 크기 조절", EditorStyles.miniLabel);
@@ -237,9 +243,27 @@ namespace Orora.ImageObjectForge
                 var sp = _vp.ImageToScreen(canvasRect, _cursorImg, _doc.Height);
                 var local = new Vector2(sp.x - canvasRect.x, sp.y - canvasRect.y);
                 Color c = _brushMode == BrushMode.Paint
-                    ? new Color(1f, 0.6f, 0.3f, 0.9f)
-                    : new Color(0.4f, 0.7f, 1f, 0.9f);
-                ForgeGfx.DrawRing(local, _brushRadius * _vp.Zoom, c);
+                    ? new Color(0.25f, 1f, 0.4f, 0.95f)
+                    : new Color(1f, 0.3f, 0.3f, 0.95f);
+                float rScreen = _brushRadius * _vp.Zoom;
+                if (_brushShape == ForgeBrush.BrushShape.Square)
+                {
+                    var rect = new Rect(local.x - rScreen, local.y - rScreen, rScreen * 2f, rScreen * 2f);
+                    ForgeGfx.DrawRectOutline(rect, c, 1.5f);
+                }
+                else
+                {
+                    ForgeGfx.DrawRing(local, rScreen, c);
+                }
+
+                if (_brushMode == BrushMode.Erase && !_strokeActive)
+                {
+                    var labelRect = new Rect(local.x - rScreen - 2f, local.y - rScreen - 14f, 40f, 14f);
+                    ForgeGfx.FilledRect(labelRect, new Color(0f, 0f, 0f, 0.3f));
+                    var st = new GUIStyle(EditorStyles.miniLabel);
+                    st.normal.textColor = new Color(1f, 1f, 1f, 0.5f);
+                    GUI.Label(labelRect, " Erase", st);
+                }
             }
 
             GUI.EndClip();
@@ -401,7 +425,7 @@ namespace Orora.ImageObjectForge
                     var imgPt = _vp.ScreenToImage(canvasRect, e.mousePosition, _doc.Height);
                     _strokeLastImg = imgPt;
                     bool paint = _brushMode == BrushMode.Paint;
-                    if (ForgeBrush.StampDisk(_doc.Mask, _doc.Width, _doc.Height, imgPt, _brushRadius, paint, out var d))
+                    if (ForgeBrush.Stamp(_doc.Mask, _doc.Width, _doc.Height, imgPt, _brushRadius, paint, _brushShape, out var d))
                         _doc.RebuildOverlayRect(d);
                     else
                         _doc.RebuildOverlayRect(d);
@@ -413,7 +437,7 @@ namespace Orora.ImageObjectForge
                 {
                     var imgPt = _vp.ScreenToImage(canvasRect, e.mousePosition, _doc.Height);
                     bool paint = _brushMode == BrushMode.Paint;
-                    if (ForgeBrush.StrokeLine(_doc.Mask, _doc.Width, _doc.Height, _strokeLastImg, imgPt, _brushRadius, paint, out var d))
+                    if (ForgeBrush.Stroke(_doc.Mask, _doc.Width, _doc.Height, _strokeLastImg, imgPt, _brushRadius, paint, _brushShape, out var d))
                         _doc.RebuildOverlayRect(d);
                     else
                         _doc.RebuildOverlayRect(d);
@@ -749,6 +773,31 @@ namespace Orora.ImageObjectForge
                 Object.DestroyImmediate(outTex);
                 if (path != null)
                 {
+                    var meta = new ForgeCropMeta
+                    {
+                        sourceAssetPath = _doc.SourceAssetPath,
+                        sourceGUID = string.IsNullOrEmpty(_doc.SourceAssetPath)
+                            ? null
+                            : AssetDatabase.AssetPathToGUID(_doc.SourceAssetPath),
+                        sourceSize = new ForgeCropMeta.SourceSize { width = _doc.Width, height = _doc.Height },
+                        cropBounds = new ForgeCropMeta.CropBounds { x = bounds.x, y = bounds.y, width = bounds.width, height = bounds.height },
+                        createdAt = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                    };
+                    if (!string.IsNullOrEmpty(_doc.SourceAssetPath))
+                    {
+                        var pngInfo = ForgePngInfo.Read(ForgeIO.AbsPath(_doc.SourceAssetPath));
+                        if (pngInfo.isPng)
+                        {
+                            meta.sourceBitDepth = pngInfo.bitDepth;
+                            meta.sourceColorType = pngInfo.colorType;
+                            meta.sourceDpiX = pngInfo.dpiX;
+                            meta.sourceDpiY = pngInfo.dpiY;
+                        }
+                    }
+                    if (!ForgeIO.WriteCropSidecar(path, meta, out var sidecarErr))
+                    {
+                        Debug.LogWarning($"[ImageObjectForge] Sidecar 저장 실패: {sidecarErr}");
+                    }
                     SetStatus($"저장: {path}");
                     var obj = AssetDatabase.LoadAssetAtPath<Object>(path);
                     if (obj != null) EditorGUIUtility.PingObject(obj);

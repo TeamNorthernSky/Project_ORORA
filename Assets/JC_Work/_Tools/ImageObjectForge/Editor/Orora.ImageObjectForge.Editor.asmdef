@@ -2,7 +2,8 @@
     "name": "Orora.ImageObjectForge.Editor",
     "rootNamespace": "Orora.ImageObjectForge",
     "references": [
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Orora.UI.Extensions"
     ],
     "includePlatforms": [
         "Editor"

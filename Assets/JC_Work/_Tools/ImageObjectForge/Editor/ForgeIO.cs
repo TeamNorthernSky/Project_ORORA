@@ -27,30 +27,43 @@ namespace Orora.ImageObjectForge
                 return false;
             }
 
-            EnsureDir(SourcesDir);
+            string normalizedSrc = srcAbsPath.Replace('\\', '/');
+            string projectData = Application.dataPath.Replace('\\', '/');
+            bool insideProject = normalizedSrc.StartsWith(projectData + "/", System.StringComparison.OrdinalIgnoreCase);
 
-            string stem = Path.GetFileNameWithoutExtension(srcAbsPath);
-            string ext = Path.GetExtension(srcAbsPath).ToLowerInvariant();
-            if (string.IsNullOrEmpty(ext)) ext = ".png";
-
-            string destName = stem + ext;
-            string absSourcesDir = AbsPath(SourcesDir);
-            string destAbs = Path.Combine(absSourcesDir, destName);
-
-            // 중복 시 _2, _3 ...
-            int i = 2;
-            while (File.Exists(destAbs))
+            string destAbs;
+            if (insideProject)
             {
-                destName = stem + "_" + i + ext;
-                destAbs = Path.Combine(absSourcesDir, destName);
-                i++;
+                // 프로젝트 내부 파일: 복사 생략, 기존 에셋을 그대로 사용.
+                assetPath = "Assets" + normalizedSrc.Substring(projectData.Length);
+                destAbs = normalizedSrc;
             }
+            else
+            {
+                EnsureDir(SourcesDir);
 
-            try { File.Copy(srcAbsPath, destAbs); }
-            catch (System.Exception ex) { errorMsg = "복사 실패: " + ex.Message; return false; }
+                string stem = Path.GetFileNameWithoutExtension(srcAbsPath);
+                string ext = Path.GetExtension(srcAbsPath).ToLowerInvariant();
+                if (string.IsNullOrEmpty(ext)) ext = ".png";
 
-            assetPath = SourcesDir + "/" + destName;
-            AssetDatabase.ImportAsset(assetPath);
+                string destName = stem + ext;
+                string absSourcesDir = AbsPath(SourcesDir);
+                destAbs = Path.Combine(absSourcesDir, destName);
+
+                int i = 2;
+                while (File.Exists(destAbs))
+                {
+                    destName = stem + "_" + i + ext;
+                    destAbs = Path.Combine(absSourcesDir, destName);
+                    i++;
+                }
+
+                try { File.Copy(srcAbsPath, destAbs); }
+                catch (System.Exception ex) { errorMsg = "복사 실패: " + ex.Message; return false; }
+
+                assetPath = SourcesDir + "/" + destName;
+                AssetDatabase.ImportAsset(assetPath);
+            }
 
             byte[] data;
             try { data = File.ReadAllBytes(destAbs); }
@@ -169,6 +182,7 @@ namespace Orora.ImageObjectForge
             importer.maxTextureSize = maxSize;
             importer.textureCompression = compression;
             importer.alphaIsTransparency = true;
+            importer.isReadable = true;
 
             var settings = new TextureImporterSettings();
             importer.ReadTextureSettings(settings);
@@ -237,6 +251,50 @@ namespace Orora.ImageObjectForge
             }
             list.Sort((a, b) => string.Compare(a.name, b.name, System.StringComparison.OrdinalIgnoreCase));
             return list;
+        }
+
+        // ---------- Sidecar (.crop.json) ----------
+        public static string GetSidecarPathFor(string pngAssetPath)
+        {
+            if (string.IsNullOrEmpty(pngAssetPath)) return null;
+            string dir = Path.GetDirectoryName(pngAssetPath).Replace('\\', '/');
+            string stem = Path.GetFileNameWithoutExtension(pngAssetPath);
+            return dir + "/" + stem + ".crop.json";
+        }
+
+        public static bool WriteCropSidecar(string pngAssetPath, ForgeCropMeta meta, out string errorMsg)
+        {
+            errorMsg = null;
+            try
+            {
+                string sidecar = GetSidecarPathFor(pngAssetPath);
+                if (string.IsNullOrEmpty(sidecar)) { errorMsg = "pngAssetPath 비어있음"; return false; }
+                string json = JsonUtility.ToJson(meta, true);
+                File.WriteAllText(AbsPath(sidecar), json);
+                AssetDatabase.ImportAsset(sidecar);
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                errorMsg = ex.Message;
+                return false;
+            }
+        }
+
+        public static ForgeCropMeta LoadCropSidecar(string sidecarAssetPath)
+        {
+            if (string.IsNullOrEmpty(sidecarAssetPath)) return null;
+            string abs = AbsPath(sidecarAssetPath);
+            if (!File.Exists(abs)) return null;
+            try
+            {
+                string json = File.ReadAllText(abs);
+                return JsonUtility.FromJson<ForgeCropMeta>(json);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public static string NextAvailableOutputName(string stem)

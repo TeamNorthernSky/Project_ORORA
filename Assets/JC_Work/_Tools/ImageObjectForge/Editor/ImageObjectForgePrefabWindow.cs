@@ -7,14 +7,14 @@ namespace Orora.ImageObjectForge
 {
     public class ImageObjectForgePrefabWindow : EditorWindow
     {
-        [MenuItem("Tools/JC/Image Object Forge/Create Prefab…")]
+        [MenuItem("Tools/JC/Image Object Forge/Create Prefab…", priority = 20)]
         public static void Open()
         {
             var w = GetWindow<ImageObjectForgePrefabWindow>("Prefab Factory");
             w.minSize = new Vector2(420, 540);
         }
 
-        [MenuItem("Tools/JC/Image Object Forge/Batch Convert Output PNGs to Sprite")]
+        [MenuItem("Tools/JC/Image Object Forge/Batch Convert Output PNGs to Sprite", priority = 21)]
         public static void BatchConvertMenu()
         {
             int mode = EditorUtility.DisplayDialogComplex(
@@ -54,6 +54,15 @@ namespace Orora.ImageObjectForge
         bool _generateMipMaps = false;
         int _maxSize = 2048;
         bool _batchForceReapply = false;
+
+        // Auto-Place
+        Canvas _autoPlaceCanvas;
+        DefaultAsset _autoPlaceFolder;
+
+        // Source Rebind
+        DefaultAsset _rebindFolder;
+        Texture2D _rebindNewSource;
+        ForgeSourceRebind.ValidationResult _rebindValidation;
 
         // Status
         string _statusMsg;
@@ -182,6 +191,69 @@ namespace Orora.ImageObjectForge
             }
             GUI.enabled = true;
 
+            EditorGUILayout.Space(12);
+
+            // -------- Auto-Place --------
+            using (new EditorGUILayout.VerticalScope(GUI.skin.box))
+            {
+                EditorGUILayout.LabelField("Auto-Place Prefabs (Sidecar 기반)", EditorStyles.boldLabel);
+                _autoPlaceCanvas = (Canvas)EditorGUILayout.ObjectField("Target Canvas", _autoPlaceCanvas, typeof(Canvas), true);
+                _autoPlaceFolder = (DefaultAsset)EditorGUILayout.ObjectField("Scan Folder", _autoPlaceFolder, typeof(DefaultAsset), false);
+                if (_autoPlaceFolder == null)
+                {
+                    EditorGUILayout.LabelField("  비워두면 기본 폴더 사용: " + ForgePrefabFactory.PrefabsDir, EditorStyles.miniLabel);
+                }
+                GUI.enabled = _autoPlaceCanvas != null;
+                if (GUILayout.Button("Auto-Place from Metadata", GUILayout.Height(26)))
+                {
+                    EditorApplication.delayCall += DoAutoPlace;
+                }
+                GUI.enabled = true;
+            }
+
+            EditorGUILayout.Space(12);
+
+            // -------- Source Rebind --------
+            using (new EditorGUILayout.VerticalScope(GUI.skin.box))
+            {
+                EditorGUILayout.LabelField("Source Rebind (사이드카 일괄 참조 변경)", EditorStyles.boldLabel);
+                _rebindFolder = (DefaultAsset)EditorGUILayout.ObjectField("Scan Folder", _rebindFolder, typeof(DefaultAsset), false);
+                if (_rebindFolder == null)
+                {
+                    EditorGUILayout.LabelField("  비워두면 기본 폴더 사용: " + ForgeIO.OutputDir, EditorStyles.miniLabel);
+                }
+                _rebindNewSource = (Texture2D)EditorGUILayout.ObjectField("New Source Image", _rebindNewSource, typeof(Texture2D), false);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUI.enabled = _rebindNewSource != null;
+                    if (GUILayout.Button("Validate", GUILayout.Height(26)))
+                    {
+                        EditorApplication.delayCall += DoRebindValidate;
+                    }
+                    GUI.enabled = _rebindValidation != null
+                                  && _rebindValidation.incompatible == 0
+                                  && _rebindValidation.compatible > 0
+                                  && _rebindNewSource != null;
+                    string rebindLabel = _rebindValidation != null
+                        ? $"Rebind ({_rebindValidation.compatible})"
+                        : "Rebind";
+                    if (GUILayout.Button(rebindLabel, GUILayout.Height(26)))
+                    {
+                        EditorApplication.delayCall += DoRebindExecute;
+                    }
+                    GUI.enabled = true;
+                }
+
+                if (_rebindValidation != null)
+                {
+                    var msgType = _rebindValidation.incompatible > 0 ? MessageType.Warning : MessageType.Info;
+                    EditorGUILayout.HelpBox(
+                        $"검증: 호환 {_rebindValidation.compatible} / 불일치 {_rebindValidation.incompatible} / 총 {_rebindValidation.total}",
+                        msgType);
+                }
+            }
+
             if (EditorApplication.timeSinceStartup < _statusExpireAt && !string.IsNullOrEmpty(_statusMsg))
             {
                 EditorGUILayout.Space(6);
@@ -189,6 +261,74 @@ namespace Orora.ImageObjectForge
             }
 
             EditorGUILayout.EndScrollView();
+        }
+
+        void DoRebindValidate()
+        {
+            if (_rebindNewSource == null) return;
+            string folder = _rebindFolder != null
+                ? AssetDatabase.GetAssetPath(_rebindFolder)
+                : ForgeIO.OutputDir;
+            _rebindValidation = ForgeSourceRebind.Validate(folder, _rebindNewSource);
+
+            string msg = $"총 {_rebindValidation.total} 건\n" +
+                         $"호환: {_rebindValidation.compatible}\n" +
+                         $"불일치: {_rebindValidation.incompatible}";
+            if (_rebindValidation.issues.Count > 0)
+                msg += "\n\n이슈:\n- " + string.Join("\n- ", _rebindValidation.issues);
+
+            var incompatibleDetails = new System.Collections.Generic.List<string>();
+            foreach (var e in _rebindValidation.entries)
+            {
+                if (!e.compatible && !string.IsNullOrEmpty(e.issue))
+                {
+                    incompatibleDetails.Add($"{System.IO.Path.GetFileName(e.sidecarPath)}: {e.issue}");
+                }
+            }
+            if (incompatibleDetails.Count > 0)
+                msg += "\n\n불일치 상세:\n- " + string.Join("\n- ", incompatibleDetails);
+
+            EditorUtility.DisplayDialog("Source Rebind — Validate", msg, "OK");
+            Repaint();
+        }
+
+        void DoRebindExecute()
+        {
+            if (_rebindValidation == null || _rebindValidation.incompatible > 0 || _rebindNewSource == null) return;
+            string newPath = AssetDatabase.GetAssetPath(_rebindNewSource);
+            if (!EditorUtility.DisplayDialog(
+                "Rebind 실행 확인",
+                $"{_rebindValidation.compatible}건의 사이드카의 소스 참조를\n{newPath}\n로 변경합니다. 계속하시겠습니까?",
+                "Rebind",
+                "Cancel"))
+                return;
+            int updated = ForgeSourceRebind.Rebind(_rebindValidation, _rebindNewSource);
+            EditorUtility.DisplayDialog("Rebind 완료", $"{updated}건 갱신됨.", "OK");
+            _rebindValidation = null;
+            ShowStatus($"Rebind — {updated}건 갱신", false);
+            Repaint();
+        }
+
+        void DoAutoPlace()
+        {
+            if (_autoPlaceCanvas == null) return;
+            string folder = _autoPlaceFolder != null
+                ? AssetDatabase.GetAssetPath(_autoPlaceFolder)
+                : ForgePrefabFactory.PrefabsDir;
+            var report = ForgeAutoPlace.Run(_autoPlaceCanvas, folder);
+
+            string msg = $"배치: {report.placed}\n" +
+                         $"스킵 (sidecar 없음): {report.skippedNoSidecar}\n" +
+                         $"스킵 (소스 불일치): {report.skippedSourceMismatch}\n" +
+                         $"스킵 (Image/Sprite 없음): {report.skippedMissingComponents}";
+            if (report.warnings.Count > 0)
+                msg += "\n\n경고:\n- " + string.Join("\n- ", report.warnings);
+            if (report.errors.Count > 0)
+                msg += "\n\n에러:\n- " + string.Join("\n- ", report.errors);
+
+            EditorUtility.DisplayDialog("Auto-Place 결과", msg, "OK");
+            ShowStatus($"Auto-Place — 배치 {report.placed}, 경고 {report.warnings.Count}, 에러 {report.errors.Count}", report.errors.Count > 0);
+            Repaint();
         }
 
         void RunBatchConvert(bool force)
