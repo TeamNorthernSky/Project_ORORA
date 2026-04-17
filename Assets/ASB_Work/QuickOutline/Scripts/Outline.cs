@@ -1,4 +1,4 @@
-﻿//
+//
 //  Outline.cs
 //  QuickOutline
 //
@@ -62,6 +62,9 @@ public class Outline : MonoBehaviour {
   [SerializeField, Range(0f, 10f)]
   private float outlineWidth = 2f;
 
+  [SerializeField, Tooltip("True: 현재 오브젝트 + 자식(Renderer/Mesh)를 모두 Outline 대상으로 처리합니다. False: 현재 오브젝트의 컴포넌트만 처리합니다.")]
+  private bool includeChildren = true;
+
   [Header("Optional")]
 
   [SerializeField, Tooltip("Precompute enabled: Per-vertex calculations are performed in the editor and serialized with the object. "
@@ -83,7 +86,7 @@ public class Outline : MonoBehaviour {
   void Awake() {
 
     // Cache renderers
-    renderers = GetComponentsInChildren<Renderer>();
+    renderers = GetTargetRenderers();
 
     // Instantiate outline materials
     outlineMaskMaterial = Instantiate(Resources.Load<Material>(@"Materials/OutlineMask"));
@@ -162,7 +165,7 @@ public class Outline : MonoBehaviour {
     // Generate smooth normals for each mesh
     var bakedMeshes = new HashSet<Mesh>();
 
-    foreach (var meshFilter in GetComponentsInChildren<MeshFilter>()) {
+    foreach (var meshFilter in GetTargetMeshFilters()) {
 
       // Skip duplicates
       if (!bakedMeshes.Add(meshFilter.sharedMesh)) {
@@ -180,7 +183,7 @@ public class Outline : MonoBehaviour {
   void LoadSmoothNormals() {
 
     // Retrieve or generate smooth normals
-    foreach (var meshFilter in GetComponentsInChildren<MeshFilter>()) {
+    foreach (var meshFilter in GetTargetMeshFilters()) {
 
       // Skip if smooth normals have already been adopted
       if (!registeredMeshes.Add(meshFilter.sharedMesh)) {
@@ -203,7 +206,7 @@ public class Outline : MonoBehaviour {
     }
 
     // Clear UV3 on skinned mesh renderers
-    foreach (var skinnedMeshRenderer in GetComponentsInChildren<SkinnedMeshRenderer>()) {
+    foreach (var skinnedMeshRenderer in GetTargetSkinnedMeshRenderers()) {
 
       // Skip if UV3 has already been reset
       if (!registeredMeshes.Add(skinnedMeshRenderer.sharedMesh)) {
@@ -216,6 +219,19 @@ public class Outline : MonoBehaviour {
       // Combine submeshes
       CombineSubmeshes(skinnedMeshRenderer.sharedMesh, skinnedMeshRenderer.sharedMaterials);
     }
+  }
+
+  // includeChildren 옵션에 맞춰 대상 컴포넌트 수집 범위를 통일합니다.
+  Renderer[] GetTargetRenderers() {
+    return includeChildren ? GetComponentsInChildren<Renderer>(true) : GetComponents<Renderer>();
+  }
+
+  MeshFilter[] GetTargetMeshFilters() {
+    return includeChildren ? GetComponentsInChildren<MeshFilter>(true) : GetComponents<MeshFilter>();
+  }
+
+  SkinnedMeshRenderer[] GetTargetSkinnedMeshRenderers() {
+    return includeChildren ? GetComponentsInChildren<SkinnedMeshRenderer>(true) : GetComponents<SkinnedMeshRenderer>();
   }
 
   List<Vector3> SmoothNormals(Mesh mesh) {

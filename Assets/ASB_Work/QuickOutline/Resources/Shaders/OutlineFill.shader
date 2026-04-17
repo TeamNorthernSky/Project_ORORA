@@ -1,4 +1,4 @@
-﻿//
+//
 //  OutlineFill.shader
 //  QuickOutline
 //

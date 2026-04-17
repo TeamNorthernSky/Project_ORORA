@@ -290,7 +290,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -503,6 +503,7 @@ MonoBehaviour:
     Luck: 0
     Speed: 1
     CriticalRate: 0
+    CritMultiplier: 1.5
     CounterRate: 0
     AvoidRate: 0
   currentHp: 0
@@ -513,9 +514,66 @@ MonoBehaviour:
   skillDataLoader: {fileID: 320332755}
   equippedWeaponIndex: 0
   availableWeapons: []
+  <EquippedWeaponData>k__BackingField:
+    WeaponIndex: 0
+    weaponClass: 
+    WeaponName: 
+    WeaponDescription: 
+    BonusHP: 0
+    BonusATK: 0
+    BonusDEF: 0
+    BonusCriticalRate: 0
+    BonusCounterRate: 0
+    BonusReduceRate: 0
+    BonusSpeed: 0
+    WeaponSkillIndex: 0
+    WeaponSkillName: 
+    WeaponSkillDescription: 
+    WeaponSkillEffect: 0
+    WeaponSkillRange: 0
+    WeaponSkillTarget: 0
+    WeaponSkillMultiTarget: 
+    WeaponSkillMultiTargetType: 0
+    WeaponSkillMultiTargetCount: 0
+    WeaponSkillValue: 0
+    WeaponSkillSubValue: 0
   classSkillIndex: 1010
   selectedSkillIndex: 0
   availableSkills: []
+  <SelectedSkillData>k__BackingField:
+    skillIndex: 0
+    skillClass: 
+    acquireLevel: 0
+    skillName: 
+    description: 
+    classSkillEffect: 0
+    classSkillRange: 0
+    classSkillTarget: 0
+    boundary: []
+    multiTargetType: 0
+    multiTargetCount: 0
+    skillValue: 0
+    skillSubValue: 0
+  runtimeBaseStats:
+    HP: 1
+    Atk: 1
+    DEF: 1
+    Luck: 0
+    Speed: 1
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+  hasExternalBaseStats: 0
+  occupiedCell: {fileID: 0}
+  isInitialized: 0
+  hasLoggedEmptyUnitNameWarning: 0
+  prototypeSkillsCacheKey: "LowerMonster\x1F9"
+  prototypeWeaponsCacheKey: LowerMonster
+  <EquippedEquipments>k__BackingField: []
+  <EquippedSkills>k__BackingField: []
+  <IsPlayer>k__BackingField: 0
+  <IsDead>k__BackingField: 0
 --- !u!1 &173309999
 GameObject:
   m_ObjectHideFlags: 0
@@ -604,8 +662,8 @@ MonoBehaviour:
   attack: 1
   defense: 1
   speed: 1
-  level: 1
-  unitCount: 1
+  level: 20
+  unitCount: 10
   unitWeight:
     HP: 1
     Atk: 1
@@ -619,12 +677,13 @@ MonoBehaviour:
     Atk: 1
     DEF: 1
   finalStats:
-    HP: 3
-    Atk: 4
-    DEF: 3
+    HP: 50
+    Atk: 70
+    DEF: 50
     Luck: 0
     Speed: 1
     CriticalRate: 0
+    CritMultiplier: 1.5
     CounterRate: 0
     AvoidRate: 0
   currentHp: 0
@@ -635,9 +694,66 @@ MonoBehaviour:
   skillDataLoader: {fileID: 320332755}
   equippedWeaponIndex: 0
   availableWeapons: []
+  <EquippedWeaponData>k__BackingField:
+    WeaponIndex: 0
+    weaponClass: 
+    WeaponName: 
+    WeaponDescription: 
+    BonusHP: 0
+    BonusATK: 0
+    BonusDEF: 0
+    BonusCriticalRate: 0
+    BonusCounterRate: 0
+    BonusReduceRate: 0
+    BonusSpeed: 0
+    WeaponSkillIndex: 0
+    WeaponSkillName: 
+    WeaponSkillDescription: 
+    WeaponSkillEffect: 0
+    WeaponSkillRange: 0
+    WeaponSkillTarget: 0
+    WeaponSkillMultiTarget: 
+    WeaponSkillMultiTargetType: 0
+    WeaponSkillMultiTargetCount: 0
+    WeaponSkillValue: 0
+    WeaponSkillSubValue: 0
   classSkillIndex: 1010
   selectedSkillIndex: 0
   availableSkills: []
+  <SelectedSkillData>k__BackingField:
+    skillIndex: 0
+    skillClass: 
+    acquireLevel: 0
+    skillName: 
+    description: 
+    classSkillEffect: 0
+    classSkillRange: 0
+    classSkillTarget: 0
+    boundary: []
+    multiTargetType: 0
+    multiTargetCount: 0
+    skillValue: 0
+    skillSubValue: 0
+  runtimeBaseStats:
+    HP: 1
+    Atk: 1
+    DEF: 1
+    Luck: 0
+    Speed: 1
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+  hasExternalBaseStats: 0
+  occupiedCell: {fileID: 0}
+  isInitialized: 0
+  hasLoggedEmptyUnitNameWarning: 0
+  prototypeSkillsCacheKey: "\uC544\uCC98\x1F20"
+  prototypeWeaponsCacheKey: "\uC544\uCC98"
+  <EquippedEquipments>k__BackingField: []
+  <EquippedSkills>k__BackingField: []
+  <IsPlayer>k__BackingField: 0
+  <IsDead>k__BackingField: 0
 --- !u!1 &320332751
 GameObject:
   m_ObjectHideFlags: 0
@@ -873,6 +989,7 @@ MonoBehaviour:
     Luck: 0
     Speed: 1
     CriticalRate: 0
+    CritMultiplier: 1.5
     CounterRate: 0
     AvoidRate: 0
   currentHp: 0
@@ -883,9 +1000,66 @@ MonoBehaviour:
   skillDataLoader: {fileID: 320332755}
   equippedWeaponIndex: 0
   availableWeapons: []
+  <EquippedWeaponData>k__BackingField:
+    WeaponIndex: 0
+    weaponClass: 
+    WeaponName: 
+    WeaponDescription: 
+    BonusHP: 0
+    BonusATK: 0
+    BonusDEF: 0
+    BonusCriticalRate: 0
+    BonusCounterRate: 0
+    BonusReduceRate: 0
+    BonusSpeed: 0
+    WeaponSkillIndex: 0
+    WeaponSkillName: 
+    WeaponSkillDescription: 
+    WeaponSkillEffect: 0
+    WeaponSkillRange: 0
+    WeaponSkillTarget: 0
+    WeaponSkillMultiTarget: 
+    WeaponSkillMultiTargetType: 0
+    WeaponSkillMultiTargetCount: 0
+    WeaponSkillValue: 0
+    WeaponSkillSubValue: 0
   classSkillIndex: 0
   selectedSkillIndex: 0
   availableSkills: []
+  <SelectedSkillData>k__BackingField:
+    skillIndex: 0
+    skillClass: 
+    acquireLevel: 0
+    skillName: 
+    description: 
+    classSkillEffect: 0
+    classSkillRange: 0
+    classSkillTarget: 0
+    boundary: []
+    multiTargetType: 0
+    multiTargetCount: 0
+    skillValue: 0
+    skillSubValue: 0
+  runtimeBaseStats:
+    HP: 1
+    Atk: 1
+    DEF: 1
+    Luck: 0
+    Speed: 1
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+  hasExternalBaseStats: 0
+  occupiedCell: {fileID: 0}
+  isInitialized: 0
+  hasLoggedEmptyUnitNameWarning: 0
+  prototypeSkillsCacheKey: "\uBA54\uC774\uC9C0\x1F11"
+  prototypeWeaponsCacheKey: "\uBA54\uC774\uC9C0"
+  <EquippedEquipments>k__BackingField: []
+  <EquippedSkills>k__BackingField: []
+  <IsPlayer>k__BackingField: 0
+  <IsDead>k__BackingField: 0
 --- !u!1 &503365170
 GameObject:
   m_ObjectHideFlags: 0
@@ -952,7 +1126,7 @@ Transform:
   m_GameObject: {fileID: 515816964}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -3, y: 0, z: -2}
+  m_LocalPosition: {x: -3.3, y: 0, z: -2}
   m_LocalScale: {x: 0.33, y: 1, z: 0.33}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1001,7 +1175,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1323,7 +1497,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1660,16 +1834,17 @@ MonoBehaviour:
     Atk: 1
     DEF: 1
   classWeight:
-    HP: 1
+    HP: 0.77
     Atk: 1
     DEF: 1
   finalStats:
-    HP: 102
+    HP: 101.77
     Atk: 12
     DEF: 2
     Luck: 0
     Speed: 1
     CriticalRate: 0
+    CritMultiplier: 1.5
     CounterRate: 0
     AvoidRate: 0
   currentHp: 0
@@ -1680,9 +1855,66 @@ MonoBehaviour:
   skillDataLoader: {fileID: 320332755}
   equippedWeaponIndex: 0
   availableWeapons: []
+  <EquippedWeaponData>k__BackingField:
+    WeaponIndex: 0
+    weaponClass: 
+    WeaponName: 
+    WeaponDescription: 
+    BonusHP: 0
+    BonusATK: 0
+    BonusDEF: 0
+    BonusCriticalRate: 0
+    BonusCounterRate: 0
+    BonusReduceRate: 0
+    BonusSpeed: 0
+    WeaponSkillIndex: 0
+    WeaponSkillName: 
+    WeaponSkillDescription: 
+    WeaponSkillEffect: 0
+    WeaponSkillRange: 0
+    WeaponSkillTarget: 0
+    WeaponSkillMultiTarget: 
+    WeaponSkillMultiTargetType: 0
+    WeaponSkillMultiTargetCount: 0
+    WeaponSkillValue: 0
+    WeaponSkillSubValue: 0
   classSkillIndex: 1010
   selectedSkillIndex: 0
   availableSkills: []
+  <SelectedSkillData>k__BackingField:
+    skillIndex: 0
+    skillClass: 
+    acquireLevel: 0
+    skillName: 
+    description: 
+    classSkillEffect: 0
+    classSkillRange: 0
+    classSkillTarget: 0
+    boundary: []
+    multiTargetType: 0
+    multiTargetCount: 0
+    skillValue: 0
+    skillSubValue: 0
+  runtimeBaseStats:
+    HP: 100
+    Atk: 10
+    DEF: 0
+    Luck: 0
+    Speed: 1
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+  hasExternalBaseStats: 0
+  occupiedCell: {fileID: 0}
+  isInitialized: 0
+  hasLoggedEmptyUnitNameWarning: 0
+  prototypeSkillsCacheKey: "\uC6CC\uB9AC\uC5B4\x1F1"
+  prototypeWeaponsCacheKey: "\uC6CC\uB9AC\uC5B4"
+  <EquippedEquipments>k__BackingField: []
+  <EquippedSkills>k__BackingField: []
+  <IsPlayer>k__BackingField: 0
+  <IsDead>k__BackingField: 0
 --- !u!1 &997278432
 GameObject:
   m_ObjectHideFlags: 0
@@ -1760,7 +1992,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1979,7 +2211,7 @@ Transform:
   m_GameObject: {fileID: 1185982871}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 3, y: 0, z: -2}
+  m_LocalPosition: {x: 3.3, y: 0, z: -2}
   m_LocalScale: {x: 0.32999998, y: 1, z: 0.33}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2027,7 +2259,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2267,7 +2499,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2375,6 +2607,7 @@ MonoBehaviour:
     Luck: 0
     Speed: 1
     CriticalRate: 0
+    CritMultiplier: 1.5
     CounterRate: 0
     AvoidRate: 0
   currentHp: 0
@@ -2385,9 +2618,66 @@ MonoBehaviour:
   skillDataLoader: {fileID: 320332755}
   equippedWeaponIndex: 0
   availableWeapons: []
+  <EquippedWeaponData>k__BackingField:
+    WeaponIndex: 0
+    weaponClass: 
+    WeaponName: 
+    WeaponDescription: 
+    BonusHP: 0
+    BonusATK: 0
+    BonusDEF: 0
+    BonusCriticalRate: 0
+    BonusCounterRate: 0
+    BonusReduceRate: 0
+    BonusSpeed: 0
+    WeaponSkillIndex: 0
+    WeaponSkillName: 
+    WeaponSkillDescription: 
+    WeaponSkillEffect: 0
+    WeaponSkillRange: 0
+    WeaponSkillTarget: 0
+    WeaponSkillMultiTarget: 
+    WeaponSkillMultiTargetType: 0
+    WeaponSkillMultiTargetCount: 0
+    WeaponSkillValue: 0
+    WeaponSkillSubValue: 0
   classSkillIndex: 1010
   selectedSkillIndex: 0
   availableSkills: []
+  <SelectedSkillData>k__BackingField:
+    skillIndex: 0
+    skillClass: 
+    acquireLevel: 0
+    skillName: 
+    description: 
+    classSkillEffect: 0
+    classSkillRange: 0
+    classSkillTarget: 0
+    boundary: []
+    multiTargetType: 0
+    multiTargetCount: 0
+    skillValue: 0
+    skillSubValue: 0
+  runtimeBaseStats:
+    HP: 100
+    Atk: 10
+    DEF: 0
+    Luck: 0
+    Speed: 1
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+  hasExternalBaseStats: 0
+  occupiedCell: {fileID: 0}
+  isInitialized: 0
+  hasLoggedEmptyUnitNameWarning: 0
+  prototypeSkillsCacheKey: "AdvancedMonster\x1F1"
+  prototypeWeaponsCacheKey: AdvancedMonster
+  <EquippedEquipments>k__BackingField: []
+  <EquippedSkills>k__BackingField: []
+  <IsPlayer>k__BackingField: 0
+  <IsDead>k__BackingField: 0
 --- !u!1 &1414445549
 GameObject:
   m_ObjectHideFlags: 0
@@ -2417,7 +2707,7 @@ Transform:
   m_GameObject: {fileID: 1414445549}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 3, y: 0, z: -2}
+  m_LocalPosition: {x: 3.3, y: 0, z: -2}
   m_LocalScale: {x: 0.33, y: 1, z: 0.33}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2466,7 +2756,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2574,6 +2864,7 @@ MonoBehaviour:
     Luck: 0
     Speed: 1
     CriticalRate: 0
+    CritMultiplier: 1.5
     CounterRate: 0
     AvoidRate: 0
   currentHp: 0
@@ -2584,9 +2875,66 @@ MonoBehaviour:
   skillDataLoader: {fileID: 320332755}
   equippedWeaponIndex: 0
   availableWeapons: []
+  <EquippedWeaponData>k__BackingField:
+    WeaponIndex: 0
+    weaponClass: 
+    WeaponName: 
+    WeaponDescription: 
+    BonusHP: 0
+    BonusATK: 0
+    BonusDEF: 0
+    BonusCriticalRate: 0
+    BonusCounterRate: 0
+    BonusReduceRate: 0
+    BonusSpeed: 0
+    WeaponSkillIndex: 0
+    WeaponSkillName: 
+    WeaponSkillDescription: 
+    WeaponSkillEffect: 0
+    WeaponSkillRange: 0
+    WeaponSkillTarget: 0
+    WeaponSkillMultiTarget: 
+    WeaponSkillMultiTargetType: 0
+    WeaponSkillMultiTargetCount: 0
+    WeaponSkillValue: 0
+    WeaponSkillSubValue: 0
   classSkillIndex: 1010
   selectedSkillIndex: 0
   availableSkills: []
+  <SelectedSkillData>k__BackingField:
+    skillIndex: 0
+    skillClass: 
+    acquireLevel: 0
+    skillName: 
+    description: 
+    classSkillEffect: 0
+    classSkillRange: 0
+    classSkillTarget: 0
+    boundary: []
+    multiTargetType: 0
+    multiTargetCount: 0
+    skillValue: 0
+    skillSubValue: 0
+  runtimeBaseStats:
+    HP: 100
+    Atk: 10
+    DEF: 0
+    Luck: 0
+    Speed: 1
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+  hasExternalBaseStats: 0
+  occupiedCell: {fileID: 0}
+  isInitialized: 0
+  hasLoggedEmptyUnitNameWarning: 0
+  prototypeSkillsCacheKey: "\uD074\uB808\uB9AD\x1F1"
+  prototypeWeaponsCacheKey: "\uD074\uB808\uB9AD"
+  <EquippedEquipments>k__BackingField: []
+  <EquippedSkills>k__BackingField: []
+  <IsPlayer>k__BackingField: 0
+  <IsDead>k__BackingField: 0
 --- !u!1 &1511189582
 GameObject:
   m_ObjectHideFlags: 0
@@ -2616,7 +2964,7 @@ Transform:
   m_GameObject: {fileID: 1511189582}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -3, y: 0, z: 2}
+  m_LocalPosition: {x: -3.3, y: 0, z: 2}
   m_LocalScale: {x: 0.33, y: 1, z: 0.33}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2664,7 +3012,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2740,10 +3088,13 @@ MonoBehaviour:
   raycastCamera: {fileID: 1956195431}
   maxRayDistance: 200
   selectionRaycastMask:
-    serializedVersion: 2
     m_Bits: 4294967295
   battleFlowManager: {fileID: 621159268}
   battleManager: {fileID: 621159269}
+  currentState: 0
+  pendingAction: 0
+  hoverTarget: {fileID: 0}
+  hoverTargetOutline: {fileID: 0}
 --- !u!4 &1540026210
 Transform:
   m_ObjectHideFlags: 0
@@ -2879,7 +3230,7 @@ Transform:
   m_GameObject: {fileID: 1596053935}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -3, y: 0, z: 2}
+  m_LocalPosition: {x: -3.3, y: 0, z: 2}
   m_LocalScale: {x: 0.32999998, y: 1, z: 0.33}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2928,7 +3279,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -3001,7 +3352,7 @@ Transform:
   m_GameObject: {fileID: 1832740940}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -3, y: 0, z: -2}
+  m_LocalPosition: {x: -3.3, y: 0, z: -2}
   m_LocalScale: {x: 0.32999998, y: 1, z: 0.33}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3049,7 +3400,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -3167,7 +3518,7 @@ Transform:
   m_GameObject: {fileID: 1853290217}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 3, y: 0, z: 2}
+  m_LocalPosition: {x: 3.3, y: 0, z: 2}
   m_LocalScale: {x: 0.33, y: 1, z: 0.33}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3216,7 +3567,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -3326,7 +3677,7 @@ Transform:
   m_GameObject: {fileID: 1933058774}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 3, y: 0, z: 2}
+  m_LocalPosition: {x: 3.3, y: 0, z: 2}
   m_LocalScale: {x: 0.32999998, y: 1, z: 0.33}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3375,7 +3726,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

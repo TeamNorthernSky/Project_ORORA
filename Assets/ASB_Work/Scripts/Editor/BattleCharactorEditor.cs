@@ -8,25 +8,62 @@ public class BattleCharactorEditor : Editor
 {
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
+        serializedObject.Update();
+        var battleCharactor = (BattleCharactor)target;
 
-        var battleCharactor = target as BattleCharactor;
-        if (battleCharactor == null)
+        EditorGUILayout.Space(4f);
+        using (new EditorGUILayout.HorizontalScope())
         {
-            return;
+            if (GUILayout.Button("Force Refresh", GUILayout.Height(24f)))
+            {
+                Undo.RecordObject(battleCharactor, "BattleCharactor Force Refresh");
+                battleCharactor.EditorForcePrototypeRefresh();
+                EditorUtility.SetDirty(battleCharactor);
+                serializedObject.Update();
+            }
         }
+
+        SerializedProperty iterator = serializedObject.GetIterator();
+        bool enterChildren = true;
+        while (iterator.NextVisible(enterChildren))
+        {
+            enterChildren = false;
+
+            if (iterator.name == "m_Script")
+            {
+                continue;
+            }
+
+            if (iterator.name == "finalStats")
+            {
+                EditorGUI.BeginDisabledGroup(true);
+                EditorGUILayout.PropertyField(iterator, true);
+                EditorGUI.EndDisabledGroup();
+            }
+            else
+            {
+                EditorGUILayout.PropertyField(iterator, true);
+            }
+        }
+
+        serializedObject.ApplyModifiedProperties();
 
         EditorGUILayout.Space(8f);
         EditorGUILayout.LabelField("CSV Skill Selection", EditorStyles.boldLabel);
 
         var enemyScript = battleCharactor.GetComponent<EnemyScript>();
-        if (enemyScript != null)
+        if (enemyScript != null && enemyScript.Data != null && !string.IsNullOrWhiteSpace(enemyScript.Data.Name))
         {
-            string enemyName = enemyScript.Data != null ? enemyScript.Data.Name : string.Empty;
-            if (!string.IsNullOrWhiteSpace(enemyName))
+            string enemyName = enemyScript.Data.Name.Trim();
+            SerializedProperty unitNameProp = serializedObject.FindProperty("unitName");
+            if (unitNameProp != null && unitNameProp.stringValue != enemyName)
             {
-                battleCharactor.SetUnitNameForSkillMatching(enemyName);
+                Undo.RecordObject(battleCharactor, "Sync unitName from EnemyScript");
+                battleCharactor.SetUnitNameForSkillMatching(enemyScript.Data.Name);
+                EditorUtility.SetDirty(battleCharactor);
             }
+
+            serializedObject.Update();
         }
 
         battleCharactor.RefreshAvailableSkillsForInspector();
@@ -35,20 +72,22 @@ public class BattleCharactorEditor : Editor
         {
             string resolvedUnitName = battleCharactor.UnitName;
             EditorGUILayout.HelpBox(
-                $"해당 이름(unitName)과 매칭되는 스킬이 없습니다.\nunitName='{resolvedUnitName}'\n" +
-                "SkillDataLoader 참조 및 skillClass 값을 확인하세요.",
+                $"해당 이름(unitName)과 매칭되는 스킬이 없거나, SkillManager/SkillDataLoader를 찾을 수 없습니다.\nunitName='{resolvedUnitName}'\n" +
+                "씬에 매니저가 있거나 SkillDataLoader를 할당했는지 확인하세요.",
                 MessageType.Info);
         }
         else
         {
             int currentSkillIndex = Mathf.Clamp(battleCharactor.SelectedSkillIndex, 0, available.Count - 1);
             string[] skillOptions = BuildSkillOptionLabels(available);
+            EditorGUI.BeginChangeCheck();
             int nextSkillIndex = EditorGUILayout.Popup("Selected Skill", currentSkillIndex, skillOptions);
-            if (nextSkillIndex != battleCharactor.SelectedSkillIndex)
+            if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(battleCharactor, "Change Selected Skill");
                 battleCharactor.SetSelectedSkillIndex(nextSkillIndex);
                 battleCharactor.ResolveSelectedSkill(false);
+                battleCharactor.RecalculateStats(applyCurrentHpClamp: false);
                 EditorUtility.SetDirty(battleCharactor);
             }
 
@@ -78,38 +117,41 @@ public class BattleCharactorEditor : Editor
         List<WeaponData> weapons = battleCharactor.availableWeapons;
         if (weapons == null || weapons.Count == 0)
         {
-            EditorGUILayout.HelpBox("해당 직업(unitName)에 장착 가능한 무기가 없습니다.", MessageType.Info);
-            return;
+            EditorGUILayout.HelpBox(
+                "해당 직업(unitName)에 장착 가능한 무기가 없거나, WeaponManager를 찾을 수 없습니다.",
+                MessageType.Info);
         }
-
-        string[] weaponOptions = BuildWeaponOptionLabels(weapons);
-        int currentWeaponIndex = Mathf.Clamp(battleCharactor.EquippedWeaponIndex, 0, weapons.Count - 1);
-
-        EditorGUI.BeginChangeCheck();
-        int nextWeaponIndex = EditorGUILayout.Popup("Equipped Weapon", currentWeaponIndex, weaponOptions);
-        if (EditorGUI.EndChangeCheck())
+        else
         {
-            Undo.RecordObject(battleCharactor, "Change Weapon");
-            battleCharactor.SetEquippedWeaponIndex(nextWeaponIndex);
-            EditorUtility.SetDirty(battleCharactor);
-        }
+            string[] weaponOptions = BuildWeaponOptionLabels(weapons);
+            int currentWeaponIndex = Mathf.Clamp(battleCharactor.EquippedWeaponIndex, 0, weapons.Count - 1);
 
-        WeaponData equipped = battleCharactor.EquippedWeaponData;
-        if (equipped != null)
-        {
-            EditorGUILayout.Space(4f);
-            using (new EditorGUI.DisabledScope(true))
+            EditorGUI.BeginChangeCheck();
+            int nextWeaponIndex = EditorGUILayout.Popup("Equipped Weapon", currentWeaponIndex, weaponOptions);
+            if (EditorGUI.EndChangeCheck())
             {
-                EditorGUILayout.LabelField("Weapon", EditorStyles.boldLabel);
-                EditorGUILayout.TextField("Name", equipped.WeaponName ?? string.Empty);
-                string desc = string.IsNullOrWhiteSpace(equipped.WeaponDescription)
-                    ? "—"
-                    : equipped.WeaponDescription;
-                EditorGUILayout.TextField("Description", desc);
-                string skillName = string.IsNullOrWhiteSpace(equipped.WeaponSkillName)
-                    ? "—"
-                    : equipped.WeaponSkillName;
-                EditorGUILayout.TextField("Weapon Skill", skillName);
+                Undo.RecordObject(battleCharactor, "Change Weapon");
+                battleCharactor.SetEquippedWeaponIndex(nextWeaponIndex);
+                EditorUtility.SetDirty(battleCharactor);
+            }
+
+            WeaponData equipped = battleCharactor.EquippedWeaponData;
+            if (equipped != null)
+            {
+                EditorGUILayout.Space(4f);
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUILayout.LabelField("Weapon", EditorStyles.boldLabel);
+                    EditorGUILayout.TextField("Name", equipped.WeaponName ?? string.Empty);
+                    string desc = string.IsNullOrWhiteSpace(equipped.WeaponDescription)
+                        ? "—"
+                        : equipped.WeaponDescription;
+                    EditorGUILayout.TextField("Description", desc);
+                    string skillName = string.IsNullOrWhiteSpace(equipped.WeaponSkillName)
+                        ? "—"
+                        : equipped.WeaponSkillName;
+                    EditorGUILayout.TextField("Weapon Skill", skillName);
+                }
             }
         }
     }
