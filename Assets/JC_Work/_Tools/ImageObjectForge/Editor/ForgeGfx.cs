@@ -72,5 +72,94 @@ namespace Orora.ImageObjectForge
             GUI.DrawTexture(r, White);
             GUI.color = saved;
         }
+
+        // -------- 타일 체커보드 텍스처 (1회 생성) --------
+        static Texture2D _checkerTex;
+        const int CheckerCell = 16;
+        const int CheckerTile = CheckerCell * 8; // 128px
+
+        public static Texture2D CheckerboardTex
+        {
+            get
+            {
+                if (_checkerTex == null)
+                {
+                    _checkerTex = new Texture2D(CheckerTile, CheckerTile, TextureFormat.RGBA32, false)
+                    {
+                        filterMode = FilterMode.Point,
+                        wrapMode = TextureWrapMode.Repeat,
+                        hideFlags = HideFlags.HideAndDontSave
+                    };
+                    var c1 = new Color32(89, 89, 89, 255);
+                    var c2 = new Color32(64, 64, 64, 255);
+                    var px = new Color32[CheckerTile * CheckerTile];
+                    for (int y = 0; y < CheckerTile; y++)
+                    {
+                        int cy = y / CheckerCell;
+                        for (int x = 0; x < CheckerTile; x++)
+                        {
+                            int cx = x / CheckerCell;
+                            px[y * CheckerTile + x] = ((cx + cy) & 1) == 0 ? c1 : c2;
+                        }
+                    }
+                    _checkerTex.SetPixels32(px);
+                    _checkerTex.Apply(false, true);
+                }
+                return _checkerTex;
+            }
+        }
+
+        public static void DrawCheckerboard(Rect rect)
+        {
+            float tilesX = rect.width / CheckerTile;
+            float tilesY = rect.height / CheckerTile;
+            GUI.DrawTextureWithTexCoords(rect, CheckerboardTex, new Rect(0, 0, tilesX, tilesY));
+        }
+
+        // -------- 링 커서 텍스처 (1회 생성) --------
+        static Texture2D _ringTex;
+        const int RingSize = 128;
+
+        public static Texture2D RingTex
+        {
+            get
+            {
+                if (_ringTex == null)
+                {
+                    _ringTex = new Texture2D(RingSize, RingSize, TextureFormat.RGBA32, false)
+                    {
+                        filterMode = FilterMode.Bilinear,
+                        wrapMode = TextureWrapMode.Clamp,
+                        hideFlags = HideFlags.HideAndDontSave
+                    };
+                    float half = RingSize * 0.5f;
+                    float outer = half - 1f;
+                    var px = new Color32[RingSize * RingSize];
+                    for (int y = 0; y < RingSize; y++)
+                    {
+                        for (int x = 0; x < RingSize; x++)
+                        {
+                            float dx = x - half + 0.5f, dy = y - half + 0.5f;
+                            float d = Mathf.Sqrt(dx * dx + dy * dy);
+                            float ring = Mathf.Clamp01(1f - Mathf.Abs(d - outer) / 1.5f);
+                            px[y * RingSize + x] = new Color32(255, 255, 255, (byte)(ring * 255));
+                        }
+                    }
+                    _ringTex.SetPixels32(px);
+                    _ringTex.Apply(false, true);
+                }
+                return _ringTex;
+            }
+        }
+
+        public static void DrawRing(Vector2 center, float radius, Color color)
+        {
+            if (radius < 0.5f) return;
+            float size = radius * 2f + 4f;
+            var saved = GUI.color;
+            GUI.color = color;
+            GUI.DrawTexture(new Rect(center.x - size * 0.5f, center.y - size * 0.5f, size, size), RingTex, ScaleMode.StretchToFill, true);
+            GUI.color = saved;
+        }
     }
 }

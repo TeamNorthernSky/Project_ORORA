@@ -142,9 +142,101 @@ namespace Orora.ImageObjectForge
                 byte[] bytes = tex.EncodeToPNG();
                 File.WriteAllBytes(abs, bytes);
                 AssetDatabase.ImportAsset(assetPath);
+                ApplySpriteImportSettings(assetPath);
             }
             catch (System.Exception ex) { errorMsg = ex.Message; return null; }
             return assetPath;
+        }
+
+        // 저장된 PNG를 UI/Sprite 용도 기본값으로 임포트 설정
+        public static void ApplySpriteImportSettings(string assetPath,
+            float pixelsPerUnit = 100f,
+            SpriteAlignment alignment = SpriteAlignment.Center,
+            Vector2? customPivot = null,
+            FilterMode filterMode = FilterMode.Bilinear,
+            TextureImporterCompression compression = TextureImporterCompression.Uncompressed,
+            bool generateMipMaps = false,
+            int maxSize = 2048)
+        {
+            var importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            if (importer == null) return;
+
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.mipmapEnabled = generateMipMaps;
+            importer.filterMode = filterMode;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.maxTextureSize = maxSize;
+            importer.textureCompression = compression;
+            importer.alphaIsTransparency = true;
+
+            var settings = new TextureImporterSettings();
+            importer.ReadTextureSettings(settings);
+            settings.spriteAlignment = (int)alignment;
+            if (customPivot.HasValue) settings.spritePivot = customPivot.Value;
+            settings.spritePixelsPerUnit = pixelsPerUnit;
+            settings.spriteMeshType = SpriteMeshType.Tight;
+            settings.spriteExtrude = 1;
+            settings.spriteGenerateFallbackPhysicsShape = false;
+            importer.SetTextureSettings(settings);
+
+            importer.SaveAndReimport();
+        }
+
+        // Output/ 폴더 스캔하여 Sprite 일괄 변환. (processed, skipped) 반환.
+        public static (int processed, int skipped) BatchApplyOutputSprites(bool forceReapply,
+            float pixelsPerUnit = 100f,
+            SpriteAlignment alignment = SpriteAlignment.Center,
+            Vector2? customPivot = null,
+            FilterMode filterMode = FilterMode.Bilinear,
+            TextureImporterCompression compression = TextureImporterCompression.Uncompressed,
+            bool generateMipMaps = false,
+            int maxSize = 2048)
+        {
+            EnsureDir(OutputDir);
+            var guids = AssetDatabase.FindAssets("t:Texture2D", new[] { OutputDir });
+            int processed = 0, skipped = 0;
+            try
+            {
+                for (int i = 0; i < guids.Length; i++)
+                {
+                    var path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                    if (EditorUtility.DisplayCancelableProgressBar("Batch Convert Sprites", path, (float)i / Mathf.Max(1, guids.Length)))
+                        break;
+                    var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                    if (importer == null) { skipped++; continue; }
+                    if (!forceReapply && importer.textureType == TextureImporterType.Sprite
+                        && importer.spriteImportMode == SpriteImportMode.Single)
+                    {
+                        skipped++;
+                        continue;
+                    }
+                    ApplySpriteImportSettings(path, pixelsPerUnit, alignment, customPivot, filterMode, compression, generateMipMaps, maxSize);
+                    processed++;
+                }
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+                AssetDatabase.Refresh();
+            }
+            return (processed, skipped);
+        }
+
+        // Output/ 내 Sprite 목록 로드 (이름 오름차순).
+        public static System.Collections.Generic.List<Sprite> EnumerateOutputSprites()
+        {
+            EnsureDir(OutputDir);
+            var list = new System.Collections.Generic.List<Sprite>();
+            var guids = AssetDatabase.FindAssets("t:Sprite", new[] { OutputDir });
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var s = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                if (s != null) list.Add(s);
+            }
+            list.Sort((a, b) => string.Compare(a.name, b.name, System.StringComparison.OrdinalIgnoreCase));
+            return list;
         }
 
         public static string NextAvailableOutputName(string stem)

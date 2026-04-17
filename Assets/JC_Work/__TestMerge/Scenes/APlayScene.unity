@@ -159,7 +159,7 @@ MonoBehaviour:
   obstacleRoot: {fileID: 2052170207}
   itemRoot: {fileID: 1617366704}
   mineRoot: {fileID: 869591012}
-  loadOnStart: 1
+  loadOnStart: 0
   clearExistingBeforeLoad: 1
 --- !u!114 &47390708
 MonoBehaviour:

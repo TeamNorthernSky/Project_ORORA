@@ -28,9 +28,16 @@ namespace Orora.ImageObjectForge
         BrushMode _brushMode = BrushMode.Paint;
         float _brushRadius = 12f;
 
-        // Pen 상태
-        readonly List<Vector2> _penPts = new List<Vector2>();
+        // Pen 상태 (베지어)
+        readonly List<PenVertex> _penVerts = new List<PenVertex>();
         const float PenCloseDistScreen = 10f;
+        const float PenHandleHitDist = 8f;
+        bool _penDraggingHandle;       // 핸들 또는 새 버텍스 드래그 중
+        int _penDragVertIdx = -1;      // 드래그 대상 버텍스 인덱스
+        bool _penDragIsOut;            // true=HandleOut, false=HandleIn
+        bool _penDragIndependent;      // Alt 홀드 시 독립 핸들
+        bool _penPlacingNew;           // 새 버텍스 배치 + 핸들 드래그 중
+        bool _penClosingDrag;          // 닫기 클릭 후 첫 버텍스 핸들 드래그 중 (MouseUp 시 commit)
 
         // 브러시 스트로크
         bool _strokeActive;
@@ -96,9 +103,9 @@ namespace Orora.ImageObjectForge
             GUILayout.BeginArea(rect);
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
-                if (GUILayout.Button("Load…", EditorStyles.toolbarButton, GUILayout.Width(70))) DoLoad();
+                if (GUILayout.Button("Load…", EditorStyles.toolbarButton, GUILayout.Width(70))) EditorApplication.delayCall += DoLoad;
                 GUI.enabled = _doc.HasImage;
-                if (GUILayout.Button("Save…", EditorStyles.toolbarButton, GUILayout.Width(70))) DoSave();
+                if (GUILayout.Button("Save…", EditorStyles.toolbarButton, GUILayout.Width(70))) EditorApplication.delayCall += DoSave;
                 GUI.enabled = true;
                 GUILayout.Space(12);
                 GUI.enabled = _undo.CanUndo;
@@ -111,6 +118,8 @@ namespace Orora.ImageObjectForge
                 if (GUILayout.Button("Fit", EditorStyles.toolbarButton, GUILayout.Width(50))) _vp.Fit(CanvasRectCached(), _doc.Width, _doc.Height);
                 if (GUILayout.Button("Clear Mask", EditorStyles.toolbarButton, GUILayout.Width(90))) DoClearMask();
                 GUI.enabled = true;
+                GUILayout.Space(12);
+                if (GUILayout.Button("Create Prefab…", EditorStyles.toolbarButton, GUILayout.Width(110))) ImageObjectForgePrefabWindow.Open();
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(_doc.HasImage ? $"{_doc.Width} × {_doc.Height}" : "(no image)", EditorStyles.miniLabel);
             }
@@ -149,15 +158,19 @@ namespace Orora.ImageObjectForge
             }
             else
             {
-                EditorGUILayout.LabelField("Pen", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField($"Vertices: {_penPts.Count}");
-                GUI.enabled = _penPts.Count >= 3;
+                EditorGUILayout.LabelField("Pen (Bezier)", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"Vertices: {_penVerts.Count}");
+                GUI.enabled = _penVerts.Count >= 3;
                 if (GUILayout.Button("Add (Enter)", GUILayout.Height(24))) CommitPen(true);
                 if (GUILayout.Button("Subtract (Shift+Enter)", GUILayout.Height(24))) CommitPen(false);
-                GUI.enabled = _penPts.Count > 0;
-                if (GUILayout.Button("Cancel (Esc)", GUILayout.Height(20))) _penPts.Clear();
+                GUI.enabled = _penVerts.Count > 0;
+                if (GUILayout.Button("Cancel (Esc)", GUILayout.Height(20))) ClearPen();
                 GUI.enabled = true;
-                EditorGUILayout.LabelField("좌클릭: 버텍스 추가", EditorStyles.miniLabel);
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("클릭: 코너 포인트", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("클릭+드래그: 스무스 (핸들 생성)", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("Alt+드래그: 핸들 독립 조작", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("Alt+클릭 앵커: 코너로 변환", EditorStyles.miniLabel);
                 EditorGUILayout.LabelField("시작점 근처 클릭 = 닫고 Add", EditorStyles.miniLabel);
                 EditorGUILayout.LabelField("Backspace: 직전 버텍스 제거", EditorStyles.miniLabel);
             }
@@ -203,8 +216,8 @@ namespace Orora.ImageObjectForge
             GUI.BeginClip(canvasRect);
             var localImgRect = new Rect(imgRect.x - canvasRect.x, imgRect.y - canvasRect.y, imgRect.width, imgRect.height);
 
-            // 체커보드 배경
-            DrawCheckerboard(localImgRect);
+            // 체커보드 배경 (타일 텍스처 1회 draw)
+            ForgeGfx.DrawCheckerboard(localImgRect);
 
             GUI.DrawTexture(localImgRect, _doc.Source, ScaleMode.StretchToFill, true);
             GUI.DrawTexture(localImgRect, _doc.MaskOverlay, ScaleMode.StretchToFill, true);
@@ -213,7 +226,7 @@ namespace Orora.ImageObjectForge
             ForgeGfx.DrawRectOutline(localImgRect, new Color(1f, 1f, 1f, 0.25f), 1f);
 
             // Pen 미리보기 (local 좌표 기준)
-            if (_tool == ToolMode.Pen && _penPts.Count > 0)
+            if (_tool == ToolMode.Pen && _penVerts.Count > 0)
             {
                 DrawPenPreviewClipped(canvasRect);
             }
@@ -226,7 +239,7 @@ namespace Orora.ImageObjectForge
                 Color c = _brushMode == BrushMode.Paint
                     ? new Color(1f, 0.6f, 0.3f, 0.9f)
                     : new Color(0.4f, 0.7f, 1f, 0.9f);
-                ForgeGfx.DrawCircle(local, _brushRadius * _vp.Zoom, c, 1.5f, 36);
+                ForgeGfx.DrawRing(local, _brushRadius * _vp.Zoom, c);
             }
 
             GUI.EndClip();
@@ -234,41 +247,93 @@ namespace Orora.ImageObjectForge
             HandleCanvasEvents(canvasRect);
         }
 
+        Vector2 ImgToLocal(Rect canvasRect, Vector2 imgPt)
+        {
+            return _vp.ImageToScreen(canvasRect, imgPt, _doc.Height) - canvasRect.position;
+        }
+
         void DrawPenPreviewClipped(Rect canvasRect)
         {
             var col = new Color(1f, 0.7f, 0.2f, 1f);
             var colDim = new Color(1f, 0.7f, 0.2f, 0.5f);
+            var colHandle = new Color(0.5f, 0.8f, 1f, 0.9f);
+            var colFirst = new Color(0.4f, 1f, 0.4f, 1f);
 
-            for (int i = 0; i < _penPts.Count - 1; i++)
+            // 확정된 세그먼트 곡선 그리기
+            if (_penVerts.Count >= 2)
             {
-                var a = _vp.ImageToScreen(canvasRect, _penPts[i], _doc.Height);
-                var b = _vp.ImageToScreen(canvasRect, _penPts[i + 1], _doc.Height);
-                ForgeGfx.DrawLine(a - canvasRect.position, b - canvasRect.position, col, 2f);
+                var flat = ForgeBezier.FlattenOpenPath(_penVerts, 1f / _vp.Zoom);
+                for (int i = 0; i < flat.Count - 1; i++)
+                    ForgeGfx.DrawLine(ImgToLocal(canvasRect, flat[i]), ImgToLocal(canvasRect, flat[i + 1]), col, 2f);
             }
 
-            if (_cursorInside && _penPts.Count >= 1)
+            // 닫기 드래그 중이면 닫는 세그먼트 (마지막 → 첫) 도 그리기
+            if (_penClosingDrag && _penVerts.Count >= 2)
             {
-                var last = _vp.ImageToScreen(canvasRect, _penPts[_penPts.Count - 1], _doc.Height);
-                var cur = _vp.ImageToScreen(canvasRect, _cursorImg, _doc.Height);
-                ForgeGfx.DrawLine(last - canvasRect.position, cur - canvasRect.position, colDim, 1.5f);
+                var last = _penVerts[_penVerts.Count - 1];
+                var first = _penVerts[0];
+                Vector2 cp1 = last.IsCorner ? last.Anchor : last.HandleOut;
+                Vector2 cp2 = first.IsCorner ? first.Anchor : first.HandleIn;
+                var seg = new System.Collections.Generic.List<Vector2> { last.Anchor };
+                ForgeBezier.FlattenSegment(last.Anchor, cp1, cp2, first.Anchor, seg, 1f / _vp.Zoom);
+                for (int i = 0; i < seg.Count - 1; i++)
+                    ForgeGfx.DrawLine(ImgToLocal(canvasRect, seg[i]), ImgToLocal(canvasRect, seg[i + 1]), colFirst, 2f);
+            }
 
-                // 닫기 가능 상태면 시작점까지 점선 대신 dim 라인
-                if (_penPts.Count >= 3)
+            // 커서까지의 임시 세그먼트 프리뷰
+            if (_cursorInside && _penVerts.Count >= 1 && !_penDraggingHandle)
+            {
+                var last = _penVerts[_penVerts.Count - 1];
+                var cursorLocal = ImgToLocal(canvasRect, _cursorImg);
+                // 마지막 버텍스의 handleOut → 커서까지 직선 or 곡선
+                if (last.HasHandleOut)
                 {
-                    var first = _vp.ImageToScreen(canvasRect, _penPts[0], _doc.Height);
-                    bool canClose = Vector2.Distance(first, cur) <= PenCloseDistScreen;
-                    var closeCol = canClose ? new Color(0.4f, 1f, 0.4f, 1f) : colDim;
-                    ForgeGfx.DrawLine(cur - canvasRect.position, first - canvasRect.position, closeCol, canClose ? 2f : 1f);
+                    var tempPts = new List<Vector2>();
+                    tempPts.Add(last.Anchor);
+                    ForgeBezier.FlattenSegment(last.Anchor, last.HandleOut, _cursorImg, _cursorImg, tempPts, 1f / _vp.Zoom);
+                    for (int i = 0; i < tempPts.Count - 1; i++)
+                        ForgeGfx.DrawLine(ImgToLocal(canvasRect, tempPts[i]), ImgToLocal(canvasRect, tempPts[i + 1]), colDim, 1.5f);
+                }
+                else
+                {
+                    ForgeGfx.DrawLine(ImgToLocal(canvasRect, last.Anchor), cursorLocal, colDim, 1.5f);
+                }
+
+                // 닫기 가능 프리뷰
+                if (_penVerts.Count >= 3)
+                {
+                    var firstScr = ImgToLocal(canvasRect, _penVerts[0].Anchor);
+                    bool canClose = Vector2.Distance(firstScr, cursorLocal) <= PenCloseDistScreen;
+                    var closeCol = canClose ? colFirst : colDim;
+                    ForgeGfx.DrawLine(cursorLocal, firstScr, closeCol, canClose ? 2f : 1f);
                 }
             }
 
-            for (int i = 0; i < _penPts.Count; i++)
+            // 앵커 + 핸들 그리기
+            for (int i = 0; i < _penVerts.Count; i++)
             {
-                var sp = _vp.ImageToScreen(canvasRect, _penPts[i], _doc.Height);
-                var local = sp - canvasRect.position;
+                var v = _penVerts[i];
+                var aLocal = ImgToLocal(canvasRect, v.Anchor);
+
+                // 핸들 선 + 점
+                if (v.HasHandleIn)
+                {
+                    var hIn = ImgToLocal(canvasRect, v.HandleIn);
+                    ForgeGfx.DrawLine(aLocal, hIn, colHandle, 1f);
+                    ForgeGfx.FilledRect(new Rect(hIn.x - 3, hIn.y - 3, 6, 6), colHandle);
+                }
+                if (v.HasHandleOut)
+                {
+                    var hOut = ImgToLocal(canvasRect, v.HandleOut);
+                    ForgeGfx.DrawLine(aLocal, hOut, colHandle, 1f);
+                    ForgeGfx.FilledRect(new Rect(hOut.x - 3, hOut.y - 3, 6, 6), colHandle);
+                }
+
+                // 앵커 점 (사각)
                 bool isFirst = (i == 0);
-                var dotCol = isFirst ? new Color(0.4f, 1f, 0.4f, 1f) : col;
-                ForgeGfx.FilledRect(new Rect(local.x - 3, local.y - 3, 6, 6), dotCol);
+                var dotCol = isFirst ? colFirst : col;
+                float dotSize = isFirst ? 8f : 6f;
+                ForgeGfx.FilledRect(new Rect(aLocal.x - dotSize * 0.5f, aLocal.y - dotSize * 0.5f, dotSize, dotSize), dotCol);
             }
         }
 
@@ -366,35 +431,10 @@ namespace Orora.ImageObjectForge
                 }
             }
 
-            // 펜툴
-            if (_tool == ToolMode.Pen && over && !_spaceDown)
+            // 펜툴 (베지어)
+            if (_tool == ToolMode.Pen && !_spaceDown)
             {
-                if (e.type == EventType.MouseDown && e.button == 0)
-                {
-                    var imgPt = _vp.ScreenToImage(canvasRect, e.mousePosition, _doc.Height);
-
-                    // 시작점 근처 클릭 → 닫고 Add
-                    if (_penPts.Count >= 3)
-                    {
-                        var first = _vp.ImageToScreen(canvasRect, _penPts[0], _doc.Height);
-                        if (Vector2.Distance(first, e.mousePosition) <= PenCloseDistScreen)
-                        {
-                            CommitPen(true);
-                            e.Use();
-                            Repaint();
-                            return;
-                        }
-                    }
-
-                    _penPts.Add(imgPt);
-                    e.Use();
-                    Repaint();
-                    return;
-                }
-                if (e.type == EventType.MouseMove)
-                {
-                    Repaint();
-                }
+                HandlePenEvents(canvasRect, e, over);
             }
         }
 
@@ -415,18 +455,195 @@ namespace Orora.ImageObjectForge
             }
         }
 
+        // -------- Pen 이벤트 (베지어) --------
+        void HandlePenEvents(Rect canvasRect, Event e, bool over)
+        {
+            // 드래그 진행 중 (핸들 조정 또는 새 포인트 핸들 드래그)
+            if (_penDraggingHandle)
+            {
+                if (e.type == EventType.MouseDrag && e.button == 0)
+                {
+                    var imgPt = _vp.ScreenToImage(canvasRect, e.mousePosition, _doc.Height);
+                    var v = _penVerts[_penDragVertIdx];
+                    if (_penDragIndependent || e.alt)
+                    {
+                        // 독립 핸들 조작
+                        if (_penDragIsOut) v.HandleOut = imgPt;
+                        else v.HandleIn = imgPt;
+                        v.IsCorner = false;
+                    }
+                    else
+                    {
+                        // 대칭 핸들
+                        if (_penDragIsOut) v.SetHandleOutSymmetric(imgPt);
+                        else v.SetHandleInSymmetric(imgPt);
+                        v.IsCorner = false;
+                    }
+                    _penVerts[_penDragVertIdx] = v;
+                    e.Use();
+                    Repaint();
+                    return;
+                }
+                if (e.type == EventType.MouseUp && e.button == 0)
+                {
+                    bool wasClosing = _penClosingDrag;
+                    _penDraggingHandle = false;
+                    _penPlacingNew = false;
+                    _penClosingDrag = false;
+                    e.Use();
+                    if (wasClosing) CommitPen(true);
+                    else Repaint();
+                    return;
+                }
+                return;
+            }
+
+            if (!over) return;
+
+            if (e.type == EventType.MouseDown && e.button == 0)
+            {
+                var imgPt = _vp.ScreenToImage(canvasRect, e.mousePosition, _doc.Height);
+
+                // Alt+클릭 기존 앵커 → 코너 변환
+                if (e.alt)
+                {
+                    int hitIdx = HitTestAnchor(canvasRect, e.mousePosition);
+                    if (hitIdx >= 0)
+                    {
+                        var v = _penVerts[hitIdx];
+                        v.MakeCorner();
+                        _penVerts[hitIdx] = v;
+                        e.Use();
+                        Repaint();
+                        return;
+                    }
+                    // Alt+클릭 기존 핸들 → 독립 드래그 시작
+                    if (HitTestHandle(canvasRect, e.mousePosition, out int hIdx, out bool isOut))
+                    {
+                        _penDraggingHandle = true;
+                        _penDragVertIdx = hIdx;
+                        _penDragIsOut = isOut;
+                        _penDragIndependent = true;
+                        e.Use();
+                        return;
+                    }
+                }
+
+                // Ctrl+클릭 기존 핸들 → 해당 핸들만 제거 (앵커로 수축)
+                if (e.control)
+                {
+                    if (HitTestHandle(canvasRect, e.mousePosition, out int cIdx, out bool cIsOut))
+                    {
+                        var v = _penVerts[cIdx];
+                        if (cIsOut) v.HandleOut = v.Anchor;
+                        else v.HandleIn = v.Anchor;
+                        if (!v.HasHandleIn && !v.HasHandleOut) v.IsCorner = true;
+                        _penVerts[cIdx] = v;
+                        e.Use();
+                        Repaint();
+                        return;
+                    }
+                }
+
+                // 시작점 근처 클릭 → 첫 버텍스 핸들 드래그 모드 진입 (MouseUp에서 닫고 commit)
+                if (_penVerts.Count >= 3 && !e.alt && !e.control)
+                {
+                    var first = _vp.ImageToScreen(canvasRect, _penVerts[0].Anchor, _doc.Height);
+                    if (Vector2.Distance(first, e.mousePosition) <= PenCloseDistScreen)
+                    {
+                        _penDraggingHandle = true;
+                        _penDragVertIdx = 0;
+                        _penDragIsOut = true;
+                        _penDragIndependent = false;
+                        _penClosingDrag = true;
+                        e.Use();
+                        Repaint();
+                        return;
+                    }
+                }
+
+                // 기존 핸들 히트 → 대칭 드래그
+                if (HitTestHandle(canvasRect, e.mousePosition, out int handleIdx, out bool handleIsOut))
+                {
+                    _penDraggingHandle = true;
+                    _penDragVertIdx = handleIdx;
+                    _penDragIsOut = handleIsOut;
+                    _penDragIndependent = false;
+                    e.Use();
+                    return;
+                }
+
+                // 새 버텍스 배치 (코너로 시작, 드래그하면 스무스로 전환)
+                _penVerts.Add(PenVertex.Corner(imgPt));
+                _penDraggingHandle = true;
+                _penDragVertIdx = _penVerts.Count - 1;
+                _penDragIsOut = true;
+                _penDragIndependent = false;
+                _penPlacingNew = true;
+                e.Use();
+                Repaint();
+                return;
+            }
+
+            if (e.type == EventType.MouseMove)
+            {
+                Repaint();
+            }
+        }
+
+        int HitTestAnchor(Rect canvasRect, Vector2 screenPos)
+        {
+            for (int i = 0; i < _penVerts.Count; i++)
+            {
+                var sp = _vp.ImageToScreen(canvasRect, _penVerts[i].Anchor, _doc.Height);
+                if (Vector2.Distance(sp, screenPos) <= PenHandleHitDist) return i;
+            }
+            return -1;
+        }
+
+        bool HitTestHandle(Rect canvasRect, Vector2 screenPos, out int vertIdx, out bool isOut)
+        {
+            vertIdx = -1; isOut = false;
+            for (int i = 0; i < _penVerts.Count; i++)
+            {
+                var v = _penVerts[i];
+                if (v.HasHandleOut)
+                {
+                    var sp = _vp.ImageToScreen(canvasRect, v.HandleOut, _doc.Height);
+                    if (Vector2.Distance(sp, screenPos) <= PenHandleHitDist) { vertIdx = i; isOut = true; return true; }
+                }
+                if (v.HasHandleIn)
+                {
+                    var sp = _vp.ImageToScreen(canvasRect, v.HandleIn, _doc.Height);
+                    if (Vector2.Distance(sp, screenPos) <= PenHandleHitDist) { vertIdx = i; isOut = false; return true; }
+                }
+            }
+            return false;
+        }
+
+        void ClearPen()
+        {
+            _penVerts.Clear();
+            _penDraggingHandle = false;
+            _penPlacingNew = false;
+            _penClosingDrag = false;
+        }
+
         void CommitPen(bool add)
         {
-            if (_penPts.Count < 3) return;
+            if (_penVerts.Count < 3) return;
+            // 베지어 경로를 폴리곤 점 목록으로 평탄화
+            var flatPts = ForgeBezier.FlattenPath(_penVerts, 0.5f);
+            if (flatPts.Count < 3) { ClearPen(); return; }
             var pre = (byte[])_doc.Mask.Clone();
-            var dirty = ForgePolygon.FillToMask(_doc.Mask, _doc.Width, _doc.Height, _penPts, add);
+            var dirty = ForgePolygon.FillToMask(_doc.Mask, _doc.Width, _doc.Height, flatPts, add);
             if (dirty.width > 0 && dirty.height > 0)
             {
                 _undo.PushHinted(pre, _doc.Mask, _doc.Width, dirty);
                 _doc.RebuildOverlayRect(dirty);
             }
-            _penPts.Clear();
-            SetStatus(add ? "폴리곤 Add 완료" : "폴리곤 Subtract 완료");
+            ClearPen();
+            SetStatus(add ? "베지어 Add 완료" : "베지어 Subtract 완료");
             Repaint();
         }
 
@@ -463,8 +680,8 @@ namespace Orora.ImageObjectForge
             {
                 if (e.keyCode == KeyCode.Z) { DoUndo(); e.Use(); Repaint(); return; }
                 if (e.keyCode == KeyCode.Y) { DoRedo(); e.Use(); Repaint(); return; }
-                if (e.keyCode == KeyCode.O) { DoLoad(); e.Use(); return; }
-                if (e.keyCode == KeyCode.S) { DoSave(); e.Use(); return; }
+                if (e.keyCode == KeyCode.O) { EditorApplication.delayCall += DoLoad; e.Use(); return; }
+                if (e.keyCode == KeyCode.S) { EditorApplication.delayCall += DoSave; e.Use(); return; }
             }
 
             if (e.keyCode == KeyCode.B) { _tool = ToolMode.Brush; e.Use(); Repaint(); return; }
@@ -483,10 +700,10 @@ namespace Orora.ImageObjectForge
 
             if (_tool == ToolMode.Pen)
             {
-                if (e.keyCode == KeyCode.Escape) { _penPts.Clear(); e.Use(); Repaint(); return; }
-                if (e.keyCode == KeyCode.Backspace && _penPts.Count > 0)
-                { _penPts.RemoveAt(_penPts.Count - 1); e.Use(); Repaint(); return; }
-                if ((e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) && _penPts.Count >= 3)
+                if (e.keyCode == KeyCode.Escape) { ClearPen(); e.Use(); Repaint(); return; }
+                if (e.keyCode == KeyCode.Backspace && _penVerts.Count > 0)
+                { _penVerts.RemoveAt(_penVerts.Count - 1); e.Use(); Repaint(); return; }
+                if ((e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) && _penVerts.Count >= 3)
                 {
                     CommitPen(!e.shift);
                     e.Use(); Repaint(); return;
@@ -501,7 +718,7 @@ namespace Orora.ImageObjectForge
             {
                 _doc.SetSource(tex, assetPath);
                 _undo.Clear();
-                _penPts.Clear();
+                ClearPen();
                 _vp.Fit(_cachedCanvasRect.width > 0 ? _cachedCanvasRect : new Rect(0, 0, position.width - SidebarWidth, position.height - ToolbarHeight - StatusHeight),
                         _doc.Width, _doc.Height);
                 SetStatus($"로드 완료: {assetPath}");
@@ -559,7 +776,6 @@ namespace Orora.ImageObjectForge
         void DoClearMask()
         {
             if (!_doc.HasImage) return;
-            if (!EditorUtility.DisplayDialog("Clear Mask", "현재 마스크를 모두 지울까요? Undo로 복구할 수 있습니다.", "Clear", "Cancel")) return;
             var pre = (byte[])_doc.Mask.Clone();
             System.Array.Clear(_doc.Mask, 0, _doc.Mask.Length);
             _undo.Push(pre, _doc.Mask, _doc.Width, _doc.Height);
@@ -573,24 +789,6 @@ namespace Orora.ImageObjectForge
             _statusExpireAt = EditorApplication.timeSinceStartup + 3.0;
         }
 
-        // -------- Checkerboard 배경 --------
-        static void DrawCheckerboard(Rect rect)
-        {
-            const int CellSize = 16;
-            int cols = Mathf.CeilToInt(rect.width / CellSize) + 1;
-            int rows = Mathf.CeilToInt(rect.height / CellSize) + 1;
-            var c1 = new Color(0.35f, 0.35f, 0.35f);
-            var c2 = new Color(0.25f, 0.25f, 0.25f);
-            GUI.BeginClip(rect);
-            for (int y = 0; y < rows; y++)
-            {
-                for (int x = 0; x < cols; x++)
-                {
-                    var col = ((x + y) & 1) == 0 ? c1 : c2;
-                    ForgeGfx.FilledRect(new Rect(x * CellSize, y * CellSize, CellSize, CellSize), col);
-                }
-            }
-            GUI.EndClip();
-        }
+        // Checkerboard — ForgeGfx.DrawCheckerboard로 이전됨 (타일 텍스처 1회 draw)
     }
 }
