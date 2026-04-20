@@ -14,8 +14,11 @@ public class CombatEncounterManager : MonoBehaviour
         if (party == null || enemy == null)
             return false;
 
+        PartyIdentity partyIdentity = party.GetComponent<PartyIdentity>();
+        string partyLabel = partyIdentity != null ? partyIdentity.PartyId : party.name;
+
         Debug.Log(
-            $"Combat encounter requested between party '{party.PartyId}' and enemy '{enemy.EnemyId}'. " +
+            $"Combat encounter requested between party '{partyLabel}' and enemy '{enemy.EnemyId}'. " +
             "Combat flow is not implemented yet.",
             this);
         CombatStarted?.Invoke(party, enemy);

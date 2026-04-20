@@ -82,13 +82,14 @@ public class ClickSelectionController : MonoBehaviour
     private void TryHandleClick()
     {
         PartyGridMover activeMover = partySelectionController != null ? partySelectionController.ActiveMover : null;
+        PartyRuntime activeRuntime = activeMover != null ? activeMover.GetComponent<PartyRuntime>() : null;
         if (mainCamera == null || gridManager == null || activeMover == null || pathfinder == null || marker == null)
             return;
 
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             return;
 
-        if (activeMover.IsMoving || activeMover.IsInputLocked)
+        if (activeMover.IsMoving || (activeRuntime != null && activeRuntime.IsInputLocked))
             return;
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -171,7 +172,8 @@ public class ClickSelectionController : MonoBehaviour
             return;
 
         PartyGridMover activeMover = partySelectionController != null ? partySelectionController.ActiveMover : null;
-        bool shouldLockUI = activeMover != null && (activeMover.IsMoving || activeMover.IsInputLocked);
+        PartyRuntime activeRuntime = activeMover != null ? activeMover.GetComponent<PartyRuntime>() : null;
+        bool shouldLockUI = activeMover != null && (activeMover.IsMoving || (activeRuntime != null && activeRuntime.IsInputLocked));
         uiInputBlocker.SetLocked(shouldLockUI);
     }
 }

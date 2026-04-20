@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using TMPro;
 
 public class TurnManager : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class TurnManager : MonoBehaviour
     [SerializeField] private PartyRegistry partyRegistry;
     [SerializeField] private ResourceManager resourceManager;
     [SerializeField] private EnemyTurnController enemyTurnController;
+    [SerializeField] private TMP_Text turnStateText;
 
     private bool enemyTurnRunning;
 
@@ -16,6 +18,8 @@ public class TurnManager : MonoBehaviour
     {
         if (enemyTurnController == null)
             enemyTurnController = FindFirstObjectByType<EnemyTurnController>();
+
+        UpdateTurnStateText("Player Turn");
     }
 
     public void EndPlayerTurn()
@@ -27,6 +31,8 @@ public class TurnManager : MonoBehaviour
     {
         if (enemyTurnRunning)
             return;
+
+        UpdateTurnStateText("Enemy Turn");
 
         if (enemyTurnController == null)
         {
@@ -46,6 +52,8 @@ public class TurnManager : MonoBehaviour
 
     private void StartPlayerTurn()
     {
+        UpdateTurnStateText("Player Turn");
+
         if (partyRegistry == null)
             return;
 
@@ -90,5 +98,13 @@ public class TurnManager : MonoBehaviour
         yield return enemyTurnController.ExecuteEnemyTurn();
         enemyTurnRunning = false;
         EndEnemyTurn();
+    }
+
+    private void UpdateTurnStateText(string nextText)
+    {
+        if (turnStateText == null)
+            return;
+
+        turnStateText.text = nextText;
     }
 }

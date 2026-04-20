@@ -15,6 +15,8 @@ public class LevelData : ScriptableObject
     [SerializeField] private Vector2Int gridSize = new Vector2Int(20, 20);
 
     [Header("Placement")]
+    [SerializeField] private List<TilePlacementData> groundTilePlacements = new List<TilePlacementData>();
+    [SerializeField] private List<TilePlacementData> obstacleTilePlacements = new List<TilePlacementData>();
     [SerializeField] private List<Vector2Int> obstacleCells = new List<Vector2Int>();
     [SerializeField] private List<ItemPlacementData> itemPlacements = new List<ItemPlacementData>();
     [SerializeField] private List<MinePlacementData> minePlacements = new List<MinePlacementData>();
@@ -25,6 +27,8 @@ public class LevelData : ScriptableObject
     public Vector2Int GridSize => gridSize;
     public Vector2Int GridMin => Vector2Int.zero;
     public Vector2Int GridMax => new Vector2Int(gridSize.x - 1, gridSize.y - 1);
+    public IReadOnlyList<TilePlacementData> GroundTilePlacements => groundTilePlacements;
+    public IReadOnlyList<TilePlacementData> ObstacleTilePlacements => obstacleTilePlacements;
     public IReadOnlyList<Vector2Int> ObstacleCells => obstacleCells;
     public IReadOnlyList<ItemPlacementData> ItemPlacements => itemPlacements;
     public IReadOnlyList<MinePlacementData> MinePlacements => minePlacements;
@@ -44,6 +48,16 @@ public class LevelData : ScriptableObject
     public bool HasObstacleAt(Vector2Int grid)
     {
         return obstacleCells.Contains(grid);
+    }
+
+    public bool HasGroundTileAt(Vector2Int grid)
+    {
+        return TryGetGroundTileAt(grid, out _);
+    }
+
+    public bool HasObstacleTileAt(Vector2Int grid)
+    {
+        return TryGetObstacleTileAt(grid, out _);
     }
 
     public bool HasItemAt(Vector2Int grid)
@@ -77,6 +91,62 @@ public class LevelData : ScriptableObject
         }
 
         return false;
+    }
+
+    public bool TryGetGroundTileAt(Vector2Int grid, out TilePlacementData tilePlacement)
+    {
+        for (int i = 0; i < groundTilePlacements.Count; i++)
+        {
+            if (groundTilePlacements[i].GridPosition != grid)
+                continue;
+
+            tilePlacement = groundTilePlacements[i];
+            return true;
+        }
+
+        tilePlacement = default;
+        return false;
+    }
+
+    public bool TryGetObstacleTileAt(Vector2Int grid, out TilePlacementData tilePlacement)
+    {
+        for (int i = 0; i < obstacleTilePlacements.Count; i++)
+        {
+            if (obstacleTilePlacements[i].GridPosition != grid)
+                continue;
+
+            tilePlacement = obstacleTilePlacements[i];
+            return true;
+        }
+
+        tilePlacement = default;
+        return false;
+    }
+
+    public void SetGroundTile(Vector2Int grid, string tileKey)
+    {
+        if (!IsInsideGrid(grid))
+            return;
+
+        SetTilePlacement(groundTilePlacements, grid, tileKey);
+    }
+
+    public void SetObstacleTile(Vector2Int grid, string tileKey)
+    {
+        if (!IsInsideGrid(grid))
+            return;
+
+        SetTilePlacement(obstacleTilePlacements, grid, tileKey);
+    }
+
+    public void EraseGroundTileAt(Vector2Int grid)
+    {
+        groundTilePlacements.RemoveAll(x => x.GridPosition == grid);
+    }
+
+    public void EraseObstacleTileAt(Vector2Int grid)
+    {
+        obstacleTilePlacements.RemoveAll(x => x.GridPosition == grid);
     }
 
     public void SetObstacle(Vector2Int grid)
@@ -122,6 +192,8 @@ public class LevelData : ScriptableObject
 
     public void EraseAt(Vector2Int grid)
     {
+        groundTilePlacements.RemoveAll(x => x.GridPosition == grid);
+        obstacleTilePlacements.RemoveAll(x => x.GridPosition == grid);
         obstacleCells.Remove(grid);
         itemPlacements.RemoveAll(x => x.GridPosition == grid);
         minePlacements.RemoveAll(x => x.GridPosition == grid);
@@ -143,6 +215,16 @@ public class LevelData : ScriptableObject
         partySpawns.RemoveAll(x => x.GridPosition == grid);
     }
 
+    private static void SetTilePlacement(List<TilePlacementData> placements, Vector2Int grid, string tileKey)
+    {
+        placements.RemoveAll(x => x.GridPosition == grid);
+
+        if (string.IsNullOrWhiteSpace(tileKey))
+            return;
+
+        placements.Add(new TilePlacementData(grid, tileKey));
+    }
+
     private void OnValidate()
     {
         gridSize = NormalizeGridSize(gridSize);
@@ -154,6 +236,22 @@ public class LevelData : ScriptableObject
             Mathf.Max(1, value.x),
             Mathf.Max(1, value.y));
     }
+}
+
+[Serializable]
+public struct TilePlacementData
+{
+    [SerializeField] private Vector2Int gridPosition;
+    [SerializeField] private string tileKey;
+
+    public TilePlacementData(Vector2Int gridPosition, string tileKey)
+    {
+        this.gridPosition = gridPosition;
+        this.tileKey = tileKey;
+    }
+
+    public Vector2Int GridPosition => gridPosition;
+    public string TileKey => tileKey;
 }
 
 [Serializable]

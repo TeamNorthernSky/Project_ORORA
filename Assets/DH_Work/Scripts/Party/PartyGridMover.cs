@@ -1,21 +1,21 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
+[RequireComponent(typeof(PartyIdentity))]
+[RequireComponent(typeof(PartyComposition))]
 public class PartyGridMover : MonoBehaviour
 {
-    [Header("Identity")]
-    [SerializeField] private string partyId = "party_001";
-
     [Header("References")]
     [SerializeField] private GridManager gridManager;
-    [SerializeField] private ResourceManager resourceManager;
-    [SerializeField] private CombatEncounterManager combatEncounterManager;
+
+    [FormerlySerializedAs("partyId")]
+    [SerializeField, HideInInspector] private string legacyPartyId = "party_001";
 
     [Header("Move Settings")]
     [SerializeField] private float moveSpeed = 4f;
     [SerializeField] private float arriveThreshold = 0.01f;
-    [SerializeField] private float itemPickupDelay = 0.5f;
     [SerializeField] private int maxMovePoints = 10;
 
     private readonly Queue<Vector2Int> pathQueue = new Queue<Vector2Int>();
@@ -23,40 +23,22 @@ public class PartyGridMover : MonoBehaviour
     private Vector2Int currentGrid;
     private float fixedY;
     private PartyMovePointController movePointController;
-    private PartyInteractionController interactionController;
 
     public event Action<List<Vector2Int>> PathUpdated;
-    public event Action<Vector2Int> AdjacentItemCellEntered;
-    public event Action<CastleUnit> AdjacentCastleDetected;
     public event Action<Vector2Int> GridEntered;
     public event Action MoveCompleted;
 
     private void Awake()
     {
+        SyncLegacyIdentity();
         fixedY = transform.position.y;
         currentGrid = gridManager != null ? gridManager.WorldToGrid(transform.position) : Vector2Int.zero;
         movePointController = new PartyMovePointController(maxMovePoints);
-        interactionController = new PartyInteractionController(
-            gridManager,
-            resourceManager,
-            combatEncounterManager,
-            this,
-            itemPickupDelay,
-            this,
-            GetCurrentGrid);
-
-        interactionController.AdjacentItemCellEntered += HandleAdjacentItemCellEntered;
-        interactionController.AdjacentCastleDetected += HandleAdjacentCastleDetected;
     }
 
-    private void OnDestroy()
+    private void OnValidate()
     {
-        if (interactionController == null)
-            return;
-
-        interactionController.AdjacentItemCellEntered -= HandleAdjacentItemCellEntered;
-        interactionController.AdjacentCastleDetected -= HandleAdjacentCastleDetected;
-        interactionController.Dispose();
+        SyncLegacyIdentity();
     }
 
     private void Update()
@@ -78,7 +60,6 @@ public class PartyGridMover : MonoBehaviour
             bool reachedPathEnd = pathQueue.Count == 0;
 
             GridEntered?.Invoke(currentGrid);
-            interactionController?.HandleGridEntered(currentGrid);
             NotifyPathUpdated();
 
             if (reachedPathEnd && pathQueue.Count == 0)
@@ -95,10 +76,8 @@ public class PartyGridMover : MonoBehaviour
     }
 
     public bool IsMoving => isMoving;
-    public bool IsInputLocked => interactionController != null && interactionController.IsInputLocked;
     public int RemainingMovePoints => movePointController != null ? movePointController.RemainingMovePoints : 0;
     public int MaxMovePoints => maxMovePoints;
-    public string PartyId => partyId;
 
     public bool CanSpendMovePoints(int amount)
     {
@@ -170,19 +149,18 @@ public class PartyGridMover : MonoBehaviour
         PathUpdated?.Invoke(remainingPath);
     }
 
-    private void HandleAdjacentItemCellEntered(Vector2Int itemGrid)
-    {
-        AdjacentItemCellEntered?.Invoke(itemGrid);
-    }
-
-    private void HandleAdjacentCastleDetected(CastleUnit castle)
-    {
-        AdjacentCastleDetected?.Invoke(castle);
-    }
-
     private static int GetPathMoveCost(List<Vector2Int> path)
     {
         return path == null ? 0 : Mathf.Max(0, path.Count - 1);
+    }
+
+    private void SyncLegacyIdentity()
+    {
+        PartyIdentity identity = GetComponent<PartyIdentity>();
+        if (identity == null || string.IsNullOrWhiteSpace(legacyPartyId))
+            return;
+
+        identity.SetPartyIdIfEmpty(legacyPartyId);
     }
 }
 

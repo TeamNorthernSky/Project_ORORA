@@ -21,7 +21,11 @@ public class PartyRegistry : MonoBehaviour
             if (candidate == null)
                 continue;
 
-            if (!string.Equals(candidate.PartyId, partyId, StringComparison.Ordinal))
+            PartyIdentity identity = candidate.GetComponent<PartyIdentity>();
+            if (identity == null)
+                continue;
+
+            if (!string.Equals(identity.PartyId, partyId, StringComparison.Ordinal))
                 continue;
 
             partyMover = candidate;
@@ -37,7 +41,11 @@ public class PartyRegistry : MonoBehaviour
         for (int i = 0; i < movers.Length; i++)
         {
             PartyGridMover current = movers[i];
-            if (current == null || string.IsNullOrWhiteSpace(current.PartyId))
+            if (current == null)
+                continue;
+
+            PartyIdentity currentIdentity = current.GetComponent<PartyIdentity>();
+            if (currentIdentity == null || string.IsNullOrWhiteSpace(currentIdentity.PartyId))
                 continue;
 
             for (int j = i + 1; j < movers.Length; j++)
@@ -46,11 +54,15 @@ public class PartyRegistry : MonoBehaviour
                 if (other == null)
                     continue;
 
-                if (!string.Equals(current.PartyId, other.PartyId, StringComparison.Ordinal))
+                PartyIdentity otherIdentity = other.GetComponent<PartyIdentity>();
+                if (otherIdentity == null)
+                    continue;
+
+                if (!string.Equals(currentIdentity.PartyId, otherIdentity.PartyId, StringComparison.Ordinal))
                     continue;
 
                 Debug.LogWarning(
-                    $"PartyRegistry has duplicate partyId '{current.PartyId}'. " +
+                    $"PartyRegistry has duplicate partyId '{currentIdentity.PartyId}'. " +
                     $"Only the first matching party will be used for level spawn mapping.",
                     this);
             }

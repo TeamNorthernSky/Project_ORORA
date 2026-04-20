@@ -14,6 +14,7 @@ public class LevelLoader : MonoBehaviour
     [SerializeField] private GridManager gridManager;
     [SerializeField] private PartyRegistry partyRegistry;
     [SerializeField] private LevelPrefabRegistry prefabRegistry;
+    [SerializeField] private LevelTilemapGenerator tilemapGenerator;
 
     [Header("Spawn Roots")]
     [SerializeField] private Transform obstacleRoot;
@@ -63,6 +64,7 @@ public class LevelLoader : MonoBehaviour
         if (clearExistingBeforeLoad)
             ClearSpawnedObjects();
 
+        GenerateTilemaps();
         SpawnObstacles();
         SpawnItems();
         SpawnMines();
@@ -196,9 +198,20 @@ public class LevelLoader : MonoBehaviour
 
     private void ClearSpawnedObjects()
     {
+        if (tilemapGenerator != null)
+            tilemapGenerator.ClearTilemaps();
+
         ClearChildren(obstacleRoot);
         ClearChildren(itemRoot);
         ClearChildren(mineRoot);
+    }
+
+    private void GenerateTilemaps()
+    {
+        if (tilemapGenerator == null)
+            return;
+
+        tilemapGenerator.Generate(levelData);
     }
 
     private void ClearChildren(Transform root)
