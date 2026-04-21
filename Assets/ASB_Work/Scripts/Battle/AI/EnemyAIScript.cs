@@ -15,6 +15,14 @@ namespace EnemyAI
                 return null;
             }
 
+            BattleCharactor tauntSource = self.GetTauntSource();
+            if (tauntSource != null
+                && !tauntSource.IsDead
+                && targets.Contains(tauntSource))
+            {
+                return BuildDecision(self, tauntSource);
+            }
+
             // 타겟: 생존 + 반대 진영 중 현재 HP가 가장 낮은 유닛
             BattleCharactor chosenTarget = null;
             for (int i = 0; i < targets.Count; i++)
@@ -41,10 +49,11 @@ namespace EnemyAI
                 return null;
             }
 
-            // 행동 우선순위:
-            // 1) 클래스 스킬(선택 스킬이 있으면)
-            // 2) 무기 스킬(무기가 있으면)
-            // 3) 기본 공격
+            return BuildDecision(self, chosenTarget);
+        }
+
+        private static EnemyActionDecision BuildDecision(BattleCharactor self, BattleCharactor chosenTarget)
+        {
             EnemyActionType actionType = EnemyActionType.BasicAttack;
             SkillData selectedSkill = null;
             if (self.SelectedSkillData != null)

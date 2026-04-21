@@ -1,4 +1,5 @@
 using UnityEngine;
+using ASB.Work.Battle.SkillExecution;
 
 /// <summary>
 /// BattleAction 및 플레이어 입력에 의한 전투 실행. 데미지는 항상 target.TakeDamage로 적용합니다.
@@ -7,6 +8,7 @@ using UnityEngine;
 public class BattleManager : MonoBehaviour
 {
     private const int ClassSkillEffect_Heal = 1;
+    private const int ClassSkillEffect_Revive = 2;
 
     /// <summary>ClassSkillSheet 행의 skillValue(예: 1.2 = 120%)로 그리드 스킬 피해를 계산합니다.</summary>
     public bool ExecuteGridSkill(BattleCharactor actor, BattleCharactor target, SkillData classSkillRow)
@@ -16,14 +18,20 @@ public class BattleManager : MonoBehaviour
             return false;
         }
 
-        if (actor.IsDead || target.IsDead)
+        if (actor.IsDead)
+        {
+            return false;
+        }
+
+        bool reviveSkill = classSkillRow.classSkillEffect == ClassSkillEffect_Revive;
+        if (target.IsDead != reviveSkill)
         {
             return false;
         }
 
         if (SkillExecutionRegistry.TryGetHandler(classSkillRow.skillIndex, out ISkillEffectHandler custom))
         {
-            return custom.Execute(actor, target, classSkillRow);
+            return custom.Execute(actor, target, classSkillRow, null);
         }
 
         return ExecuteDefaultSkill(actor, target, classSkillRow);

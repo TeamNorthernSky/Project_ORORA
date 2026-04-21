@@ -6,6 +6,7 @@ using GridManagerRef = ASB.Work.BattleGrid.GridManager;
 public static class TargetingHelper
 {
     private const int ClassSkillEffect_Heal = 1;
+    private const int ClassSkillEffect_Revive = 2;
 
     public static HashSet<BattleCharactor> GetValidTargets(BattleCharactor actor, PendingActionType actionType)
     {
@@ -37,7 +38,7 @@ public static class TargetingHelper
 
     public static bool IsStillValidTarget(BattleCharactor actor, PendingActionType actionType, BattleCharactor target)
     {
-        if (target == null || target.IsDead || target.CurrentHp <= 0f)
+        if (target == null || actor == null || actor.IsDead)
         {
             return false;
         }
@@ -94,15 +95,38 @@ public static class TargetingHelper
         }
 
         bool isHeal = skill.classSkillEffect == ClassSkillEffect_Heal;
+        bool isRevive = skill.classSkillEffect == ClassSkillEffect_Revive;
 
-        // [1단계] 진영 + 힐 여부 1차 필터링
+        // [1단계] 진영 + 스킬 성격 1차 필터링
+        // - 부활: 죽은 아군만 (적군·생존자 제외)
         // - 힐: 아군 생존자(자기 자신 포함)
         // - 공격: 적군 생존자(자기 자신 제외)
         var stage1 = new List<BattleCharactor>(all.Length);
         for (int i = 0; i < all.Length; i++)
         {
             BattleCharactor unit = all[i];
-            if (unit == null || unit.IsDead || unit.CurrentHp <= 0f)
+            if (unit == null)
+            {
+                continue;
+            }
+
+            if (isRevive)
+            {
+                if (!unit.IsDead)
+                {
+                    continue;
+                }
+
+                if (unit.IsPlayer != actor.IsPlayer)
+                {
+                    continue;
+                }
+
+                stage1.Add(unit);
+                continue;
+            }
+
+            if (unit.IsDead || unit.CurrentHp <= 0f)
             {
                 continue;
             }
@@ -141,13 +165,13 @@ public static class TargetingHelper
             }
         }
 
-        // [3단계] 근접(사거리 0) 공격은 전열(x==0) 우선
-        if (!isHeal && skill.classSkillRange == 0)
+        // [3단계] 근접(사거리 0) 공격은 전열(x==0) 우선 (부활·힐에는 적용하지 않음)
+        if (!isHeal && !isRevive && skill.classSkillRange == 0)
         {
             bool hasFront = false;
             for (int i = 0; i < inRange.Count; i++)
             {
-                if (IsFrontRow(inRange[i]))
+                if (inRange[i] != null && inRange[i].IsInFrontRow)
                 {
                     hasFront = true;
                     break;
@@ -158,7 +182,8 @@ public static class TargetingHelper
             {
                 for (int i = inRange.Count - 1; i >= 0; i--)
                 {
-                    if (!IsFrontRow(inRange[i]))
+                    BattleCharactor unit = inRange[i];
+                    if (unit == null || !unit.IsInFrontRow)
                     {
                         inRange.RemoveAt(i);
                     }
@@ -188,16 +213,6 @@ public static class TargetingHelper
 
         Vector2Int relative = targetCell.Coords - actorCell.Coords;
         return skill.boundary.Contains(relative);
-    }
-
-    private static bool IsFrontRow(BattleCharactor unit)
-    {
-        if (!TryResolveCell(unit, out GridCellRef cell))
-        {
-            return false;
-        }
-
-        return cell.Coords.x == 0;
     }
 
     private static bool TryResolveCell(BattleCharactor unit, out GridCellRef cell)

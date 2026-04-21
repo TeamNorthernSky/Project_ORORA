@@ -153,6 +153,9 @@ public class BattleFlowManager : MonoBehaviour
         return null;
     }
 
+    /// <summary>
+    /// 전투에서 유닛을 완전히 제거할 때만 사용(예: 오브젝트 파괴). 일반 사망(OnDied)에서는 호출하지 마세요.
+    /// </summary>
     public void RemoveUnit(BattleCharactor unit)
     {
         if (unit == null) return;
@@ -193,10 +196,26 @@ public class BattleFlowManager : MonoBehaviour
             }
 
             CurrentUnit = unit;
+            if (unit.IsDead)
+            {
+                CurrentUnit = null;
+                continue;
+            }
+
             // 턴 전환 시 입력 상태(타겟팅/아웃라인)가 남지 않도록 항상 정리
             inputHandler?.ClearSelectionState();
             Log(FormatTurnStartLog(unit));
             SetOutline(unit, true);
+
+            CurrentUnit.ProcessTurnStartStatusEffects();
+            if (CurrentUnit == null || CurrentUnit.IsDead)
+            {
+                SetOutline(unit, false);
+                CurrentUnit = null;
+                EndTurnSelectionCleanup();
+                yield return null;
+                continue;
+            }
 
             if (unit.IsPlayer)
             {
@@ -237,6 +256,11 @@ public class BattleFlowManager : MonoBehaviour
             }
 
             SetOutline(unit, false);
+            if (!unit.IsDead)
+            {
+                unit.AdvanceStatusEffectDuration();
+            }
+
             CurrentUnit = null;
             EndTurnSelectionCleanup();
             yield return null;
@@ -371,6 +395,7 @@ public class BattleFlowManager : MonoBehaviour
             CurrentUnit = null;
         }
 
+        // 마스터 participants 목록은 유지(시체 포함). 턴 큐만 생존자 기준으로 재구성.
         RefreshQueue();
     }
 

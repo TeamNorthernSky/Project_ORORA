@@ -10,8 +10,12 @@ namespace ASB.Work.BattleGrid
         [SerializeField] private BattleCharactor occupyingUnit;
 
         public Vector2Int Coords => coords;
+        public bool IsFrontRow => coords.x == 0;
 
         public BattleCharactor OccupyingUnit => occupyingUnit;
+
+        /// <summary>살아있든 시체든 점유자가 있으면 true. 살아있는 다른 유닛의 진입/스폰은 막습니다.</summary>
+        public bool IsBlockedForLivingEntry => occupyingUnit != null;
 
         private void Awake()
         {

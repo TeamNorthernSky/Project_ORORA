@@ -129,8 +129,8 @@ public class InputHandler : MonoBehaviour
                 continue;
             }
 
-            unit.OnDied -= HandleUnitDied;
-            unit.OnDied += HandleUnitDied;
+            unit.OnDied -= OnUnitDied;
+            unit.OnDied += OnUnitDied;
             deathSubscribedUnits.Add(unit);
         }
     }
@@ -144,24 +144,31 @@ public class InputHandler : MonoBehaviour
                 continue;
             }
 
-            unit.OnDied -= HandleUnitDied;
+            unit.OnDied -= OnUnitDied;
         }
 
         deathSubscribedUnits.Clear();
     }
 
-    private void HandleUnitDied(BattleCharactor deadUnit)
+    /// <summary>부활 스킬 등으로 죽은 유닛을 타겟에 남기려면 <see cref="RemoveDeadUnitFromTargets"/> 호출을 조건부로 끄면 됩니다.</summary>
+    private void OnUnitDied(BattleCharactor deadUnit)
     {
         if (deadUnit == null)
         {
             return;
         }
 
+        RemoveDeadUnitFromTargets(deadUnit);
+    }
+
+    private void RemoveDeadUnitFromTargets(BattleCharactor deadUnit)
+    {
         validTargets.Remove(deadUnit);
         if (deadUnit == hoverTarget)
         {
             SetHoverTarget(null);
         }
+
         if (validTargets.Count == 0 && currentState == PlayerActionState.WaitingForTarget)
         {
             ResetTargetingState();

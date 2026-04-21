@@ -716,7 +716,8 @@ public static class CSVLoader
                 multiTargetType = ParseIntOrDefault(GetField(fields, 9), 0),
                 multiTargetCount = ParseIntOrDefault(GetField(fields, 10), 0),
                 skillValue = ParseFloatSafe(GetField(fields, 11), 1f),
-                skillSubValue = ParseFloatSafe(GetField(fields, 12), 0f)
+                skillSubValue = ParseFloatSafe(GetField(fields, 12), 0f),
+                aoePatternIndices = fields.Count > 13 ? ParseIntListField(GetField(fields, 13)) : new List<int>()
             };
 
             result.Add(row);

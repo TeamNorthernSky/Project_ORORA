@@ -60,7 +60,10 @@ public class WeaponData
             multiTargetCount = WeaponSkillMultiTargetCount,
             skillValue = WeaponSkillValue,
             skillSubValue = WeaponSkillSubValue,
-            boundary = BuildManhattanBoundary(WeaponSkillRange)
+            boundary = BuildManhattanBoundary(WeaponSkillRange),
+            aoePatternIndices = WeaponSkillMultiTarget != null
+                ? new List<int>(WeaponSkillMultiTarget)
+                : new List<int>()
         };
 
         return result;

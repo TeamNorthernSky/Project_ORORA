@@ -1,5 +1,5 @@
 using UnityEngine;
-
+using ASB.Work.Battle.SkillExecution;
 /// <summary>
 /// 특수 스킬 예시: 기본 피해 후 출혈 시도(상태이상 시스템 미구현 시 로그만).
 /// </summary>
@@ -7,7 +7,7 @@ public sealed class BleedStrikeSkillHandler : ISkillEffectHandler
 {
     private const float BleedChance = 0.35f;
 
-    public bool Execute(BattleCharactor caster, BattleCharactor target, SkillData skillData)
+    public bool Execute(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillData additionalSkillData)
     {
         if (caster == null || target == null || skillData == null)
         {

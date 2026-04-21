@@ -212,6 +212,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 102285277}
+    - targetCorrespondingSourceObject: {fileID: 3556432788587944534, guid: 68ab9538664a58744a4818fbb7109931,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 102285281}
   m_SourcePrefab: {fileID: 100100000, guid: 68ab9538664a58744a4818fbb7109931, type: 3}
 --- !u!1 &51024760
 GameObject:
@@ -463,7 +467,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4fc997578c8c2b340aa8764d3f3d361e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyAIIndex: 0
 --- !u!114 &102285278
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -476,13 +479,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitName: LowerMonster
+--- !u!114 &102285281
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 102285273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  unitName: Unit
   teamType: 1
-  maxHp: 1
-  attack: 1
-  defense: 1
+  maxHp: 100
+  attack: 10
+  defense: 0
   speed: 1
-  level: 9
+  level: 1
   unitCount: 1
   unitWeight:
     HP: 1
@@ -497,9 +512,9 @@ MonoBehaviour:
     Atk: 1
     DEF: 1
   finalStats:
-    HP: 19
-    Atk: 19
-    DEF: 19
+    HP: 102
+    Atk: 12
+    DEF: 2
     Luck: 0
     Speed: 1
     CriticalRate: 0
@@ -507,73 +522,17 @@ MonoBehaviour:
     CounterRate: 0
     AvoidRate: 0
   currentHp: 0
+  activeStatusEffects: []
   activeSkill:
     skillId: 
     skillPercent: 100
     skillBoundary: []
-  skillDataLoader: {fileID: 320332755}
+  skillDataLoader: {fileID: 320332756}
   equippedWeaponIndex: 0
   availableWeapons: []
-  <EquippedWeaponData>k__BackingField:
-    WeaponIndex: 0
-    weaponClass: 
-    WeaponName: 
-    WeaponDescription: 
-    BonusHP: 0
-    BonusATK: 0
-    BonusDEF: 0
-    BonusCriticalRate: 0
-    BonusCounterRate: 0
-    BonusReduceRate: 0
-    BonusSpeed: 0
-    WeaponSkillIndex: 0
-    WeaponSkillName: 
-    WeaponSkillDescription: 
-    WeaponSkillEffect: 0
-    WeaponSkillRange: 0
-    WeaponSkillTarget: 0
-    WeaponSkillMultiTarget: 
-    WeaponSkillMultiTargetType: 0
-    WeaponSkillMultiTargetCount: 0
-    WeaponSkillValue: 0
-    WeaponSkillSubValue: 0
   classSkillIndex: 1010
   selectedSkillIndex: 0
   availableSkills: []
-  <SelectedSkillData>k__BackingField:
-    skillIndex: 0
-    skillClass: 
-    acquireLevel: 0
-    skillName: 
-    description: 
-    classSkillEffect: 0
-    classSkillRange: 0
-    classSkillTarget: 0
-    boundary: []
-    multiTargetType: 0
-    multiTargetCount: 0
-    skillValue: 0
-    skillSubValue: 0
-  runtimeBaseStats:
-    HP: 1
-    Atk: 1
-    DEF: 1
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  hasExternalBaseStats: 0
-  occupiedCell: {fileID: 0}
-  isInitialized: 0
-  hasLoggedEmptyUnitNameWarning: 0
-  prototypeSkillsCacheKey: "LowerMonster\x1F9"
-  prototypeWeaponsCacheKey: LowerMonster
-  <EquippedEquipments>k__BackingField: []
-  <EquippedSkills>k__BackingField: []
-  <IsPlayer>k__BackingField: 0
-  <IsDead>k__BackingField: 0
 --- !u!1 &173309999
 GameObject:
   m_ObjectHideFlags: 0
@@ -656,30 +615,42 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &175597882
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 175597874}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
   unitName: "\uC544\uCC98"
   teamType: 0
-  maxHp: 1
-  attack: 1
-  defense: 1
+  maxHp: 100
+  attack: 10
+  defense: 0
   speed: 1
-  level: 20
-  unitCount: 10
+  level: 1
+  unitCount: 1
   unitWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
+    HP: 4.52
+    Atk: 4.84
+    DEF: 7.09
   levelWeight:
-    HP: 1
-    Atk: 2
-    DEF: 1
+    HP: 1.32
+    Atk: 3.3
+    DEF: 2.42
   classWeight:
     HP: 1
     Atk: 1
     DEF: 1
   finalStats:
-    HP: 50
-    Atk: 70
-    DEF: 50
+    HP: 454.32
+    Atk: 52.7
+    DEF: 3.42
     Luck: 0
     Speed: 1
     CriticalRate: 0
@@ -687,73 +658,17 @@ MonoBehaviour:
     CounterRate: 0
     AvoidRate: 0
   currentHp: 0
+  activeStatusEffects: []
   activeSkill:
     skillId: 
     skillPercent: 100
     skillBoundary: []
-  skillDataLoader: {fileID: 320332755}
+  skillDataLoader: {fileID: 320332756}
   equippedWeaponIndex: 0
   availableWeapons: []
-  <EquippedWeaponData>k__BackingField:
-    WeaponIndex: 0
-    weaponClass: 
-    WeaponName: 
-    WeaponDescription: 
-    BonusHP: 0
-    BonusATK: 0
-    BonusDEF: 0
-    BonusCriticalRate: 0
-    BonusCounterRate: 0
-    BonusReduceRate: 0
-    BonusSpeed: 0
-    WeaponSkillIndex: 0
-    WeaponSkillName: 
-    WeaponSkillDescription: 
-    WeaponSkillEffect: 0
-    WeaponSkillRange: 0
-    WeaponSkillTarget: 0
-    WeaponSkillMultiTarget: 
-    WeaponSkillMultiTargetType: 0
-    WeaponSkillMultiTargetCount: 0
-    WeaponSkillValue: 0
-    WeaponSkillSubValue: 0
   classSkillIndex: 1010
   selectedSkillIndex: 0
   availableSkills: []
-  <SelectedSkillData>k__BackingField:
-    skillIndex: 0
-    skillClass: 
-    acquireLevel: 0
-    skillName: 
-    description: 
-    classSkillEffect: 0
-    classSkillRange: 0
-    classSkillTarget: 0
-    boundary: []
-    multiTargetType: 0
-    multiTargetCount: 0
-    skillValue: 0
-    skillSubValue: 0
-  runtimeBaseStats:
-    HP: 1
-    Atk: 1
-    DEF: 1
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  hasExternalBaseStats: 0
-  occupiedCell: {fileID: 0}
-  isInitialized: 0
-  hasLoggedEmptyUnitNameWarning: 0
-  prototypeSkillsCacheKey: "\uC544\uCC98\x1F20"
-  prototypeWeaponsCacheKey: "\uC544\uCC98"
-  <EquippedEquipments>k__BackingField: []
-  <EquippedSkills>k__BackingField: []
-  <IsPlayer>k__BackingField: 0
-  <IsDead>k__BackingField: 0
 --- !u!1 &320332751
 GameObject:
   m_ObjectHideFlags: 0
@@ -767,6 +682,7 @@ GameObject:
   - component: {fileID: 320332754}
   - component: {fileID: 320332755}
   - component: {fileID: 320332756}
+  - component: {fileID: 320332757}
   m_Layer: 0
   m_Name: DataManager
   m_TagString: Untagged
@@ -786,11 +702,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 605e5315b8954e54989d5ce105aa9770, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitCsv: {fileID: 4900000, guid: d928a03962cf2d6429bfc8241c3ba7d1, type: 3}
-  playerUnitCsv: {fileID: 4900000, guid: 32fabe508b336cc4990e4bc88f1d78ee, type: 3}
-  enemyUnitCsv: {fileID: 4900000, guid: 75b7d0f12ff4976478d649b8bd8b2e44, type: 3}
-  classSkillSheetCsv: {fileID: 4900000, guid: aa40c91a648ed6c43ab0538e6ab3e1ac, type: 3}
-  weaponSheetCsv: {fileID: 4900000, guid: 6678f728aee96de4ca301c3dd99a7393, type: 3}
 --- !u!4 &320332753
 Transform:
   m_ObjectHideFlags: 0
@@ -818,9 +729,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1213a2ec935c07c4183b16fa65cfc702, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  csvLoader: {fileID: 320332752}
-  skillDataLoader: {fileID: 320332755}
-  weaponDataLoader: {fileID: 320332756}
+  csvLoader: {fileID: 320332755}
+  skillDataLoader: {fileID: 320332756}
+  weaponDataLoader: {fileID: 320332757}
   charactorManager: {fileID: 1002047753}
   enemyManager: {fileID: 1002047755}
 --- !u!114 &320332755
@@ -832,9 +743,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 320332751}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d07d5682f0f57d446afe1ad71f38c0f9, type: 3}
+  m_Script: {fileID: 11500000, guid: 407c923e952858047875ef90f3fb4584, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  unitCsv: {fileID: 0}
+  playerUnitCsv: {fileID: 4900000, guid: 32fabe508b336cc4990e4bc88f1d78ee, type: 3}
+  enemyUnitCsv: {fileID: 4900000, guid: 75b7d0f12ff4976478d649b8bd8b2e44, type: 3}
+  classSkillSheetCsv: {fileID: 4900000, guid: aa40c91a648ed6c43ab0538e6ab3e1ac, type: 3}
+  weaponSheetCsv: {fileID: 4900000, guid: 6678f728aee96de4ca301c3dd99a7393, type: 3}
 --- !u!114 &320332756
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -844,7 +760,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 320332751}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d23befd88b558634c91ae50200e9d605, type: 3}
+  m_Script: {fileID: 11500000, guid: 5e8feb2d358f17e468926fe84f593747, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &320332757
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 320332751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16209b6b3ff36dc4cafd7db1c4ac6180, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1001 &330322749
@@ -853,7 +781,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1596053936}
+    m_TransformParent: {fileID: 1832740941}
     m_Modifications:
     - target: {fileID: 6743325076284844202, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
         type: 3}
@@ -937,6 +865,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1396920964}
+    - targetCorrespondingSourceObject: {fileID: 7563937201503599213, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1396920968}
   m_SourcePrefab: {fileID: 100100000, guid: 7753f0ea7bf83d64ba8d577883cd7d60, type: 3}
 --- !u!1 &493354917 stripped
 GameObject:
@@ -962,104 +894,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitName: "\uBA54\uC774\uC9C0"
-  teamType: 0
-  maxHp: 1
-  attack: 1
-  defense: 1
-  speed: 1
-  level: 11
-  unitCount: 4
-  unitWeight:
-    HP: 2
-    Atk: 3
-    DEF: 1
-  levelWeight:
-    HP: 1
-    Atk: 1
-    DEF: 3
-  classWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  finalStats:
-    HP: 30
-    Atk: 34
-    DEF: 48
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  currentHp: 0
-  activeSkill:
-    skillId: 
-    skillPercent: 100
-    skillBoundary: []
-  skillDataLoader: {fileID: 320332755}
-  equippedWeaponIndex: 0
-  availableWeapons: []
-  <EquippedWeaponData>k__BackingField:
-    WeaponIndex: 0
-    weaponClass: 
-    WeaponName: 
-    WeaponDescription: 
-    BonusHP: 0
-    BonusATK: 0
-    BonusDEF: 0
-    BonusCriticalRate: 0
-    BonusCounterRate: 0
-    BonusReduceRate: 0
-    BonusSpeed: 0
-    WeaponSkillIndex: 0
-    WeaponSkillName: 
-    WeaponSkillDescription: 
-    WeaponSkillEffect: 0
-    WeaponSkillRange: 0
-    WeaponSkillTarget: 0
-    WeaponSkillMultiTarget: 
-    WeaponSkillMultiTargetType: 0
-    WeaponSkillMultiTargetCount: 0
-    WeaponSkillValue: 0
-    WeaponSkillSubValue: 0
-  classSkillIndex: 0
-  selectedSkillIndex: 0
-  availableSkills: []
-  <SelectedSkillData>k__BackingField:
-    skillIndex: 0
-    skillClass: 
-    acquireLevel: 0
-    skillName: 
-    description: 
-    classSkillEffect: 0
-    classSkillRange: 0
-    classSkillTarget: 0
-    boundary: []
-    multiTargetType: 0
-    multiTargetCount: 0
-    skillValue: 0
-    skillSubValue: 0
-  runtimeBaseStats:
-    HP: 1
-    Atk: 1
-    DEF: 1
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  hasExternalBaseStats: 0
-  occupiedCell: {fileID: 0}
-  isInitialized: 0
-  hasLoggedEmptyUnitNameWarning: 0
-  prototypeSkillsCacheKey: "\uBA54\uC774\uC9C0\x1F11"
-  prototypeWeaponsCacheKey: "\uBA54\uC774\uC9C0"
-  <EquippedEquipments>k__BackingField: []
-  <EquippedSkills>k__BackingField: []
-  <IsPlayer>k__BackingField: 0
-  <IsDead>k__BackingField: 0
 --- !u!1 &503365170
 GameObject:
   m_ObjectHideFlags: 0
@@ -1237,6 +1071,11 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 3822256990648516214, guid: 8e839b26f24666340915ba452e52ad0e,
+        type: 3}
+      propertyPath: unitWeight.HP
+      value: 1.92
+      objectReference: {fileID: 0}
     - target: {fileID: 4383120895684230713, guid: 8e839b26f24666340915ba452e52ad0e,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -1309,6 +1148,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 929773950}
+    - targetCorrespondingSourceObject: {fileID: 1742596684811356356, guid: 8e839b26f24666340915ba452e52ad0e,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 929773954}
   m_SourcePrefab: {fileID: 100100000, guid: 8e839b26f24666340915ba452e52ad0e, type: 3}
 --- !u!1 &621159265
 GameObject:
@@ -1322,7 +1165,6 @@ GameObject:
   - component: {fileID: 621159266}
   - component: {fileID: 621159268}
   - component: {fileID: 621159269}
-  - component: {fileID: 621159270}
   - component: {fileID: 621159271}
   m_Layer: 0
   m_Name: BattleSceneManager
@@ -1393,20 +1235,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53194c5e2822cc44993d83d47a0fc12b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &621159270
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 621159265}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 791ad8d29d6dfcc429f0e6f1d21e28fe, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  unitPresenters: []
-  includeInactivePresenters: 1
 --- !u!114 &621159271
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1419,7 +1247,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c4b6ece18e890a44951552dc2661adc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  weaponDataLoader: {fileID: 320332756}
+  weaponDataLoader: {fileID: 320332757}
 --- !u!1 &771919882
 GameObject:
   m_ObjectHideFlags: 0
@@ -1726,6 +1554,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 175597878}
+    - targetCorrespondingSourceObject: {fileID: 453319653275471567, guid: 0794eea0d06dda54f921e3c87af19cd5,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 175597882}
   m_SourcePrefab: {fileID: 100100000, guid: 0794eea0d06dda54f921e3c87af19cd5, type: 3}
 --- !u!1 &912453329
 GameObject:
@@ -1817,6 +1649,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &929773954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 929773946}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
   unitName: "\uC6CC\uB9AC\uC5B4"
   teamType: 0
   maxHp: 100
@@ -1834,11 +1678,11 @@ MonoBehaviour:
     Atk: 1
     DEF: 1
   classWeight:
-    HP: 0.77
+    HP: 1
     Atk: 1
     DEF: 1
   finalStats:
-    HP: 101.77
+    HP: 102
     Atk: 12
     DEF: 2
     Luck: 0
@@ -1848,73 +1692,17 @@ MonoBehaviour:
     CounterRate: 0
     AvoidRate: 0
   currentHp: 0
+  activeStatusEffects: []
   activeSkill:
     skillId: 
     skillPercent: 100
     skillBoundary: []
-  skillDataLoader: {fileID: 320332755}
+  skillDataLoader: {fileID: 320332756}
   equippedWeaponIndex: 0
   availableWeapons: []
-  <EquippedWeaponData>k__BackingField:
-    WeaponIndex: 0
-    weaponClass: 
-    WeaponName: 
-    WeaponDescription: 
-    BonusHP: 0
-    BonusATK: 0
-    BonusDEF: 0
-    BonusCriticalRate: 0
-    BonusCounterRate: 0
-    BonusReduceRate: 0
-    BonusSpeed: 0
-    WeaponSkillIndex: 0
-    WeaponSkillName: 
-    WeaponSkillDescription: 
-    WeaponSkillEffect: 0
-    WeaponSkillRange: 0
-    WeaponSkillTarget: 0
-    WeaponSkillMultiTarget: 
-    WeaponSkillMultiTargetType: 0
-    WeaponSkillMultiTargetCount: 0
-    WeaponSkillValue: 0
-    WeaponSkillSubValue: 0
   classSkillIndex: 1010
   selectedSkillIndex: 0
   availableSkills: []
-  <SelectedSkillData>k__BackingField:
-    skillIndex: 0
-    skillClass: 
-    acquireLevel: 0
-    skillName: 
-    description: 
-    classSkillEffect: 0
-    classSkillRange: 0
-    classSkillTarget: 0
-    boundary: []
-    multiTargetType: 0
-    multiTargetCount: 0
-    skillValue: 0
-    skillSubValue: 0
-  runtimeBaseStats:
-    HP: 100
-    Atk: 10
-    DEF: 0
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  hasExternalBaseStats: 0
-  occupiedCell: {fileID: 0}
-  isInitialized: 0
-  hasLoggedEmptyUnitNameWarning: 0
-  prototypeSkillsCacheKey: "\uC6CC\uB9AC\uC5B4\x1F1"
-  prototypeWeaponsCacheKey: "\uC6CC\uB9AC\uC5B4"
-  <EquippedEquipments>k__BackingField: []
-  <EquippedSkills>k__BackingField: []
-  <IsPlayer>k__BackingField: 0
-  <IsDead>k__BackingField: 0
 --- !u!1 &997278432
 GameObject:
   m_ObjectHideFlags: 0
@@ -2567,7 +2355,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4fc997578c8c2b340aa8764d3f3d361e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyAIIndex: 0
 --- !u!114 &1396920965
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2580,7 +2367,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitName: AdvancedMonster
+--- !u!114 &1396920968
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1396920960}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  unitName: Unit
   teamType: 1
   maxHp: 100
   attack: 10
@@ -2611,73 +2410,17 @@ MonoBehaviour:
     CounterRate: 0
     AvoidRate: 0
   currentHp: 0
+  activeStatusEffects: []
   activeSkill:
     skillId: 
     skillPercent: 100
     skillBoundary: []
-  skillDataLoader: {fileID: 320332755}
+  skillDataLoader: {fileID: 320332756}
   equippedWeaponIndex: 0
   availableWeapons: []
-  <EquippedWeaponData>k__BackingField:
-    WeaponIndex: 0
-    weaponClass: 
-    WeaponName: 
-    WeaponDescription: 
-    BonusHP: 0
-    BonusATK: 0
-    BonusDEF: 0
-    BonusCriticalRate: 0
-    BonusCounterRate: 0
-    BonusReduceRate: 0
-    BonusSpeed: 0
-    WeaponSkillIndex: 0
-    WeaponSkillName: 
-    WeaponSkillDescription: 
-    WeaponSkillEffect: 0
-    WeaponSkillRange: 0
-    WeaponSkillTarget: 0
-    WeaponSkillMultiTarget: 
-    WeaponSkillMultiTargetType: 0
-    WeaponSkillMultiTargetCount: 0
-    WeaponSkillValue: 0
-    WeaponSkillSubValue: 0
   classSkillIndex: 1010
   selectedSkillIndex: 0
   availableSkills: []
-  <SelectedSkillData>k__BackingField:
-    skillIndex: 0
-    skillClass: 
-    acquireLevel: 0
-    skillName: 
-    description: 
-    classSkillEffect: 0
-    classSkillRange: 0
-    classSkillTarget: 0
-    boundary: []
-    multiTargetType: 0
-    multiTargetCount: 0
-    skillValue: 0
-    skillSubValue: 0
-  runtimeBaseStats:
-    HP: 100
-    Atk: 10
-    DEF: 0
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  hasExternalBaseStats: 0
-  occupiedCell: {fileID: 0}
-  isInitialized: 0
-  hasLoggedEmptyUnitNameWarning: 0
-  prototypeSkillsCacheKey: "AdvancedMonster\x1F1"
-  prototypeWeaponsCacheKey: AdvancedMonster
-  <EquippedEquipments>k__BackingField: []
-  <EquippedSkills>k__BackingField: []
-  <IsPlayer>k__BackingField: 0
-  <IsDead>k__BackingField: 0
 --- !u!1 &1414445549
 GameObject:
   m_ObjectHideFlags: 0
@@ -2837,6 +2580,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1483893787
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1483893778}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
   unitName: "\uD074\uB808\uB9AD"
   teamType: 0
   maxHp: 100
@@ -2868,73 +2623,17 @@ MonoBehaviour:
     CounterRate: 0
     AvoidRate: 0
   currentHp: 0
+  activeStatusEffects: []
   activeSkill:
     skillId: 
     skillPercent: 100
     skillBoundary: []
-  skillDataLoader: {fileID: 320332755}
+  skillDataLoader: {fileID: 320332756}
   equippedWeaponIndex: 0
   availableWeapons: []
-  <EquippedWeaponData>k__BackingField:
-    WeaponIndex: 0
-    weaponClass: 
-    WeaponName: 
-    WeaponDescription: 
-    BonusHP: 0
-    BonusATK: 0
-    BonusDEF: 0
-    BonusCriticalRate: 0
-    BonusCounterRate: 0
-    BonusReduceRate: 0
-    BonusSpeed: 0
-    WeaponSkillIndex: 0
-    WeaponSkillName: 
-    WeaponSkillDescription: 
-    WeaponSkillEffect: 0
-    WeaponSkillRange: 0
-    WeaponSkillTarget: 0
-    WeaponSkillMultiTarget: 
-    WeaponSkillMultiTargetType: 0
-    WeaponSkillMultiTargetCount: 0
-    WeaponSkillValue: 0
-    WeaponSkillSubValue: 0
   classSkillIndex: 1010
   selectedSkillIndex: 0
   availableSkills: []
-  <SelectedSkillData>k__BackingField:
-    skillIndex: 0
-    skillClass: 
-    acquireLevel: 0
-    skillName: 
-    description: 
-    classSkillEffect: 0
-    classSkillRange: 0
-    classSkillTarget: 0
-    boundary: []
-    multiTargetType: 0
-    multiTargetCount: 0
-    skillValue: 0
-    skillSubValue: 0
-  runtimeBaseStats:
-    HP: 100
-    Atk: 10
-    DEF: 0
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  hasExternalBaseStats: 0
-  occupiedCell: {fileID: 0}
-  isInitialized: 0
-  hasLoggedEmptyUnitNameWarning: 0
-  prototypeSkillsCacheKey: "\uD074\uB808\uB9AD\x1F1"
-  prototypeWeaponsCacheKey: "\uD074\uB808\uB9AD"
-  <EquippedEquipments>k__BackingField: []
-  <EquippedSkills>k__BackingField: []
-  <IsPlayer>k__BackingField: 0
-  <IsDead>k__BackingField: 0
 --- !u!1 &1511189582
 GameObject:
   m_ObjectHideFlags: 0
@@ -3082,19 +2781,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 1540026208}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ecb51207f499464b973b518ef395db1, type: 3}
+  m_Script: {fileID: 11500000, guid: 62745f4fda5e5de4f86aef7175362f96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  raycastCamera: {fileID: 1956195431}
+  raycastCamera: {fileID: 0}
   maxRayDistance: 200
   selectionRaycastMask:
+    serializedVersion: 2
     m_Bits: 4294967295
   battleFlowManager: {fileID: 621159268}
   battleManager: {fileID: 621159269}
-  currentState: 0
-  pendingAction: 0
-  hoverTarget: {fileID: 0}
-  hoverTargetOutline: {fileID: 0}
 --- !u!4 &1540026210
 Transform:
   m_ObjectHideFlags: 0
@@ -3188,10 +2884,15 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 8
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -881707880648396494, guid: e540557cd11514240aafdf2c329798cb, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6290960558266015020, guid: e540557cd11514240aafdf2c329798cb,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1483893787}
     - targetCorrespondingSourceObject: {fileID: 6290960558266015020, guid: e540557cd11514240aafdf2c329798cb,
         type: 3}
       insertIndex: -1
@@ -3233,8 +2934,7 @@ Transform:
   m_LocalPosition: {x: -3.3, y: 0, z: 2}
   m_LocalScale: {x: 0.32999998, y: 1, z: 0.33}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1396920961}
+  m_Children: []
   m_Father: {fileID: 1926818296}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!64 &1596053937
@@ -3355,7 +3055,8 @@ Transform:
   m_LocalPosition: {x: -3.3, y: 0, z: -2}
   m_LocalScale: {x: 0.32999998, y: 1, z: 0.33}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1396920961}
   m_Father: {fileID: 1926818296}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!64 &1832740942
@@ -3473,7 +3174,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8bbd38d3da5764c428703a75db2620f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultParent: {fileID: 173310003}
 --- !u!4 &1847199438
 Transform:
   m_ObjectHideFlags: 0

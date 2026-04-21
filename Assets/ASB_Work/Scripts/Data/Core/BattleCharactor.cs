@@ -35,6 +35,8 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     [Tooltip("StatCalculator 결과. 인스펙터에서 결과 확인용.")]
     [SerializeField] private StatBlock finalStats;
     [SerializeField] private float currentHp;
+
+    [SerializeField] private List<StatusEffectInstance> activeStatusEffects = new List<StatusEffectInstance>();
     [HideInInspector] [SerializeField] private Skill activeSkill;
     [SerializeField] private SkillDataLoader skillDataLoader;
     /// <summary>availableWeapons 목록 내 로컬 인덱스(0..Count-1). 인스펙터에서는 BattleCharactorEditor 드롭다운으로만 설정합니다.</summary>
@@ -93,6 +95,8 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     public StatBlock FinalStats => finalStats;
 
     public float CurrentHp => currentHp;
+    public float MaxHp => finalStats.HP;
+    public IReadOnlyList<StatusEffectInstance> ActiveStatusEffects => activeStatusEffects;
 
     // [레거시] 인스펙터 스킬 선택 방식으로 전환 완료 후 제거 예정.
     // [마이그레이션 종료 기준]
@@ -105,6 +109,7 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
     public GridCellRef OccupiedCell => occupiedCell;
     public bool IsInitialized => isInitialized;
+    public bool IsInFrontRow => occupiedCell != null && occupiedCell.IsFrontRow;
 
     /// <summary>디버그용: 현재 계산에 쓰는 base 원본.</summary>
     public StatBlock RuntimeBaseStats => runtimeBaseStats;
@@ -124,6 +129,11 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
         if (availableWeapons == null)
         {
             availableWeapons = new List<WeaponData>();
+        }
+
+        if (activeStatusEffects == null)
+        {
+            activeStatusEffects = new List<StatusEffectInstance>();
         }
     }
 
@@ -222,6 +232,8 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
             EquippedEquipments,
             EquippedWeaponData != null ? EquippedWeaponData.GetBonusStatBlock() : default);
 
+        ApplyStatusEffectStatModifiers();
+
         if (applyCurrentHpClamp)
         {
             currentHp = Mathf.Clamp(currentHp, 0f, finalStats.HP);
@@ -277,6 +289,177 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
         }
     }
 
+    public void ApplyStatusEffect(StatusEffectInstance effect)
+    {
+        if (effect == null || effect.effectType == StatusEffectType.none)
+        {
+            return;
+        }
+
+        if (activeStatusEffects == null)
+        {
+            activeStatusEffects = new List<StatusEffectInstance>();
+        }
+
+        StatusEffectInstance existing = activeStatusEffects.Find(x => x != null && x.effectType == effect.effectType);
+        if (existing != null)
+        {
+            existing.category = effect.category;
+            existing.value = effect.value;
+            existing.remainingTurns = Mathf.Max(1, effect.remainingTurns);
+            existing.source = effect.source;
+            Debug.Log($"[Status] 갱신: {UnitName} effect={effect.effectType} turns={existing.remainingTurns}");
+        }
+        else
+        {
+            activeStatusEffects.Add(new StatusEffectInstance
+            {
+                effectType = effect.effectType,
+                category = effect.category,
+                value = effect.value,
+                remainingTurns = Mathf.Max(1, effect.remainingTurns),
+                source = effect.source
+            });
+            Debug.Log($"[Status] 적용: {UnitName} effect={effect.effectType} turns={Mathf.Max(1, effect.remainingTurns)}");
+        }
+
+        if (RequiresStatRecalculation(effect.effectType))
+        {
+            RecalculateStats(applyCurrentHpClamp: true);
+        }
+    }
+
+    public void RemoveStatusEffect(StatusEffectType effectType)
+    {
+        if (activeStatusEffects == null || activeStatusEffects.Count == 0)
+        {
+            return;
+        }
+
+        bool removed = activeStatusEffects.RemoveAll(x => x != null && x.effectType == effectType) > 0;
+        if (removed && RequiresStatRecalculation(effectType))
+        {
+            RecalculateStats(applyCurrentHpClamp: true);
+        }
+    }
+
+    public bool HasStatusEffect(StatusEffectType effectType)
+    {
+        if (activeStatusEffects == null || activeStatusEffects.Count == 0)
+        {
+            return false;
+        }
+
+        return activeStatusEffects.Exists(x => x != null && x.effectType == effectType);
+    }
+
+    public BattleCharactor GetTauntSource()
+    {
+        if (activeStatusEffects == null || activeStatusEffects.Count == 0)
+        {
+            return null;
+        }
+
+        for (int i = activeStatusEffects.Count - 1; i >= 0; i--)
+        {
+            StatusEffectInstance effect = activeStatusEffects[i];
+            if (effect == null || effect.effectType != StatusEffectType.taunt)
+            {
+                continue;
+            }
+
+            if (effect.remainingTurns > 0 && effect.source != null && !effect.source.IsDead)
+            {
+                return effect.source;
+            }
+
+            activeStatusEffects.RemoveAt(i);
+        }
+
+        return null;
+    }
+
+    public void ProcessTurnStartStatusEffects()
+    {
+        if (IsDead || activeStatusEffects == null || activeStatusEffects.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < activeStatusEffects.Count; i++)
+        {
+            StatusEffectInstance effect = activeStatusEffects[i];
+            if (effect == null || effect.remainingTurns <= 0)
+            {
+                continue;
+            }
+
+            if (effect.effectType != StatusEffectType.poison && effect.effectType != StatusEffectType.bleed)
+            {
+                continue;
+            }
+
+            float dotDamage = Mathf.Max(0f, effect.value);
+            if (dotDamage <= 0f)
+            {
+                continue;
+            }
+
+            float before = currentHp;
+            TakeDamage(dotDamage);
+            float applied = Mathf.Max(0f, before - currentHp);
+            Debug.Log($"[Status] DOT tick: {UnitName} effect={effect.effectType} dmg={applied:F1} turnsLeft={effect.remainingTurns}");
+
+            if (IsDead)
+            {
+                return;
+            }
+        }
+    }
+
+    public void AdvanceStatusEffectDuration()
+    {
+        if (activeStatusEffects == null || activeStatusEffects.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < activeStatusEffects.Count; i++)
+        {
+            StatusEffectInstance effect = activeStatusEffects[i];
+            if (effect == null)
+            {
+                continue;
+            }
+
+            effect.remainingTurns -= 1;
+        }
+
+        bool removedAny = false;
+        bool removedStatModifier = false;
+        for (int i = activeStatusEffects.Count - 1; i >= 0; i--)
+        {
+            StatusEffectInstance effect = activeStatusEffects[i];
+            if (effect == null || effect.remainingTurns > 0)
+            {
+                continue;
+            }
+
+            if (effect != null && RequiresStatRecalculation(effect.effectType))
+            {
+                removedStatModifier = true;
+            }
+
+            activeStatusEffects.RemoveAt(i);
+            removedAny = true;
+        }
+
+        if (removedAny && removedStatModifier)
+        {
+            RecalculateStats(applyCurrentHpClamp: true);
+        }
+    }
+
     private void Die()
     {
         if (IsDead)
@@ -286,7 +469,6 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
         IsDead = true;
         currentHp = 0f;
-        ClearOccupiedCell();
         OnDied?.Invoke(this);
         DisableVisuals();
     }
@@ -342,6 +524,77 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
         StopAllCoroutines();
     }
 
+    /// <summary>시체 상태에서 전투 복귀. hpRatio는 최대 체력 대비 비율(예: 0.5 = 50%).</summary>
+    public void Revive(float hpRatio)
+    {
+        if (!IsDead)
+        {
+            return;
+        }
+
+        IsDead = false;
+        float ratio = Mathf.Clamp01(hpRatio);
+        currentHp = Mathf.Clamp(MaxHp * ratio, 1f, MaxHp);
+        EnableVisuals();
+
+        var animator = GetComponentInChildren<Animator>(true);
+        if (animator != null && animator.isActiveAndEnabled)
+        {
+            animator.SetTrigger("Revive");
+        }
+
+        Debug.Log($"[Battle] Revive: {UnitName} HP={currentHp:F1}/{MaxHp:F1} (ratio={ratio:0.##})");
+    }
+
+    private void EnableVisuals()
+    {
+        var renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+            {
+                renderers[i].enabled = true;
+            }
+        }
+
+        var colliders = GetComponentsInChildren<Collider>(true);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (colliders[i] != null)
+            {
+                colliders[i].enabled = true;
+            }
+        }
+
+        var colliders2D = GetComponentsInChildren<Collider2D>(true);
+        for (int i = 0; i < colliders2D.Length; i++)
+        {
+            if (colliders2D[i] != null)
+            {
+                colliders2D[i].enabled = true;
+            }
+        }
+
+        var canvases = GetComponentsInChildren<Canvas>(true);
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            if (canvases[i] != null)
+            {
+                canvases[i].enabled = true;
+            }
+        }
+
+        var outlines = GetComponentsInChildren<Outline>(true);
+        for (int i = 0; i < outlines.Length; i++)
+        {
+            if (outlines[i] != null)
+            {
+                outlines[i].enabled = true;
+                outlines[i].OutlineMode = Outline.Mode.OutlineHidden;
+            }
+        }
+    }
+
     public void ReviveToFull()
     {
         IsDead = false;
@@ -357,6 +610,13 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
                 cell.SetOccupyingUnit(this);
             }
 
+            return;
+        }
+
+        if (cell != null && cell.OccupyingUnit != null && cell.OccupyingUnit != this)
+        {
+            Debug.LogWarning(
+                $"[BattleCharactor] 셀 점유 불가(다른 유닛/시체): cell={cell.name}, occupant={cell.OccupyingUnit.UnitName}, incoming={UnitName}");
             return;
         }
 
@@ -419,6 +679,57 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
         RefreshAvailableWeapons(forceRefresh: true);
         ResolveEquippedWeapon(true);
         isInitialized = true;
+    }
+
+    private void ApplyStatusEffectStatModifiers()
+    {
+        if (activeStatusEffects == null || activeStatusEffects.Count == 0)
+        {
+            return;
+        }
+
+        float atkMultiplier = 1f;
+        float defMultiplier = 1f;
+
+        for (int i = 0; i < activeStatusEffects.Count; i++)
+        {
+            StatusEffectInstance effect = activeStatusEffects[i];
+            if (effect == null || effect.remainingTurns <= 0)
+            {
+                continue;
+            }
+
+            float amount = Mathf.Max(0f, effect.value);
+            switch (effect.effectType)
+            {
+                case StatusEffectType.attack_up:
+                    atkMultiplier += amount;
+                    break;
+                case StatusEffectType.attack_down:
+                    atkMultiplier -= amount;
+                    break;
+                case StatusEffectType.defense_up:
+                    defMultiplier += amount;
+                    break;
+                case StatusEffectType.defense_down:
+                    defMultiplier -= amount;
+                    break;
+            }
+        }
+
+        atkMultiplier = Mathf.Max(0.1f, atkMultiplier);
+        defMultiplier = Mathf.Max(0.1f, defMultiplier);
+
+        finalStats.Atk = Mathf.Max(1f, finalStats.Atk * atkMultiplier);
+        finalStats.DEF = Mathf.Max(0f, finalStats.DEF * defMultiplier);
+    }
+
+    private static bool RequiresStatRecalculation(StatusEffectType effectType)
+    {
+        return effectType == StatusEffectType.attack_up
+               || effectType == StatusEffectType.attack_down
+               || effectType == StatusEffectType.defense_up
+               || effectType == StatusEffectType.defense_down;
     }
 
     public void Initialize(IUnitData data, TeamType team)
