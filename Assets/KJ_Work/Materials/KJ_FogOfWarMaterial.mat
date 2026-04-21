@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: KJ_FogOfWarMaterial
-  m_Shader: {fileID: 4800000, guid: 01a00c9758aa1d54ca5fb67a1e5d5268, type: 3}
+  m_Shader: {fileID: 4800000, guid: 97b9046a6bdb195418e50880c003ee9b, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -36,7 +36,8 @@ Material:
     - _FlowSpeed3: 0.08
     - _FogCeilingY: 2
     - _FogDensityHigh: 0.5
-    - _FogDensityLow: 1
+    - _FogDensityLow: 0.7
+    - _FogDensityLowUnexplored: 1
     - _FogDensityMid: 0.85
     - _HeightTransition: 0.5
     - _NoiseContrast: 3.5

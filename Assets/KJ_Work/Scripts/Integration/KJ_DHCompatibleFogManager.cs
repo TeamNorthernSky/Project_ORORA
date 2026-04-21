@@ -29,35 +29,31 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
 
     [Header("Mask Rendering")]
     [SerializeField, Min(0f)] private float maskSmoothEdge = 0.5f;
-    [Header("Turn-Based Refog")]
-    [SerializeField, Min(1)] private int revealedTurnLifetime = 3;
-    [SerializeField, Range(0f, 1f)] private float refoggedVisibility = 0.5f;
-    [SerializeField, Range(0f, 1f)] private float refoggedVisibilityStage1 = 0.8f;
-    [SerializeField, Range(0f, 1f)] private float refoggedVisibilityStage2 = 0.65f;
 
     private RenderTexture rtCurrent;
     private RenderTexture rtExplored;
     private RenderTexture rtExploredTemp;
     private Texture2D currentStateTexture;
-    private Texture2D exploredStateTexture;
 
     private Material maskMaterial;
+    private Material decayMaterial;
     private CommandBuffer cmd;
 
     private Vector2Int activeGridSize;
     private bool initialized;
     private bool currentTextureDirty;
-    private bool exploredTextureDirty;
-    private TurnManager turnManager;
-    private int currentTurn = 1;
     private bool[] currentVisibleCells;
-    private int[] lastRevealedTurns;
-    private bool[] hasBeenRevealed;
 
     private static readonly int CurrentTexGlobalId = Shader.PropertyToID("_VisibilityCurrentTex");
     private static readonly int ExploredTexGlobalId = Shader.PropertyToID("_VisibilityExploredTex");
     private static readonly int SmoothEdgeId = Shader.PropertyToID("_SmoothEdge");
     private static readonly int GridWorldSizeId = Shader.PropertyToID("_GridWorldSize");
+    private static readonly int CurrentTexInputId = Shader.PropertyToID("_CurrentTex");
+    private static readonly int ExploredTexInputId = Shader.PropertyToID("_ExploredTex");
+    private static readonly int RestoreDelaysId = Shader.PropertyToID("_RestoreDelays");
+    private static readonly int RestoreDurationId = Shader.PropertyToID("_RestoreDuration");
+    private static readonly int FogDeltaTimeId = Shader.PropertyToID("_FogDeltaTime");
+    private static readonly int FogHidableLowThresholdId = Shader.PropertyToID("_FogHidableLowThreshold");
 
     public bool FogEnabled
     {
@@ -75,17 +71,12 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
     private void OnEnable()
     {
         Initialize();
-        SubscribeTurnEvents();
     }
 
     private void OnValidate()
     {
         fallbackGridSize.x = Mathf.Max(1, fallbackGridSize.x);
         fallbackGridSize.y = Mathf.Max(1, fallbackGridSize.y);
-        revealedTurnLifetime = Mathf.Max(1, revealedTurnLifetime);
-        refoggedVisibilityStage1 = Mathf.Clamp01(refoggedVisibilityStage1);
-        refoggedVisibilityStage2 = Mathf.Clamp01(refoggedVisibilityStage2);
-        refoggedVisibility = Mathf.Clamp01(refoggedVisibility);
 
         if (!isActiveAndEnabled)
             return;
@@ -95,12 +86,10 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
 
     private void OnDisable()
     {
-        UnsubscribeTurnEvents();
     }
 
     private void OnDestroy()
     {
-        UnsubscribeTurnEvents();
         ReleaseResources();
     }
 
@@ -123,15 +112,15 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
         if (rtCurrent == null || rtExplored == null || rtExploredTemp == null)
             return;
 
-        EnsureTurnState(nextGridSize);
+        EnsureRuntimeState(nextGridSize);
         ApplyGridGlobals(nextGridSize);
 
-        Shader.SetGlobalTexture(CurrentTexGlobalId, rtExplored);
+        Shader.SetGlobalTexture(CurrentTexGlobalId, rtCurrent);
         Shader.SetGlobalTexture(ExploredTexGlobalId, rtExplored);
 
         activeGridSize = nextGridSize;
         initialized = rtCurrent != null && rtExplored != null && rtExploredTemp != null;
-        PushExploredStateToTexture(true);
+        PushCurrentVisibilityToTexture(true);
     }
 
     public void UpdatePlayerVisibility(Vector2Int playerGridPos, int sightRadiusCells)
@@ -142,13 +131,16 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
         if (gridManager == null)
             return;
 
-        RevealCells(playerGridPos, sightRadiusCells);
+        MarkVisibleCells(playerGridPos, sightRadiusCells);
     }
 
     public void ClearCurrentVisibility()
     {
-        // Current visibility is intentionally aliased to rtExplored.
-        // Keep this method as a no-op so the existing bridge flow can stay unchanged.
+        if (currentVisibleCells == null)
+            return;
+
+        System.Array.Clear(currentVisibleCells, 0, currentVisibleCells.Length);
+        currentTextureDirty = true;
     }
 
     public void SetFogEnabled(bool enabled)
@@ -168,7 +160,7 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
         if (rtCurrent == null || rtExplored == null || rtExploredTemp == null)
             return;
 
-        if (maskMaterial == null)
+        if (maskMaterial == null || decayMaterial == null)
             return;
 
         cmd.Clear();
@@ -181,8 +173,22 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
             return;
         }
 
+        PushCurrentVisibilityToTexture();
+
+        cmd.SetGlobalVector(RestoreDelaysId, new Vector4(lowLayerDelay, midLayerDelay, highLayerDelay, 0f));
+        cmd.SetGlobalFloat(RestoreDurationId, restoreDuration);
+        cmd.SetGlobalFloat(FogHidableLowThresholdId, fogHidableLowThreshold);
+        cmd.SetGlobalFloat(FogDeltaTimeId, Time.deltaTime);
+        cmd.SetGlobalTexture(ExploredTexInputId, rtExplored);
+        cmd.SetGlobalTexture(CurrentTexInputId, rtCurrent);
+        cmd.Blit(Texture2D.blackTexture, rtExploredTemp, decayMaterial);
+
         Graphics.ExecuteCommandBuffer(cmd);
-        PushExploredStateToTexture();
+
+        RenderTexture swap = rtExplored;
+        rtExplored = rtExploredTemp;
+        rtExploredTemp = swap;
+        Shader.SetGlobalTexture(ExploredTexGlobalId, rtExplored);
     }
 
     private void ResolveReferences()
@@ -195,9 +201,6 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
 
         if (levelData == null && levelLoader != null)
             levelData = levelLoader.LevelData;
-
-        if (turnManager == null)
-            turnManager = FindFirstObjectByType<TurnManager>();
     }
 
     private Vector2Int ResolveGridSize()
@@ -228,6 +231,18 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
             maskMaterial = new Material(maskShader) { hideFlags = HideFlags.DontSave };
         }
 
+        if (decayMaterial == null)
+        {
+            Shader decayShader = Shader.Find("Custom/JC/FogDecay");
+            if (decayShader == null)
+            {
+                Debug.LogError("[KJ_DHCompatibleFogManager] Missing shader Custom/JC/FogDecay.");
+                return false;
+            }
+
+            decayMaterial = new Material(decayShader) { hideFlags = HideFlags.DontSave };
+        }
+
         maskMaterial.SetFloat(SmoothEdgeId, maskSmoothEdge);
 
         if (cmd == null)
@@ -243,21 +258,14 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
         rtExploredTemp = EnsureTexture(rtExploredTemp, gridSize.x, gridSize.y, RenderTextureFormat.ARGBFloat, "KJ_FogRT_ExploredTemp");
     }
 
-    private void EnsureTurnState(Vector2Int gridSize)
+    private void EnsureRuntimeState(Vector2Int gridSize)
     {
         int cellCount = gridSize.x * gridSize.y;
 
-        if (lastRevealedTurns == null || lastRevealedTurns.Length != cellCount)
+        if (currentVisibleCells == null || currentVisibleCells.Length != cellCount)
         {
             currentVisibleCells = new bool[cellCount];
-            lastRevealedTurns = new int[cellCount];
-            hasBeenRevealed = new bool[cellCount];
-
-            for (int i = 0; i < cellCount; i++)
-                lastRevealedTurns[i] = int.MinValue;
-
             currentTextureDirty = true;
-            exploredTextureDirty = true;
         }
 
         if (currentStateTexture == null || currentStateTexture.width != gridSize.x || currentStateTexture.height != gridSize.y)
@@ -275,24 +283,6 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
 
             currentTextureDirty = true;
         }
-
-        if (exploredStateTexture == null || exploredStateTexture.width != gridSize.x || exploredStateTexture.height != gridSize.y)
-        {
-            if (exploredStateTexture != null)
-                DestroyImmediate(exploredStateTexture);
-
-            exploredStateTexture = new Texture2D(gridSize.x, gridSize.y, TextureFormat.RGBAFloat, false, true)
-            {
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp,
-                name = "KJ_FogExploredState",
-                hideFlags = HideFlags.DontSave,
-            };
-
-            exploredTextureDirty = true;
-        }
-
-        currentTurn = turnManager != null ? turnManager.GetDay() : Mathf.Max(1, currentTurn);
     }
 
     private void ApplyGridGlobals(Vector2Int gridSize)
@@ -335,27 +325,6 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
         RenderTexture.active = previous;
     }
 
-    private void SubscribeTurnEvents()
-    {
-        ResolveReferences();
-        currentTurn = turnManager != null ? turnManager.GetDay() : Mathf.Max(1, currentTurn);
-
-        if (turnManager != null)
-            turnManager.DayAdvanced += OnDayAdvanced;
-    }
-
-    private void UnsubscribeTurnEvents()
-    {
-        if (turnManager != null)
-            turnManager.DayAdvanced -= OnDayAdvanced;
-    }
-
-    private void OnDayAdvanced(int day)
-    {
-        currentTurn = day;
-        exploredTextureDirty = true;
-    }
-
     private void MarkVisibleCells(Vector2Int centerGrid, int sightRadiusCells)
     {
         if (currentVisibleCells == null)
@@ -381,87 +350,6 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
         }
 
         currentTextureDirty = true;
-    }
-
-    private void RevealCells(Vector2Int centerGrid, int sightRadiusCells)
-    {
-        if (lastRevealedTurns == null || hasBeenRevealed == null)
-            return;
-
-        int radius = Mathf.Max(0, sightRadiusCells);
-        int radiusSquared = radius * radius;
-
-        for (int y = centerGrid.y - radius; y <= centerGrid.y + radius; y++)
-        {
-            for (int x = centerGrid.x - radius; x <= centerGrid.x + radius; x++)
-            {
-                if (!IsInsideGrid(x, y))
-                    continue;
-
-                int dx = x - centerGrid.x;
-                int dy = y - centerGrid.y;
-                if ((dx * dx) + (dy * dy) > radiusSquared)
-                    continue;
-
-                int index = ToIndex(x, y);
-                hasBeenRevealed[index] = true;
-                lastRevealedTurns[index] = currentTurn;
-            }
-        }
-
-        exploredTextureDirty = true;
-    }
-
-    private void PushExploredStateToTexture(bool force = false)
-    {
-        if (!force && !exploredTextureDirty)
-            return;
-
-        if (exploredStateTexture == null || lastRevealedTurns == null || hasBeenRevealed == null || rtExplored == null)
-            return;
-
-        int width = activeGridSize.x;
-        int height = activeGridSize.y;
-        Color[] pixels = new Color[width * height];
-
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                int index = ToIndex(x, y);
-                if (!hasBeenRevealed[index])
-                {
-                    pixels[index] = Color.clear;
-                    continue;
-                }
-
-                float exploredVisibility = ResolveExploredVisibility(lastRevealedTurns[index]);
-                pixels[index] = new Color(exploredVisibility, exploredVisibility, exploredVisibility, 1f);
-            }
-        }
-
-        exploredStateTexture.SetPixels(pixels);
-        exploredStateTexture.Apply(false, false);
-        Graphics.Blit(exploredStateTexture, rtExplored);
-        Shader.SetGlobalTexture(CurrentTexGlobalId, rtExplored);
-        Shader.SetGlobalTexture(ExploredTexGlobalId, rtExplored);
-        exploredTextureDirty = false;
-    }
-
-    private float ResolveExploredVisibility(int lastRevealedTurn)
-    {
-        int turnsSinceReveal = currentTurn - lastRevealedTurn;
-        if (turnsSinceReveal < revealedTurnLifetime)
-            return 1f;
-
-        int refogTurns = turnsSinceReveal - revealedTurnLifetime;
-        if (refogTurns == 0)
-            return refoggedVisibilityStage1;
-
-        if (refogTurns == 1)
-            return refoggedVisibilityStage2;
-
-        return refoggedVisibility;
     }
 
     private void PushCurrentVisibilityToTexture(bool force = false)
@@ -512,11 +400,11 @@ public class KJ_DHCompatibleFogManager : MonoBehaviour
         if (currentStateTexture != null)
             DestroyImmediate(currentStateTexture);
 
-        if (exploredStateTexture != null)
-            DestroyImmediate(exploredStateTexture);
-
         if (maskMaterial != null)
             DestroyImmediate(maskMaterial);
+
+        if (decayMaterial != null)
+            DestroyImmediate(decayMaterial);
 
         cmd?.Release();
     }
