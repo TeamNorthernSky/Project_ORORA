@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// MapTerrain 프리팹에 붙어, PlayGridManager의 Width/Height를 읽어
+/// MapTerrain 프리팹에 붙어, PlayGridManagerJC의 Width/Height를 읽어
 /// GroundPlane과 GridOverlay의 크기·위치를 런타임에 직사각형으로 조정한다.
 ///
 /// Unity 기본 Plane 메시는 10×10 크기이므로, scale = gridSize / 10.
@@ -21,10 +21,10 @@ public class MapTerrainSizer : MonoBehaviour
 
     private void Start()
     {
-        var grid = GameManager.Instance?.Grid;
+        var grid = FindFirstObjectByType<PlayGridManagerJC>();
         if (grid == null)
         {
-            Debug.LogError("[MapTerrainSizer] PlayGridManager를 찾을 수 없습니다");
+            Debug.LogError("[MapTerrainSizer] PlayGridManagerJC를 찾을 수 없습니다");
             return;
         }
 
@@ -52,8 +52,8 @@ public class MapTerrainSizer : MonoBehaviour
 
     private void ApplySize(int gridWidth, int gridHeight)
     {
-        float worldW = gridWidth * PlayGridManager.CellSize;
-        float worldH = gridHeight * PlayGridManager.CellSize;
+        float worldW = gridWidth * PlayGridManagerJC.CellSize;
+        float worldH = gridHeight * PlayGridManagerJC.CellSize;
         float scaleX = worldW / basePlaneSize;
         float scaleZ = worldH / basePlaneSize;
 

@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 ///
 /// 작동 조건 (두 조건 모두 충족해야 함):
 ///   1. 활성 씬 이름이 "PlayScene"
-///   2. GameManager.Instance.Grid != null
+///   2. PlayGridManagerJC 인스턴스가 씬에 존재
 ///
 /// 활성화 시 MapCameraController와 PlayerControllerJC를 자동 비활성화,
 /// 비활성화 시 저장된 카메라 위치/회전을 복원하고 두 컴포넌트 복원.
@@ -69,7 +69,7 @@ public class FreeCameraController : MonoBehaviour
     {
         // === 씬 제한 체크 (방법 A + B) ===
         if (SceneManager.GetActiveScene().name != AllowedSceneName) return;
-        if (GameManager.Instance == null || GameManager.Instance.Grid == null) return;
+        if (GameManager.Instance == null || FindFirstObjectByType<PlayGridManagerJC>() == null) return;
 
         // === Backspace 런타임 토글 ===
         if (Input.GetKeyDown(KeyCode.Backspace))

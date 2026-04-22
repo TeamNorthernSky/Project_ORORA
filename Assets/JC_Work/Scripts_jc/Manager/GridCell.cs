@@ -1,6 +1,6 @@
 /// <summary>
 /// 그리드 셀 하나의 데이터. 값 타입(struct)으로 구현.
-/// 좌표(x,y)는 보유하지 않으며, PlayGridManager의 인덱스(y * width + x)로 도출.
+/// 좌표(x,y)는 보유하지 않으며, PlayGridManagerJC의 인덱스(y * width + x)로 도출.
 /// 8192² 같은 대형 그리드에서 메모리 사용량을 최소화하기 위한 구조.
 /// </summary>
 [System.Serializable]

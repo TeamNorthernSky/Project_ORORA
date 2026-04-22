@@ -13,9 +13,9 @@ public class PlaySceneController : MonoBehaviour
 
     private void Start()
     {
-        if (GameManager.Instance?.Grid == null)
+        if (FindFirstObjectByType<PlayGridManagerJC>() == null)
         {
-            Debug.LogError("[PlaySceneController] PlayGridManager가 없습니다. GameManager 프리팹에 추가하세요.");
+            Debug.LogError("[PlaySceneController] PlayGridManagerJC가 없습니다. GameManager 프리팹에 추가하세요.");
             return;
         }
 

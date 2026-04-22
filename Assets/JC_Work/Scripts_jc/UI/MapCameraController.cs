@@ -36,11 +36,11 @@ public class MapCameraController : MonoBehaviour
         cam.fieldOfView = fieldOfView;
         transform.rotation = Quaternion.Euler(cameraAngleX, 0f, 0f);
 
-        var grid = GameManager.Instance?.Grid;
+        var grid = FindFirstObjectByType<PlayGridManagerJC>();
         int gridW = grid != null ? grid.Width : 64;
         int gridH = grid != null ? grid.Height : 64;
-        float centerX = gridW * PlayGridManager.CellSize * 0.5f;
-        float centerZ = gridH * PlayGridManager.CellSize * 0.5f;
+        float centerX = gridW * PlayGridManagerJC.CellSize * 0.5f;
+        float centerZ = gridH * PlayGridManagerJC.CellSize * 0.5f;
         transform.position = new Vector3(centerX, cameraHeight, centerZ - CameraZOffset());
     }
 

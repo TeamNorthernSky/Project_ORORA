@@ -10,8 +10,8 @@ public class PlayerControllerJC : MonoBehaviour
     [SerializeField] private int sightRadius = 5;
     [SerializeField] private float moveSpeed = 8f;
 
-    private PlayGridManager grid;
-    private PlayFogManager fogOfWar;
+    private PlayGridManagerJC grid;
+    private PlayFogManagerJC fogOfWar;
     private Vector2Int currentGridPos;
     private Vector3 targetWorldPos;
     private bool hasTarget;
@@ -21,17 +21,17 @@ public class PlayerControllerJC : MonoBehaviour
 
     private void Start()
     {
-        grid = GameManager.Instance?.Grid;
+        grid = FindFirstObjectByType<PlayGridManagerJC>();
         if (grid == null)
         {
-            Debug.LogError("[PlayerControllerJC] PlayGridManager를 찾을 수 없습니다");
+            Debug.LogError("[PlayerControllerJC] PlayGridManagerJC를 찾을 수 없습니다");
             return;
         }
 
-        fogOfWar = GameManager.Instance?.FogOfWar;
+        fogOfWar = FindFirstObjectByType<PlayFogManagerJC>();
 
-        currentGridPos = PlayGridManager.WorldToGrid(transform.position);
-        targetWorldPos = PlayGridManager.GridToWorld(currentGridPos);
+        currentGridPos = PlayGridManagerJC.WorldToGrid(transform.position);
+        targetWorldPos = PlayGridManagerJC.GridToWorld(currentGridPos);
         targetWorldPos.y = transform.position.y;
         transform.position = targetWorldPos;
 
@@ -62,14 +62,14 @@ public class PlayerControllerJC : MonoBehaviour
         if (!plane.Raycast(ray, out float distance)) return;
 
         Vector3 hitPoint = ray.GetPoint(distance);
-        Vector2Int targetGrid = PlayGridManager.WorldToGrid(hitPoint);
+        Vector2Int targetGrid = PlayGridManagerJC.WorldToGrid(hitPoint);
 
         // 맵 경계 내로 클램프
         targetGrid.x = Mathf.Clamp(targetGrid.x, 0, grid.Width - 1);
         targetGrid.y = Mathf.Clamp(targetGrid.y, 0, grid.Height - 1);
 
         currentGridPos = targetGrid;
-        targetWorldPos = PlayGridManager.GridToWorld(targetGrid);
+        targetWorldPos = PlayGridManagerJC.GridToWorld(targetGrid);
         targetWorldPos.y = transform.position.y;
         hasTarget = true;
     }
@@ -79,7 +79,7 @@ public class PlayerControllerJC : MonoBehaviour
         transform.position = Vector3.MoveTowards(transform.position, targetWorldPos, moveSpeed * Time.deltaTime);
 
         // 이동 중 현재 위치 기준 시야 갱신
-        var movingGridPos = PlayGridManager.WorldToGrid(transform.position);
+        var movingGridPos = PlayGridManagerJC.WorldToGrid(transform.position);
         if (movingGridPos != currentGridPos)
         {
             currentGridPos = movingGridPos;
@@ -90,7 +90,7 @@ public class PlayerControllerJC : MonoBehaviour
         {
             transform.position = targetWorldPos;
             hasTarget = false;
-            currentGridPos = PlayGridManager.WorldToGrid(transform.position);
+            currentGridPos = PlayGridManagerJC.WorldToGrid(transform.position);
             fogOfWar?.UpdatePlayerVisibility(currentGridPos, sightRadius);
         }
     }

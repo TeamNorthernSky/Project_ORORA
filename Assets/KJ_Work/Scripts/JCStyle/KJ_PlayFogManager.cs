@@ -78,7 +78,7 @@ public class KJ_PlayFogManager : MonoBehaviour
 
     public void Initialize()
     {
-        grid = KJ_GameManager.Instance?.Grid;
+        grid = KJ_FOWManager.Instance?.Grid;
         if (grid == null)
         {
             Debug.LogError("[KJ_PlayFogManager] PlayGridManager를 찾을 수 없습니다");
