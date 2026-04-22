@@ -115,12 +115,6 @@ public class InputHandler : MonoBehaviour
         ResetTargetingState();
     }
 
-    /// <summary>외부(UI 버튼 등)에서 숫자키 1/2/3과 동일한 액션 발동을 요청. 키보드 입력과 동일한 경로로 처리.</summary>
-    public void TriggerAction(PendingActionType actionType)
-    {
-        BeginPendingAction(actionType);
-    }
-
     public void BindUnitDeathEvents(IEnumerable<BattleCharactor> units)
     {
         if (units == null)

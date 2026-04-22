@@ -5,18 +5,22 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 전투 UI 전체 제어:
-/// - BattleFlowManager.CurrentUnit 폴링 → 턴 전환 감지 → 하단 로그 패널 클리어
-/// - Application.logMessageReceived 훅 → 프리픽스 화이트리스트로 필터 → 해당 패널에 라우팅
-/// - 우상단(적 행동 로그): 현재 턴 소유자가 적일 때만 적재. 적 턴 시작 시 클리어, 아군 턴에는 직전 내용 유지(A안).
-/// - 하단(현재 턴 로그): 화이트리스트 전체. 매 턴 시작 직전 클리어.
-/// 스크롤은 auto-scroll to bottom만 구현(프로토타입).
+/// - Application.logMessageReceived 훅 → 화이트리스트 필터 → 해당 패널에 라우팅
+/// - 로그 문자열 패턴으로 턴 상태 관리 (BattleFlowManager 참조·리플렉션 없이)
+///   - "[턴 시작] 플레이어 진영" 감지 → 하단 Clear + 적 턴 모드 OFF (우상단은 유지, A안)
+///   - "[턴 시작] 적 진영"       감지 → 하단 + 우상단 둘 다 Clear, 적 턴 모드 ON
+/// - 적 턴 모드일 때만 우상단에 적재
+///
+/// Clear 타이밍이 로그가 쌓이기 전에 일어나므로 해당 턴 첫 로그가 그대로 보존된다.
+/// (이전 Update 폴링 방식은 턴 전이를 1프레임 늦게 감지해 첫 로그들을 날려먹는 버그가 있었음.)
+///
+/// BattleFlowManager의 "[턴 시작] {진영}: ..." 로그 형식이 바뀌면 이 파일도 동기화 필요.
+///
+/// [BUI-TRACE] 접두 로그: 진단용 임시 로그. 재귀 방지를 위해 OnLogReceived에서 즉시 컷한다.
 /// </summary>
 [DisallowMultipleComponent]
 public class BattleUIController : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField] private BattleFlowManager battleFlowManager;
-
     [Header("Enemy Action Log (우상단)")]
     [SerializeField] private TextMeshProUGUI enemyLogText;
     [SerializeField] private ScrollRect enemyLogScrollRect;
@@ -46,43 +50,18 @@ public class BattleUIController : MonoBehaviour
     private readonly StringBuilder enemyBuf = new StringBuilder(1024);
     private readonly StringBuilder turnBuf = new StringBuilder(1024);
 
-    private BattleCharactor lastCurrentUnit;
+    private bool isInEnemyTurn = false;
 
     private void OnEnable()
     {
         Application.logMessageReceived += OnLogReceived;
+        Debug.Log("[BUI-TRACE] OnEnable subscribed");
     }
 
     private void OnDisable()
     {
         Application.logMessageReceived -= OnLogReceived;
-    }
-
-    private void Update()
-    {
-        BattleCharactor current = battleFlowManager != null ? battleFlowManager.CurrentUnit : null;
-        if (current != lastCurrentUnit)
-        {
-            if (current != null)
-            {
-                OnTurnOwnerChanged(current);
-            }
-            lastCurrentUnit = current;
-        }
-    }
-
-    private void OnTurnOwnerChanged(BattleCharactor next)
-    {
-        // 턴 시작: 하단 패널은 매번 클리어
-        turnBuf.Clear();
-        ApplyTurnBuffer();
-
-        // 우상단은 새 소유자가 적일 때만 클리어 (아군 턴이면 직전 적 행동 유지)
-        if (!next.IsPlayer)
-        {
-            enemyBuf.Clear();
-            ApplyEnemyBuffer();
-        }
+        Debug.Log("[BUI-TRACE] OnDisable unsubscribed");
     }
 
     private void OnLogReceived(string condition, string stackTrace, LogType type)
@@ -92,16 +71,44 @@ public class BattleUIController : MonoBehaviour
             return;
         }
 
-        if (!PassesWhitelist(condition))
+        // 자기 자신 trace 로그 재귀 차단 (최우선)
+        if (condition.StartsWith("[BUI-TRACE]"))
         {
             return;
+        }
+
+        bool pass = PassesWhitelist(condition);
+        string snippet = condition.Length > 30 ? condition.Substring(0, 30) : condition;
+        Debug.Log($"[BUI-TRACE] OnLogReceived pass={pass} msg={snippet}");
+
+        if (!pass)
+        {
+            return;
+        }
+
+        // 턴 시작 감지 → 버퍼/모드 상태 갱신 (로그를 turnBuf/enemyBuf에 쌓기 전에)
+        if (condition.Contains("[턴 시작]"))
+        {
+            turnBuf.Clear();
+
+            bool enemyTurnNext = condition.Contains("적 진영");
+            if (enemyTurnNext)
+            {
+                enemyBuf.Clear();
+                isInEnemyTurn = true;
+            }
+            else
+            {
+                // 플레이어 턴 시작: 우상단은 유지(A안), 적재만 멈춤
+                isInEnemyTurn = false;
+            }
+            Debug.Log($"[BUI-TRACE] TurnStart enemyTurn={enemyTurnNext} isInEnemyTurn={isInEnemyTurn}");
         }
 
         AppendLine(turnBuf, condition);
         ApplyTurnBuffer();
 
-        BattleCharactor current = battleFlowManager != null ? battleFlowManager.CurrentUnit : null;
-        if (current != null && !current.IsPlayer)
+        if (isInEnemyTurn)
         {
             AppendLine(enemyBuf, condition);
             ApplyEnemyBuffer();
@@ -140,18 +147,24 @@ public class BattleUIController : MonoBehaviour
 
     private void ApplyTurnBuffer()
     {
+        Debug.Log($"[BUI-TRACE] ApplyTurnBuffer len={turnBuf.Length} textNull={turnLogText == null}");
         if (turnLogText != null)
         {
             turnLogText.text = turnBuf.ToString();
+            turnLogText.ForceMeshUpdate();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(turnLogText.rectTransform);
         }
         ScrollToBottom(turnLogScrollRect);
     }
 
     private void ApplyEnemyBuffer()
     {
+        Debug.Log($"[BUI-TRACE] ApplyEnemyBuffer len={enemyBuf.Length} textNull={enemyLogText == null}");
         if (enemyLogText != null)
         {
             enemyLogText.text = enemyBuf.ToString();
+            enemyLogText.ForceMeshUpdate();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(enemyLogText.rectTransform);
         }
         ScrollToBottom(enemyLogScrollRect);
     }
