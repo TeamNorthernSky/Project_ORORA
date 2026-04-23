@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 [RequireComponent(typeof(PartyIdentity))]
 [RequireComponent(typeof(PartyComposition))]
@@ -9,9 +8,6 @@ public class PartyGridMover : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private GridManager gridManager;
-
-    [FormerlySerializedAs("partyId")]
-    [SerializeField, HideInInspector] private string legacyPartyId = "party_001";
 
     [Header("Move Settings")]
     [SerializeField] private float moveSpeed = 4f;
@@ -30,15 +26,9 @@ public class PartyGridMover : MonoBehaviour
 
     private void Awake()
     {
-        SyncLegacyIdentity();
         fixedY = transform.position.y;
         currentGrid = gridManager != null ? gridManager.WorldToGrid(transform.position) : Vector2Int.zero;
         movePointController = new PartyMovePointController(maxMovePoints);
-    }
-
-    private void OnValidate()
-    {
-        SyncLegacyIdentity();
     }
 
     private void Update()
@@ -152,15 +142,6 @@ public class PartyGridMover : MonoBehaviour
     private static int GetPathMoveCost(List<Vector2Int> path)
     {
         return path == null ? 0 : Mathf.Max(0, path.Count - 1);
-    }
-
-    private void SyncLegacyIdentity()
-    {
-        PartyIdentity identity = GetComponent<PartyIdentity>();
-        if (identity == null || string.IsNullOrWhiteSpace(legacyPartyId))
-            return;
-
-        identity.SetPartyIdIfEmpty(legacyPartyId);
     }
 }
 

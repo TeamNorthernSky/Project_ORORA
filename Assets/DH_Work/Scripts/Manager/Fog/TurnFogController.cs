@@ -6,6 +6,7 @@ public class TurnFogController : MonoBehaviour
     [SerializeField] private FogGridManager fogGridManager;
     [SerializeField] private PartyFogRevealer partyFogRevealer;
     [SerializeField] private MineFogRevealer mineFogRevealer;
+    [SerializeField] private CastleFogRevealer castleFogRevealer;
 
     private void OnEnable()
     {
@@ -39,5 +40,6 @@ public class TurnFogController : MonoBehaviour
         fogGridManager.ApplyDayProgression();
         partyFogRevealer?.RevealAllCurrentPartyPositions();
         mineFogRevealer?.RevealAllClaimedMines();
+        castleFogRevealer?.RevealAllCastles();
     }
 }

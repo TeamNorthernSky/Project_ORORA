@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -7,7 +8,7 @@ public class PartyUnitBootstrap : MonoBehaviour
 {
     [Header("Bootstrap")]
     [SerializeField] private bool populateOnStart = true;
-    [SerializeField] private int startingUnitCount = 3;
+    [SerializeField] private List<PartyHeroUnitSeed> heroUnitSeeds = new List<PartyHeroUnitSeed>();
     [SerializeField] private bool onlyWhenAllSlotsEmpty = true;
 
     private PartyComposition partyComposition;
@@ -40,28 +41,70 @@ public class PartyUnitBootstrap : MonoBehaviour
         if (repository == null || partyComposition == null)
             return;
 
-        startingUnitCount = Mathf.Max(0, startingUnitCount);
-        partyComposition.EnsureSlotCount(startingUnitCount);
-
-        if (onlyWhenAllSlotsEmpty && !AreAllTargetSlotsEmpty())
+        if (!HasConfiguredHeroSeeds())
             return;
 
-        for (int i = 0; i < startingUnitCount; i++)
+        InitializeFromHeroSeeds(repository);
+    }
+
+    [ContextMenu("Collect Hero Unit Seeds From Children")]
+    public void CollectHeroUnitSeedsFromChildren()
+    {
+        heroUnitSeeds.Clear();
+        heroUnitSeeds.AddRange(GetComponentsInChildren<PartyHeroUnitSeed>(true));
+    }
+
+    private bool HasConfiguredHeroSeeds()
+    {
+        for (int i = 0; i < heroUnitSeeds.Count; i++)
         {
+            if (heroUnitSeeds[i] != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void InitializeFromHeroSeeds(PersistentUnitRepository repository)
+    {
+        int slotCount = heroUnitSeeds.Count;
+        partyComposition.EnsureSlotCount(slotCount);
+
+        if (onlyWhenAllSlotsEmpty && !AreAllHeroSeedSlotsEmpty(slotCount))
+            return;
+
+        int registeredCount = 0;
+        for (int i = 0; i < heroUnitSeeds.Count; i++)
+        {
+            PartyHeroUnitSeed seed = heroUnitSeeds[i];
+            if (seed == null)
+                continue;
+
             if (partyComposition.GetUnitIndexAt(i) > 0)
                 continue;
 
-            int unitIndex = repository.CreateUnit();
+            if (string.IsNullOrWhiteSpace(seed.UnitTemplateKey))
+            {
+                Debug.LogWarning($"Party hero seed on '{seed.name}' is missing a unitTemplateKey.", seed);
+                continue;
+            }
+
+            int unitIndex = repository.CreateUnit(
+                seed.UnitTemplateKey,
+                seed.Level,
+                seed.Favorability,
+                seed.BaseStats);
             partyComposition.SetUnitIndexAt(i, unitIndex);
+            registeredCount++;
         }
 
         string partyLabel = partyIdentity != null ? partyIdentity.PartyId : gameObject.name;
-        Debug.Log($"Party '{partyLabel}' initialized with {startingUnitCount} unit slot(s).", this);
+        Debug.Log($"Party '{partyLabel}' initialized from {registeredCount} hero unit seed(s).", this);
     }
 
-    private bool AreAllTargetSlotsEmpty()
+    private bool AreAllHeroSeedSlotsEmpty(int slotCount)
     {
-        for (int i = 0; i < startingUnitCount; i++)
+        for (int i = 0; i < slotCount; i++)
         {
             if (partyComposition.GetUnitIndexAt(i) > 0)
                 return false;

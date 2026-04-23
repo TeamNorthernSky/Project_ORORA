@@ -6,10 +6,12 @@ public class PartyFogRevealer : MonoBehaviour
 {
     [SerializeField] private PartyRegistry partyRegistry;
     [SerializeField] private FogGridManager fogGridManager;
-    [SerializeField, Min(0)] private int revealRadius = 3;
+    [SerializeField, Min(0)] private int revealRadius = 4;
+    [SerializeField] private bool useRoundedMask = true;
     [SerializeField] private bool revealCurrentPositionsOnEnable = true;
 
     private readonly HashSet<PartyGridMover> subscribedMovers = new HashSet<PartyGridMover>();
+    private readonly List<Vector2Int> revealBuffer = new List<Vector2Int>(81);
     private Coroutine initialRevealCoroutine;
 
     private void OnEnable()
@@ -44,8 +46,42 @@ public class PartyFogRevealer : MonoBehaviour
             if (mover == null)
                 continue;
 
-            fogGridManager.RevealArea(mover.GetCurrentGrid(), revealRadius);
+            RevealAround(mover.GetCurrentGrid());
         }
+    }
+
+    public void RevealAround(Vector2Int centerGrid)
+    {
+        if (fogGridManager == null)
+            return;
+
+        revealBuffer.Clear();
+
+        for (int dx = -revealRadius; dx <= revealRadius; dx++)
+        {
+            for (int dy = -revealRadius; dy <= revealRadius; dy++)
+            {
+                if (useRoundedMask && IsExcludedCornerOffset(dx, dy))
+                    continue;
+
+                revealBuffer.Add(centerGrid + new Vector2Int(dx, dy));
+            }
+        }
+
+        fogGridManager.RevealCells(revealBuffer);
+    }
+
+    private bool IsExcludedCornerOffset(int dx, int dy)
+    {
+        if (revealRadius != 4)
+            return false;
+
+        int absX = Mathf.Abs(dx);
+        int absY = Mathf.Abs(dy);
+
+        return (absX == 4 && absY == 4)
+            || (absX == 4 && absY == 3)
+            || (absX == 3 && absY == 4);
     }
 
     private void SubscribeToRegisteredParties()
@@ -83,7 +119,7 @@ public class PartyFogRevealer : MonoBehaviour
         if (fogGridManager == null)
             return;
 
-        fogGridManager.RevealArea(currentGrid, revealRadius);
+        RevealAround(currentGrid);
     }
 
     private void QueueInitialReveal()

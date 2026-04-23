@@ -8,6 +8,7 @@ public class ClickSelectionController : MonoBehaviour
     [SerializeField] private GridManager gridManager;
     [SerializeField] private AStarPathfinder pathfinder;
     [SerializeField] private PartyRegistry partyRegistry;
+    [SerializeField] private TurnManager turnManager;
     [SerializeField] private Transform marker;
 
     [Header("Raycast")]
@@ -52,6 +53,9 @@ public class ClickSelectionController : MonoBehaviour
         partySelectionController.ActiveMoverPathUpdated += HandleActiveMoverPathUpdated;
         partySelectionController.ActiveMoverMoveCompleted += HandleActiveMoverMoveCompleted;
 
+        if (turnManager != null)
+            turnManager.EnemyTurnStateChanged += HandleEnemyTurnStateChanged;
+
         partySelectionController.Initialize();
         moveCommandPreviewController.Initialize();
     }
@@ -65,6 +69,9 @@ public class ClickSelectionController : MonoBehaviour
             partySelectionController.ActiveMoverMoveCompleted -= HandleActiveMoverMoveCompleted;
             partySelectionController.Dispose();
         }
+
+        if (turnManager != null)
+            turnManager.EnemyTurnStateChanged -= HandleEnemyTurnStateChanged;
     }
 
     private void Update()
@@ -87,6 +94,9 @@ public class ClickSelectionController : MonoBehaviour
             return;
 
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            return;
+
+        if (turnManager != null && turnManager.IsEnemyTurnRunning)
             return;
 
         if (activeMover.IsMoving || (activeRuntime != null && activeRuntime.IsInputLocked))
@@ -166,6 +176,14 @@ public class ClickSelectionController : MonoBehaviour
         moveCommandPreviewController?.HandleMoveCompleted();
     }
 
+    private void HandleEnemyTurnStateChanged(bool isEnemyTurnRunning)
+    {
+        if (!isEnemyTurnRunning)
+            return;
+
+        moveCommandPreviewController?.ClearPreview();
+    }
+
     private void RefreshUILockState()
     {
         if (uiInputBlocker == null)
@@ -173,7 +191,9 @@ public class ClickSelectionController : MonoBehaviour
 
         PartyGridMover activeMover = partySelectionController != null ? partySelectionController.ActiveMover : null;
         PartyRuntime activeRuntime = activeMover != null ? activeMover.GetComponent<PartyRuntime>() : null;
-        bool shouldLockUI = activeMover != null && (activeMover.IsMoving || (activeRuntime != null && activeRuntime.IsInputLocked));
+        bool shouldLockUI =
+            (turnManager != null && turnManager.IsEnemyTurnRunning) ||
+            (activeMover != null && (activeMover.IsMoving || (activeRuntime != null && activeRuntime.IsInputLocked)));
         uiInputBlocker.SetLocked(shouldLockUI);
     }
 }

@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: DHFogOfWarMaterial
-  m_Shader: {fileID: 4800000, guid: 282891d52a12e05459c88a23f6ba59fa, type: 3}
+  m_Shader: {fileID: 4800000, guid: 4ac4b9f377f109840ba6970b8c877371, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -31,6 +31,7 @@ Material:
     - _CloudContrast: 0.15
     - _DebugMode: 0
     - _DistortionStrength: 0.3
+    - _EdgeSoftness: 0.18
     - _FlowSpeed1: 0.15
     - _FlowSpeed2: 0.25
     - _FlowSpeed3: 0.08
@@ -43,6 +44,8 @@ Material:
     - _NoiseScale1: 6
     - _NoiseScale2: 18
     - _NoiseScale3: 3
+    - _TrimStrength: 0.65
+    - _VisibilitySoftness: 0.18
     m_Colors:
     - _FogColor: {r: 0.75, g: 0.78, b: 0.85, a: 1}
   m_BuildTextureStacks: []

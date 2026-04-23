@@ -7,6 +7,8 @@ public class EnemyRegistry : MonoBehaviour
     private readonly List<EnemyUnit> enemies = new List<EnemyUnit>();
 
     public IReadOnlyList<EnemyUnit> Enemies => enemies;
+    public event Action<EnemyUnit> EnemyRegistered;
+    public event Action<EnemyUnit> EnemyUnregistered;
 
     private void Awake()
     {
@@ -19,6 +21,7 @@ public class EnemyRegistry : MonoBehaviour
             return;
 
         enemies.Add(enemy);
+        EnemyRegistered?.Invoke(enemy);
     }
 
     public void Unregister(EnemyUnit enemy)
@@ -26,7 +29,10 @@ public class EnemyRegistry : MonoBehaviour
         if (enemy == null)
             return;
 
-        enemies.Remove(enemy);
+        if (!enemies.Remove(enemy))
+            return;
+
+        EnemyUnregistered?.Invoke(enemy);
     }
 
     [ContextMenu("Refresh Scene Enemies")]

@@ -5,6 +5,7 @@ using TMPro;
 public class TurnManager : MonoBehaviour
 {
     public event System.Action<int> DayAdvanced;
+    public event System.Action<bool> EnemyTurnStateChanged;
 
     [SerializeField] private int day = 1;
     [SerializeField] private PartyRegistry partyRegistry;
@@ -13,6 +14,9 @@ public class TurnManager : MonoBehaviour
     [SerializeField] private TMP_Text turnStateText;
 
     private bool enemyTurnRunning;
+
+    public bool IsEnemyTurnRunning => enemyTurnRunning;
+    public bool IsPlayerTurn => !enemyTurnRunning;
 
     private void Awake()
     {
@@ -32,10 +36,13 @@ public class TurnManager : MonoBehaviour
         if (enemyTurnRunning)
             return;
 
+        enemyTurnRunning = true;
+        EnemyTurnStateChanged?.Invoke(true);
         UpdateTurnStateText("Enemy Turn");
 
         if (enemyTurnController == null)
         {
+            enemyTurnRunning = false;
             EndEnemyTurn();
             return;
         }
@@ -94,9 +101,9 @@ public class TurnManager : MonoBehaviour
 
     private IEnumerator RunEnemyTurn()
     {
-        enemyTurnRunning = true;
         yield return enemyTurnController.ExecuteEnemyTurn();
         enemyTurnRunning = false;
+        EnemyTurnStateChanged?.Invoke(false);
         EndEnemyTurn();
     }
 

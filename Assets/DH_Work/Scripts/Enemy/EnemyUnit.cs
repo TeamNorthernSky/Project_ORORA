@@ -4,12 +4,16 @@ using UnityEngine;
 
 public class EnemyUnit : MonoBehaviour
 {
+    public event System.Action<EnemyUnit, Vector2Int> GridChanged;
+
     [Header("Identity")]
     [SerializeField] private string enemyId = "enemy_001";
+    [SerializeField] private List<int> combatUnitIndices = new List<int>();
 
     [Header("References")]
     [SerializeField] private GridManager gridManager;
     [SerializeField] private EnemyRegistry enemyRegistry;
+    [SerializeField] private PersistentEnemyRepository persistentEnemyRepository;
 
     [Header("Move Settings")]
     [SerializeField] private float moveSpeed = 4f;
@@ -26,6 +30,7 @@ public class EnemyUnit : MonoBehaviour
     private Component currentTarget;
 
     public string EnemyId => enemyId;
+    public IReadOnlyList<int> CombatUnitIndices => combatUnitIndices;
     public int MovePointsPerTurn => Mathf.Max(0, movePointsPerTurn);
     public int DetectionRange => Mathf.Max(0, detectionRange);
     public EnemyTargetingProfile TargetingProfile => targetingProfile;
@@ -33,6 +38,11 @@ public class EnemyUnit : MonoBehaviour
     public int StrategicGroupWeight => GetStrategicGroupWeight(targetingProfile);
     public EnemyTargetType CurrentTargetType => currentTargetType;
     public Component CurrentTarget => currentTarget;
+
+    public bool HasCombatUnitIndices()
+    {
+        return combatUnitIndices != null && combatUnitIndices.Count > 0;
+    }
 
     private void Awake()
     {
@@ -47,6 +57,7 @@ public class EnemyUnit : MonoBehaviour
     {
         ResolveRegistry();
         enemyRegistry?.Register(this);
+        RegisterPersistentData();
     }
 
     private void OnDisable()
@@ -78,14 +89,22 @@ public class EnemyUnit : MonoBehaviour
 
     public void SnapToGridPosition(Vector2Int grid)
     {
+        bool changed = currentGrid != grid;
         currentGrid = grid;
 
         if (gridManager == null)
+        {
+            if (changed)
+                GridChanged?.Invoke(this, currentGrid);
             return;
+        }
 
         Vector3 worldPosition = gridManager.GridToWorldCenter(grid);
         worldPosition.y = fixedY;
         transform.position = worldPosition;
+
+        if (changed)
+            GridChanged?.Invoke(this, currentGrid);
     }
 
     public IEnumerator MoveAlongPath(List<Vector2Int> path)
@@ -107,6 +126,7 @@ public class EnemyUnit : MonoBehaviour
 
             transform.position = target;
             currentGrid = nextGrid;
+            GridChanged?.Invoke(this, currentGrid);
         }
     }
 
@@ -114,6 +134,21 @@ public class EnemyUnit : MonoBehaviour
     {
         if (enemyRegistry == null)
             enemyRegistry = FindFirstObjectByType<EnemyRegistry>();
+
+        if (persistentEnemyRepository == null)
+            persistentEnemyRepository = PersistentEnemyRepository.Instance;
+    }
+
+    private void RegisterPersistentData()
+    {
+        if (string.IsNullOrWhiteSpace(enemyId))
+        {
+            Debug.LogWarning("EnemyUnit has no enemyId. Persistent enemy data registration was skipped.", this);
+            return;
+        }
+
+        persistentEnemyRepository ??= PersistentEnemyRepository.Instance;
+        persistentEnemyRepository?.RegisterOrUpdateEnemy(enemyId, combatUnitIndices);
     }
 
     private static int GetResourceGroupWeight(EnemyTargetingProfile profile)

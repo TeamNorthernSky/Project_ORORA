@@ -15,6 +15,7 @@ MonoBehaviour:
   levelId: level_001
   displayName: New Level
   gridSize: {x: 50, y: 50}
+  groundTilePlacements: []
   obstacleCells:
   - {x: 28, y: 28}
   itemPlacements:
@@ -30,4 +31,4 @@ MonoBehaviour:
   - partyId: party_001
     gridPosition: {x: 24, y: 24}
   - partyId: party_002
-    gridPosition: {x: 27, y: 24}
+    gridPosition: {x: 30, y: 24}

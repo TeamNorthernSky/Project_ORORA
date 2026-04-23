@@ -34,10 +34,15 @@ public class PersistentUnitRepository : MonoBehaviour
 
     public int CreateUnit()
     {
+        return CreateUnit(string.Empty, 1, 0, default);
+    }
+
+    public int CreateUnit(string unitTemplateKey, int level, int favorability, StatBlock baseStats)
+    {
         int unitIndex = Mathf.Max(1, nextUnitIndex);
         nextUnitIndex = unitIndex + 1;
 
-        var data = new UnitPersistentData(unitIndex);
+        var data = new UnitPersistentData(unitIndex, unitTemplateKey, level, favorability, baseStats);
         units.Add(data);
         unitLookup[unitIndex] = data;
         return unitIndex;

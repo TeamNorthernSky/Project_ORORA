@@ -73,6 +73,19 @@ public class FogGridManager : MonoBehaviour
             FogChanged?.Invoke();
     }
 
+    public void RevealCells(IEnumerable<Vector2Int> grids)
+    {
+        if (grids == null)
+            return;
+
+        bool anyChanged = false;
+        foreach (Vector2Int grid in grids)
+            anyChanged |= RevealCell(grid);
+
+        if (anyChanged)
+            FogChanged?.Invoke();
+    }
+
     public void ApplyDayProgression()
     {
         if (refogDelayDays <= 0)
@@ -129,4 +142,5 @@ public class FogGridManager : MonoBehaviour
 
         return changed;
     }
+
 }

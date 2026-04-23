@@ -23,6 +23,7 @@ public class FogRenderManager : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float unexploredValue = 0f;
     [SerializeField, Range(0f, 1f)] private float foggedValue = 0.5f;
     [SerializeField, Range(0f, 1f)] private float visibleValue = 1f;
+    [SerializeField] private FilterMode fogTextureFilterMode = FilterMode.Bilinear;
 
     private Texture2D fogTexture;
     private bool isDirty = true;
@@ -66,6 +67,7 @@ public class FogRenderManager : MonoBehaviour
             return;
 
         CreateTextureIfNeeded();
+        ApplyTextureSettings();
         ApplyShaderGlobals();
     }
 
@@ -143,7 +145,10 @@ public class FogRenderManager : MonoBehaviour
             return;
 
         if (fogTexture != null && fogTexture.width == gridSize.x && fogTexture.height == gridSize.y)
+        {
+            ApplyTextureSettings();
             return;
+        }
 
         if (fogTexture != null)
             DestroyImmediate(fogTexture);
@@ -151,9 +156,19 @@ public class FogRenderManager : MonoBehaviour
         fogTexture = new Texture2D(gridSize.x, gridSize.y, TextureFormat.RGBA32, false, true)
         {
             name = "FogVisibilityTexture",
-            filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp
         };
+
+        ApplyTextureSettings();
+    }
+
+    private void ApplyTextureSettings()
+    {
+        if (fogTexture == null)
+            return;
+
+        fogTexture.filterMode = fogTextureFilterMode;
+        fogTexture.wrapMode = TextureWrapMode.Clamp;
     }
 
     private void ApplyShaderGlobals()
