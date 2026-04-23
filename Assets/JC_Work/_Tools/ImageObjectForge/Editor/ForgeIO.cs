@@ -237,12 +237,20 @@ namespace Orora.ImageObjectForge
             return (processed, skipped);
         }
 
-        // Output/ 내 Sprite 목록 로드 (이름 오름차순).
+        // Output/ 내 Sprite 목록 로드 (이름 오름차순). 호환용: 내부에서 EnumerateSpritesIn(OutputDir) 호출.
         public static System.Collections.Generic.List<Sprite> EnumerateOutputSprites()
         {
             EnsureDir(OutputDir);
+            return EnumerateSpritesIn(OutputDir);
+        }
+
+        // 임의 폴더(Assets 이하) 내 Sprite 목록 로드 (이름 오름차순). 폴더가 유효하지 않으면 빈 리스트.
+        public static System.Collections.Generic.List<Sprite> EnumerateSpritesIn(string folderAssetPath)
+        {
             var list = new System.Collections.Generic.List<Sprite>();
-            var guids = AssetDatabase.FindAssets("t:Sprite", new[] { OutputDir });
+            if (string.IsNullOrEmpty(folderAssetPath) || !AssetDatabase.IsValidFolder(folderAssetPath))
+                return list;
+            var guids = AssetDatabase.FindAssets("t:Sprite", new[] { folderAssetPath });
             foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
@@ -251,6 +259,32 @@ namespace Orora.ImageObjectForge
             }
             list.Sort((a, b) => string.Compare(a.name, b.name, System.StringComparison.OrdinalIgnoreCase));
             return list;
+        }
+
+        // 임의 폴더(Assets 이하) 내 Prefab 목록 로드 (이름 오름차순). 폴더가 유효하지 않으면 빈 리스트.
+        public static System.Collections.Generic.List<GameObject> EnumeratePrefabsIn(string folderAssetPath)
+        {
+            var list = new System.Collections.Generic.List<GameObject>();
+            if (string.IsNullOrEmpty(folderAssetPath) || !AssetDatabase.IsValidFolder(folderAssetPath))
+                return list;
+            var guids = AssetDatabase.FindAssets("t:Prefab", new[] { folderAssetPath });
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var p = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (p != null) list.Add(p);
+            }
+            list.Sort((a, b) => string.Compare(a.name, b.name, System.StringComparison.OrdinalIgnoreCase));
+            return list;
+        }
+
+        // 폴더 검증: Assets/ 이하의 유효한 폴더인지.
+        public static bool IsValidAssetsFolder(string folderAssetPath)
+        {
+            if (string.IsNullOrEmpty(folderAssetPath)) return false;
+            if (!folderAssetPath.StartsWith("Assets/", System.StringComparison.Ordinal)
+                && folderAssetPath != "Assets") return false;
+            return AssetDatabase.IsValidFolder(folderAssetPath);
         }
 
         // ---------- Sidecar (.crop.json) ----------
@@ -289,7 +323,15 @@ namespace Orora.ImageObjectForge
             try
             {
                 string json = File.ReadAllText(abs);
-                return JsonUtility.FromJson<ForgeCropMeta>(json);
+                var meta = JsonUtility.FromJson<ForgeCropMeta>(json);
+                if (meta == null) return null;
+                // v2 자동 호환: canvasSize가 비어 있고 sourceSize가 채워져 있으면 매핑.
+                if (meta.canvasSize.width == 0 && meta.canvasSize.height == 0
+                    && (meta.sourceSize.width != 0 || meta.sourceSize.height != 0))
+                {
+                    meta.canvasSize = meta.sourceSize;
+                }
+                return meta;
             }
             catch
             {

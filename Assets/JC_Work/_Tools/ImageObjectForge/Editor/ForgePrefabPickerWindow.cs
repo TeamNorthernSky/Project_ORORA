@@ -4,25 +4,26 @@ using UnityEditor;
 
 namespace Orora.ImageObjectForge
 {
-    internal class ForgeSpritePickerWindow : EditorWindow
+    internal class ForgePrefabPickerWindow : EditorWindow
     {
-        System.Action<List<Sprite>> _onConfirm;
-        List<Sprite> _all = new List<Sprite>();
+        System.Action<List<GameObject>> _onConfirm;
+        List<GameObject> _all = new List<GameObject>();
         HashSet<int> _sel = new HashSet<int>();
         string _search = "";
         Vector2 _scroll;
 
         DefaultAsset _folderAsset;
-        string _folderPath = ForgeIO.OutputDir;
+        string _folderPath = ForgePrefabFactory.PrefabsDir;
         string _folderError;
 
-        public static void Show(IEnumerable<Sprite> preSelected, System.Action<List<Sprite>> onConfirm)
+        public static void Show(string initialFolderPath, IEnumerable<GameObject> preSelected, System.Action<List<GameObject>> onConfirm)
         {
-            var w = CreateInstance<ForgeSpritePickerWindow>();
-            w.titleContent = new GUIContent("Select Sprites");
+            var w = CreateInstance<ForgePrefabPickerWindow>();
+            w.titleContent = new GUIContent("Select Prefabs");
             w._onConfirm = onConfirm;
             w.minSize = new Vector2(420, 560);
-            w.SetFolder(ForgeIO.OutputDir);
+            string folder = !string.IsNullOrEmpty(initialFolderPath) ? initialFolderPath : ForgePrefabFactory.PrefabsDir;
+            w.SetFolder(folder);
             w.RefreshList(preSelected);
             w.ShowUtility();
             w.Focus();
@@ -34,21 +35,21 @@ namespace Orora.ImageObjectForge
             _folderAsset = string.IsNullOrEmpty(folderPath) ? null : AssetDatabase.LoadAssetAtPath<DefaultAsset>(folderPath);
         }
 
-        void RefreshList(IEnumerable<Sprite> preSelected = null)
+        void RefreshList(IEnumerable<GameObject> preSelected = null)
         {
             _folderError = null;
             if (!ForgeIO.IsValidAssetsFolder(_folderPath))
             {
-                _all = new List<Sprite>();
+                _all = new List<GameObject>();
                 _sel.Clear();
                 _folderError = "Assets/ 이하의 유효한 폴더를 지정하세요.";
                 return;
             }
-            _all = ForgeIO.EnumerateSpritesIn(_folderPath);
+            _all = ForgeIO.EnumeratePrefabsIn(_folderPath);
             _sel.Clear();
             if (preSelected != null)
             {
-                var keepSet = new HashSet<Sprite>(preSelected);
+                var keepSet = new HashSet<GameObject>(preSelected);
                 for (int i = 0; i < _all.Count; i++)
                     if (keepSet.Contains(_all[i])) _sel.Add(i);
             }
@@ -69,7 +70,7 @@ namespace Orora.ImageObjectForge
                 var newAsset = (DefaultAsset)EditorGUILayout.ObjectField(_folderAsset, typeof(DefaultAsset), false);
                 if (newAsset != _folderAsset)
                 {
-                    string newPath = newAsset != null ? AssetDatabase.GetAssetPath(newAsset) : ForgeIO.OutputDir;
+                    string newPath = newAsset != null ? AssetDatabase.GetAssetPath(newAsset) : ForgePrefabFactory.PrefabsDir;
                     if (newAsset == null || ForgeIO.IsValidAssetsFolder(newPath))
                     {
                         SetFolder(newPath);
@@ -82,18 +83,18 @@ namespace Orora.ImageObjectForge
                 }
                 if (GUILayout.Button("Reset", GUILayout.Width(60)))
                 {
-                    SetFolder(ForgeIO.OutputDir);
+                    SetFolder(ForgePrefabFactory.PrefabsDir);
                     RefreshList(GetSelected());
                 }
             }
-            EditorGUILayout.LabelField(string.IsNullOrEmpty(_folderPath) ? ForgeIO.OutputDir : _folderPath, EditorStyles.miniLabel);
+            EditorGUILayout.LabelField(string.IsNullOrEmpty(_folderPath) ? ForgePrefabFactory.PrefabsDir : _folderPath, EditorStyles.miniLabel);
             if (!string.IsNullOrEmpty(_folderError))
             {
                 EditorGUILayout.HelpBox(_folderError, MessageType.Warning);
             }
 
             EditorGUILayout.Space(2);
-            EditorGUILayout.LabelField($"Sprites ({_all.Count}개)", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"Prefabs ({_all.Count}개)", EditorStyles.boldLabel);
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -113,14 +114,14 @@ namespace Orora.ImageObjectForge
 
             if (_all.Count == 0)
             {
-                EditorGUILayout.HelpBox("선택된 폴더에 Sprite가 없습니다.\n다른 폴더를 지정하거나, 이미지를 저장/일괄 변환하세요.", MessageType.Info);
+                EditorGUILayout.HelpBox("선택된 폴더에 Prefab이 없습니다.\n다른 폴더를 지정하거나, Create Prefabs로 먼저 생성하세요.", MessageType.Info);
             }
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll, GUI.skin.box);
             for (int i = 0; i < _all.Count; i++)
             {
                 if (!Passes(i)) continue;
-                var sp = _all[i];
+                var go = _all[i];
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     bool was = _sel.Contains(i);
@@ -129,19 +130,18 @@ namespace Orora.ImageObjectForge
                     else if (!now && was) _sel.Remove(i);
 
                     var previewRect = GUILayoutUtility.GetRect(40, 40, GUILayout.Width(40), GUILayout.Height(40));
-                    var preview = AssetPreview.GetAssetPreview(sp);
-                    if (preview == null) preview = AssetPreview.GetMiniThumbnail(sp);
+                    var preview = AssetPreview.GetAssetPreview(go);
+                    if (preview == null) preview = AssetPreview.GetMiniThumbnail(go);
                     if (preview != null) GUI.DrawTexture(previewRect, preview, ScaleMode.ScaleToFit);
 
-                    var r = sp.rect;
                     using (new EditorGUILayout.VerticalScope())
                     {
-                        EditorGUILayout.LabelField(sp.name, EditorStyles.boldLabel);
-                        EditorGUILayout.LabelField($"{(int)r.width} × {(int)r.height} px", EditorStyles.miniLabel);
+                        EditorGUILayout.LabelField(go.name, EditorStyles.boldLabel);
+                        EditorGUILayout.LabelField(AssetDatabase.GetAssetPath(go), EditorStyles.miniLabel);
                     }
 
                     if (GUILayout.Button("Ping", GUILayout.Width(50)))
-                        EditorGUIUtility.PingObject(sp);
+                        EditorGUIUtility.PingObject(go);
                 }
             }
             EditorGUILayout.EndScrollView();
@@ -165,9 +165,9 @@ namespace Orora.ImageObjectForge
             }
         }
 
-        List<Sprite> GetSelected()
+        List<GameObject> GetSelected()
         {
-            var r = new List<Sprite>();
+            var r = new List<GameObject>();
             foreach (var idx in _sel) r.Add(_all[idx]);
             return r;
         }

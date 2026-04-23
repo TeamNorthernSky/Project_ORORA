@@ -58,11 +58,7 @@ namespace Orora.ImageObjectForge
         // Auto-Place
         Canvas _autoPlaceCanvas;
         DefaultAsset _autoPlaceFolder;
-
-        // Source Rebind
-        DefaultAsset _rebindFolder;
-        Texture2D _rebindNewSource;
-        ForgeSourceRebind.ValidationResult _rebindValidation;
+        List<GameObject> _autoPlaceSelected = new List<GameObject>();
 
         // Status
         string _statusMsg;
@@ -198,60 +194,50 @@ namespace Orora.ImageObjectForge
             {
                 EditorGUILayout.LabelField("Auto-Place Prefabs (Sidecar 기반)", EditorStyles.boldLabel);
                 _autoPlaceCanvas = (Canvas)EditorGUILayout.ObjectField("Target Canvas", _autoPlaceCanvas, typeof(Canvas), true);
-                _autoPlaceFolder = (DefaultAsset)EditorGUILayout.ObjectField("Scan Folder", _autoPlaceFolder, typeof(DefaultAsset), false);
+                _autoPlaceFolder = (DefaultAsset)EditorGUILayout.ObjectField("Default Folder", _autoPlaceFolder, typeof(DefaultAsset), false);
                 if (_autoPlaceFolder == null)
                 {
                     EditorGUILayout.LabelField("  비워두면 기본 폴더 사용: " + ForgePrefabFactory.PrefabsDir, EditorStyles.miniLabel);
                 }
-                GUI.enabled = _autoPlaceCanvas != null;
-                if (GUILayout.Button("Auto-Place from Metadata", GUILayout.Height(26)))
-                {
-                    EditorApplication.delayCall += DoAutoPlace;
-                }
-                GUI.enabled = true;
-            }
+                EditorGUILayout.LabelField("  픽커 안에서 다른 폴더로 변경 가능", EditorStyles.miniLabel);
 
-            EditorGUILayout.Space(12);
-
-            // -------- Source Rebind --------
-            using (new EditorGUILayout.VerticalScope(GUI.skin.box))
-            {
-                EditorGUILayout.LabelField("Source Rebind (사이드카 일괄 참조 변경)", EditorStyles.boldLabel);
-                _rebindFolder = (DefaultAsset)EditorGUILayout.ObjectField("Scan Folder", _rebindFolder, typeof(DefaultAsset), false);
-                if (_rebindFolder == null)
-                {
-                    EditorGUILayout.LabelField("  비워두면 기본 폴더 사용: " + ForgeIO.OutputDir, EditorStyles.miniLabel);
-                }
-                _rebindNewSource = (Texture2D)EditorGUILayout.ObjectField("New Source Image", _rebindNewSource, typeof(Texture2D), false);
+                EditorGUILayout.Space(4);
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    GUI.enabled = _rebindNewSource != null;
-                    if (GUILayout.Button("Validate", GUILayout.Height(26)))
+                    if (GUILayout.Button("Select Prefabs…", GUILayout.Height(24)))
                     {
-                        EditorApplication.delayCall += DoRebindValidate;
+                        string folder = _autoPlaceFolder != null
+                            ? AssetDatabase.GetAssetPath(_autoPlaceFolder)
+                            : ForgePrefabFactory.PrefabsDir;
+                        var preSel = new List<GameObject>(_autoPlaceSelected);
+                        EditorApplication.delayCall += () =>
+                            ForgePrefabPickerWindow.Show(folder, preSel, list =>
+                            {
+                                _autoPlaceSelected = list ?? new List<GameObject>();
+                                Repaint();
+                            });
                     }
-                    GUI.enabled = _rebindValidation != null
-                                  && _rebindValidation.incompatible == 0
-                                  && _rebindValidation.compatible > 0
-                                  && _rebindNewSource != null;
-                    string rebindLabel = _rebindValidation != null
-                        ? $"Rebind ({_rebindValidation.compatible})"
-                        : "Rebind";
-                    if (GUILayout.Button(rebindLabel, GUILayout.Height(26)))
+                    if (GUILayout.Button("Clear", GUILayout.Width(60), GUILayout.Height(24)))
                     {
-                        EditorApplication.delayCall += DoRebindExecute;
+                        _autoPlaceSelected.Clear();
                     }
-                    GUI.enabled = true;
                 }
+                EditorGUILayout.LabelField($"  선택된 프리팹: {_autoPlaceSelected.Count}개", EditorStyles.miniLabel);
 
-                if (_rebindValidation != null)
+                EditorGUILayout.Space(4);
+
+                GUI.enabled = _autoPlaceCanvas != null && _autoPlaceSelected.Count > 0;
+                if (GUILayout.Button($"Auto-Place from Metadata ({_autoPlaceSelected.Count})", GUILayout.Height(26)))
                 {
-                    var msgType = _rebindValidation.incompatible > 0 ? MessageType.Warning : MessageType.Info;
-                    EditorGUILayout.HelpBox(
-                        $"검증: 호환 {_rebindValidation.compatible} / 불일치 {_rebindValidation.incompatible} / 총 {_rebindValidation.total}",
-                        msgType);
+                    EditorApplication.delayCall += DoAutoPlaceSelected;
                 }
+                GUI.enabled = _autoPlaceCanvas != null;
+                if (GUILayout.Button("Place All in Folder", GUILayout.Height(22)))
+                {
+                    EditorApplication.delayCall += DoAutoPlaceFolder;
+                }
+                GUI.enabled = true;
             }
 
             if (EditorApplication.timeSinceStartup < _statusExpireAt && !string.IsNullOrEmpty(_statusMsg))
@@ -263,63 +249,28 @@ namespace Orora.ImageObjectForge
             EditorGUILayout.EndScrollView();
         }
 
-        void DoRebindValidate()
+        void DoAutoPlaceSelected()
         {
-            if (_rebindNewSource == null) return;
-            string folder = _rebindFolder != null
-                ? AssetDatabase.GetAssetPath(_rebindFolder)
-                : ForgeIO.OutputDir;
-            _rebindValidation = ForgeSourceRebind.Validate(folder, _rebindNewSource);
-
-            string msg = $"총 {_rebindValidation.total} 건\n" +
-                         $"호환: {_rebindValidation.compatible}\n" +
-                         $"불일치: {_rebindValidation.incompatible}";
-            if (_rebindValidation.issues.Count > 0)
-                msg += "\n\n이슈:\n- " + string.Join("\n- ", _rebindValidation.issues);
-
-            var incompatibleDetails = new System.Collections.Generic.List<string>();
-            foreach (var e in _rebindValidation.entries)
-            {
-                if (!e.compatible && !string.IsNullOrEmpty(e.issue))
-                {
-                    incompatibleDetails.Add($"{System.IO.Path.GetFileName(e.sidecarPath)}: {e.issue}");
-                }
-            }
-            if (incompatibleDetails.Count > 0)
-                msg += "\n\n불일치 상세:\n- " + string.Join("\n- ", incompatibleDetails);
-
-            EditorUtility.DisplayDialog("Source Rebind — Validate", msg, "OK");
-            Repaint();
+            if (_autoPlaceCanvas == null || _autoPlaceSelected.Count == 0) return;
+            var report = ForgeAutoPlace.RunForPrefabs(_autoPlaceCanvas, _autoPlaceSelected);
+            ShowAutoPlaceResult(report);
         }
 
-        void DoRebindExecute()
-        {
-            if (_rebindValidation == null || _rebindValidation.incompatible > 0 || _rebindNewSource == null) return;
-            string newPath = AssetDatabase.GetAssetPath(_rebindNewSource);
-            if (!EditorUtility.DisplayDialog(
-                "Rebind 실행 확인",
-                $"{_rebindValidation.compatible}건의 사이드카의 소스 참조를\n{newPath}\n로 변경합니다. 계속하시겠습니까?",
-                "Rebind",
-                "Cancel"))
-                return;
-            int updated = ForgeSourceRebind.Rebind(_rebindValidation, _rebindNewSource);
-            EditorUtility.DisplayDialog("Rebind 완료", $"{updated}건 갱신됨.", "OK");
-            _rebindValidation = null;
-            ShowStatus($"Rebind — {updated}건 갱신", false);
-            Repaint();
-        }
-
-        void DoAutoPlace()
+        void DoAutoPlaceFolder()
         {
             if (_autoPlaceCanvas == null) return;
             string folder = _autoPlaceFolder != null
                 ? AssetDatabase.GetAssetPath(_autoPlaceFolder)
                 : ForgePrefabFactory.PrefabsDir;
             var report = ForgeAutoPlace.Run(_autoPlaceCanvas, folder);
+            ShowAutoPlaceResult(report);
+        }
 
+        void ShowAutoPlaceResult(ForgeAutoPlace.Report report)
+        {
             string msg = $"배치: {report.placed}\n" +
                          $"스킵 (sidecar 없음): {report.skippedNoSidecar}\n" +
-                         $"스킵 (소스 불일치): {report.skippedSourceMismatch}\n" +
+                         $"스킵 (사이드카 무효): {report.skippedInvalidSidecar}\n" +
                          $"스킵 (Image/Sprite 없음): {report.skippedMissingComponents}";
             if (report.warnings.Count > 0)
                 msg += "\n\n경고:\n- " + string.Join("\n- ", report.warnings);

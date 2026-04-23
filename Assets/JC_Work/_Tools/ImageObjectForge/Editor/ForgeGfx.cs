@@ -56,6 +56,23 @@ namespace Orora.ImageObjectForge
             }
         }
 
+        public static void DrawEllipseOutline(Rect bbox, Color color, float thickness = 1.5f, int segments = 48)
+        {
+            float rx = bbox.width * 0.5f;
+            float ry = bbox.height * 0.5f;
+            if (rx < 0.5f || ry < 0.5f) return;
+            float cx = bbox.center.x;
+            float cy = bbox.center.y;
+            Vector2 prev = new Vector2(cx + rx, cy);
+            for (int i = 1; i <= segments; i++)
+            {
+                float a = (i / (float)segments) * Mathf.PI * 2f;
+                Vector2 cur = new Vector2(cx + Mathf.Cos(a) * rx, cy + Mathf.Sin(a) * ry);
+                DrawLine(prev, cur, color, thickness);
+                prev = cur;
+            }
+        }
+
         public static void DrawPolyline(Vector2[] pts, Color color, float thickness = 1.5f, bool close = false)
         {
             if (pts == null || pts.Length < 2) return;

@@ -95,6 +95,7 @@ namespace Orora.ImageObjectForge
             var size = ResolveSize(opts);
             var go = new GameObject(opts.SourceSprite.texture.name, typeof(RectTransform));
             var rt = go.GetComponent<RectTransform>();
+            ApplyTopLeftAnchor(rt);
             rt.sizeDelta = size;
 
             var img = go.AddComponent<Image>();
@@ -159,6 +160,7 @@ namespace Orora.ImageObjectForge
             var size = ResolveSize(opts);
             var go = new GameObject(opts.SourceSprite.texture.name, typeof(RectTransform));
             var rt = go.GetComponent<RectTransform>();
+            ApplyTopLeftAnchor(rt);
             rt.sizeDelta = size;
 
             var img = go.AddComponent<Image>();
@@ -178,6 +180,15 @@ namespace Orora.ImageObjectForge
         }
 
         // -------- Helpers --------
+        // Auto-Place 좌상단 표준과 일관: anchor·pivot 모두 (0, 1).
+        public static void ApplyTopLeftAnchor(RectTransform rt)
+        {
+            var topLeft = new Vector2(0f, 1f);
+            rt.anchorMin = topLeft;
+            rt.anchorMax = topLeft;
+            rt.pivot = topLeft;
+        }
+
         static Vector2 ResolveSize(Options opts)
         {
             if (opts.SizeOverride.HasValue) return opts.SizeOverride.Value;

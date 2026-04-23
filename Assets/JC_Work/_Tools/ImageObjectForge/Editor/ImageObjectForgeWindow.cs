@@ -6,8 +6,9 @@ namespace Orora.ImageObjectForge
 {
     public class ImageObjectForgeWindow : EditorWindow
     {
-        public enum ToolMode { Brush, Pen }
+        public enum ToolMode { Brush, Pen, Marquee }
         public enum BrushMode { Paint, Erase }
+        public enum MarqueeShape { Rect, Ellipse }
 
         const float SidebarWidth = 220f;
         const float ToolbarHeight = 28f;
@@ -44,6 +45,14 @@ namespace Orora.ImageObjectForge
         bool _strokeActive;
         Vector2 _strokeLastImg;
         byte[] _preOpMask;
+
+        // 마키(사각/타원 드래그) 상태
+        bool _marqueeActive;
+        bool _marqueeAdd = true;            // 사이드바 모드 (영구)
+        bool _marqueeEffectiveAdd = true;   // 이번 드래그의 실제 동작 (Alt 적용 후)
+        MarqueeShape _marqueeShape = MarqueeShape.Rect;
+        Vector2 _marqueeStartImg;           // 시작점 (이미지 y-up)
+        Vector2 _marqueeCurImg;             // 현재 점
 
         // 뷰 내비게이션
         bool _spaceDown;
@@ -139,8 +148,9 @@ namespace Orora.ImageObjectForge
             EditorGUILayout.LabelField("Tool", EditorStyles.boldLabel);
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (ToggleButton(_tool == ToolMode.Brush, "Brush (B)")) _tool = ToolMode.Brush;
-                if (ToggleButton(_tool == ToolMode.Pen, "Pen (P)")) _tool = ToolMode.Pen;
+                if (ToggleButton(_tool == ToolMode.Brush, "Brush (B)")) SwitchTool(ToolMode.Brush);
+                if (ToggleButton(_tool == ToolMode.Pen, "Pen (P)")) SwitchTool(ToolMode.Pen);
+                if (ToggleButton(_tool == ToolMode.Marquee, "Marquee (M)")) SwitchTool(ToolMode.Marquee);
             }
 
             EditorGUILayout.Space(8);
@@ -161,6 +171,25 @@ namespace Orora.ImageObjectForge
                 EditorGUILayout.LabelField("Size", Mathf.RoundToInt(_brushRadius * 2).ToString() + " px");
                 _brushRadius = EditorGUILayout.Slider(_brushRadius, 1f, 256f);
                 EditorGUILayout.LabelField("[ ]  키: 크기 조절", EditorStyles.miniLabel);
+            }
+            else if (_tool == ToolMode.Marquee)
+            {
+                EditorGUILayout.LabelField("Marquee", EditorStyles.boldLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (ToggleButton(_marqueeAdd, "Add (Paint)")) _marqueeAdd = true;
+                    if (ToggleButton(!_marqueeAdd, "Subtract (Erase)")) _marqueeAdd = false;
+                }
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (ToggleButton(_marqueeShape == MarqueeShape.Rect, "Rect")) _marqueeShape = MarqueeShape.Rect;
+                    if (ToggleButton(_marqueeShape == MarqueeShape.Ellipse, "Ellipse")) _marqueeShape = MarqueeShape.Ellipse;
+                }
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("드래그: bbox 영역 선택", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("Shift+드래그: 정사각/정원", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("Alt+드래그: Subtract 강제 (사이드바 무시)", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("Esc: 드래그 취소", EditorStyles.miniLabel);
             }
             else
             {
@@ -235,6 +264,12 @@ namespace Orora.ImageObjectForge
             if (_tool == ToolMode.Pen && _penVerts.Count > 0)
             {
                 DrawPenPreviewClipped(canvasRect);
+            }
+
+            // 마키 미리보기
+            if (_tool == ToolMode.Marquee && _marqueeActive)
+            {
+                DrawMarqueePreviewClipped(canvasRect);
             }
 
             // 브러시 커서
@@ -460,6 +495,12 @@ namespace Orora.ImageObjectForge
             {
                 HandlePenEvents(canvasRect, e, over);
             }
+
+            // 마키 (사각형 드래그)
+            if (_tool == ToolMode.Marquee && !_spaceDown)
+            {
+                HandleMarqueeEvents(canvasRect, e, over);
+            }
         }
 
         void StartBrushStroke()
@@ -671,6 +712,111 @@ namespace Orora.ImageObjectForge
             Repaint();
         }
 
+        // -------- Marquee --------
+        void HandleMarqueeEvents(Rect canvasRect, Event e, bool over)
+        {
+            if (_marqueeActive)
+            {
+                if (e.type == EventType.MouseDrag && e.button == 0)
+                {
+                    _marqueeCurImg = _vp.ScreenToImage(canvasRect, e.mousePosition, _doc.Height);
+                    e.Use(); Repaint();
+                    return;
+                }
+                if (e.type == EventType.MouseUp && e.button == 0)
+                {
+                    CommitMarquee(e.shift);
+                    _marqueeActive = false;
+                    e.Use(); Repaint();
+                    return;
+                }
+                if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
+                {
+                    _marqueeActive = false;
+                    e.Use(); Repaint();
+                    return;
+                }
+                return;
+            }
+
+            if (!over) return;
+
+            if (e.type == EventType.MouseDown && e.button == 0)
+            {
+                _marqueeStartImg = _vp.ScreenToImage(canvasRect, e.mousePosition, _doc.Height);
+                _marqueeCurImg = _marqueeStartImg;
+                // 사이드바 모드(_marqueeAdd)는 영구. 이번 드래그만 Alt가 눌리면 Subtract 강제.
+                _marqueeEffectiveAdd = e.alt ? false : _marqueeAdd;
+                _marqueeActive = true;
+                e.Use(); Repaint();
+                return;
+            }
+        }
+
+        void CommitMarquee(bool square)
+        {
+            var rect = ForgeMarquee.RectFromPoints(_marqueeStartImg, _marqueeCurImg, square);
+            if (rect.width <= 0 || rect.height <= 0) return;
+            var pre = (byte[])_doc.Mask.Clone();
+            RectInt dirty = _marqueeShape == MarqueeShape.Ellipse
+                ? ForgeMarquee.FillEllipse(_doc.Mask, _doc.Width, _doc.Height, rect, _marqueeEffectiveAdd)
+                : ForgeMarquee.FillRect(_doc.Mask, _doc.Width, _doc.Height, rect, _marqueeEffectiveAdd);
+            if (dirty.width > 0 && dirty.height > 0)
+            {
+                _undo.PushHinted(pre, _doc.Mask, _doc.Width, dirty);
+                _doc.RebuildOverlayRect(dirty);
+            }
+            string shapeName = _marqueeShape == MarqueeShape.Ellipse ? "Ellipse" : "Rect";
+            SetStatus($"Marquee {shapeName} {(_marqueeEffectiveAdd ? "Add" : "Subtract")} 완료");
+        }
+
+        void DrawMarqueePreviewClipped(Rect canvasRect)
+        {
+            bool square = Event.current != null && Event.current.shift;
+            var rect = ForgeMarquee.RectFromPoints(_marqueeStartImg, _marqueeCurImg, square);
+            if (rect.width <= 0 || rect.height <= 0) return;
+
+            // 이미지(y-up) RectInt → 화면(y-down) Rect
+            var blImg = new Vector2(rect.xMin, rect.yMin);
+            var trImg = new Vector2(rect.xMax, rect.yMax);
+            var bl = ImgToLocal(canvasRect, blImg);
+            var tr = ImgToLocal(canvasRect, trImg);
+            float xMin = Mathf.Min(bl.x, tr.x);
+            float xMax = Mathf.Max(bl.x, tr.x);
+            float yMin = Mathf.Min(bl.y, tr.y);
+            float yMax = Mathf.Max(bl.y, tr.y);
+            var screenRect = new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
+
+            Color edge = _marqueeEffectiveAdd
+                ? new Color(0.25f, 1f, 0.4f, 0.95f)
+                : new Color(1f, 0.3f, 0.3f, 0.95f);
+
+            if (_marqueeShape == MarqueeShape.Ellipse)
+            {
+                // 타원은 외곽선만. bbox 가이드는 옅은 점선 대신 옅은 사각 외곽선으로 표시
+                Color guide = new Color(edge.r, edge.g, edge.b, 0.25f);
+                ForgeGfx.DrawRectOutline(screenRect, guide, 1f);
+                ForgeGfx.DrawEllipseOutline(screenRect, edge, 1.5f);
+            }
+            else
+            {
+                Color fill = new Color(edge.r, edge.g, edge.b, 0.15f);
+                ForgeGfx.FilledRect(screenRect, fill);
+                ForgeGfx.DrawRectOutline(screenRect, edge, 1.5f);
+            }
+        }
+
+        // -------- Tool 전환 --------
+        void SwitchTool(ToolMode next)
+        {
+            if (_tool == next) return;
+            // 진행 중이던 도구별 임시 상태 정리
+            if (_marqueeActive) _marqueeActive = false;
+            if (_penVerts.Count > 0) ClearPen();
+            _tool = next;
+            Repaint();
+        }
+
         // -------- StatusBar --------
         void DrawStatusBar(Rect r)
         {
@@ -708,8 +854,9 @@ namespace Orora.ImageObjectForge
                 if (e.keyCode == KeyCode.S) { EditorApplication.delayCall += DoSave; e.Use(); return; }
             }
 
-            if (e.keyCode == KeyCode.B) { _tool = ToolMode.Brush; e.Use(); Repaint(); return; }
-            if (e.keyCode == KeyCode.P) { _tool = ToolMode.Pen; e.Use(); Repaint(); return; }
+            if (e.keyCode == KeyCode.B) { SwitchTool(ToolMode.Brush); e.Use(); return; }
+            if (e.keyCode == KeyCode.P) { SwitchTool(ToolMode.Pen); e.Use(); return; }
+            if (e.keyCode == KeyCode.M) { SwitchTool(ToolMode.Marquee); e.Use(); return; }
             if (e.keyCode == KeyCode.F && _doc.HasImage)
             {
                 _vp.Fit(_cachedCanvasRect, _doc.Width, _doc.Height); e.Use(); Repaint(); return;
@@ -775,25 +922,10 @@ namespace Orora.ImageObjectForge
                 {
                     var meta = new ForgeCropMeta
                     {
-                        sourceAssetPath = _doc.SourceAssetPath,
-                        sourceGUID = string.IsNullOrEmpty(_doc.SourceAssetPath)
-                            ? null
-                            : AssetDatabase.AssetPathToGUID(_doc.SourceAssetPath),
-                        sourceSize = new ForgeCropMeta.SourceSize { width = _doc.Width, height = _doc.Height },
+                        canvasSize = new ForgeCropMeta.CanvasSize { width = _doc.Width, height = _doc.Height },
                         cropBounds = new ForgeCropMeta.CropBounds { x = bounds.x, y = bounds.y, width = bounds.width, height = bounds.height },
                         createdAt = System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
                     };
-                    if (!string.IsNullOrEmpty(_doc.SourceAssetPath))
-                    {
-                        var pngInfo = ForgePngInfo.Read(ForgeIO.AbsPath(_doc.SourceAssetPath));
-                        if (pngInfo.isPng)
-                        {
-                            meta.sourceBitDepth = pngInfo.bitDepth;
-                            meta.sourceColorType = pngInfo.colorType;
-                            meta.sourceDpiX = pngInfo.dpiX;
-                            meta.sourceDpiY = pngInfo.dpiY;
-                        }
-                    }
                     if (!ForgeIO.WriteCropSidecar(path, meta, out var sidecarErr))
                     {
                         Debug.LogWarning($"[ImageObjectForge] Sidecar 저장 실패: {sidecarErr}");
