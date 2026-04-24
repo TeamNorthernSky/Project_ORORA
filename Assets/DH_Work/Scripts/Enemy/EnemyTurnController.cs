@@ -11,6 +11,8 @@ public class EnemyTurnController : MonoBehaviour
     [SerializeField] private AStarPathfinder pathfinder;
     [SerializeField] private CombatEncounterManager combatEncounterManager;
     [SerializeField] private GridManager gridManager;
+    [SerializeField] private MineRegistry mineRegistry;
+    [SerializeField] private ItemRegistry itemRegistry;
 
     private readonly List<TargetCandidate> resourceCandidates = new List<TargetCandidate>();
     private readonly List<TargetCandidate> strategicCandidates = new List<TargetCandidate>();
@@ -191,22 +193,30 @@ public class EnemyTurnController : MonoBehaviour
 
     private void CollectResourceCandidates(Vector2Int enemyGrid, int detectionRange)
     {
-        Mine[] mines = FindObjectsByType<Mine>(FindObjectsSortMode.None);
-        for (int i = 0; i < mines.Length; i++)
+        if (mineRegistry == null || itemRegistry == null)
+            return;
+
+        IReadOnlyList<Mine> mines = mineRegistry.Mines;
+
+        for (int i = 0; i < mines.Count; i++)
         {
             Mine mine = mines[i];
             if (mine == null || gridManager == null)
                 continue;
 
-            Vector2Int targetGrid = gridManager.WorldToGrid(mine.transform.position);
+            if (mine.IsEnemyClaimed)
+                continue;
+
+            Vector2Int targetGrid = mine.GetAnchorGrid(gridManager);
             if (!IsWithinDetectionRange(enemyGrid, targetGrid, detectionRange) || IsAdjacent(enemyGrid, targetGrid))
                 continue;
 
             resourceCandidates.Add(new TargetCandidate(EnemyTargetType.Mine, mine, targetGrid));
         }
 
-        ItemObject[] items = FindObjectsByType<ItemObject>(FindObjectsSortMode.None);
-        for (int i = 0; i < items.Length; i++)
+        IReadOnlyList<ItemObject> items = itemRegistry.Items;
+
+        for (int i = 0; i < items.Count; i++)
         {
             ItemObject item = items[i];
             if (item == null)
@@ -296,6 +306,9 @@ public class EnemyTurnController : MonoBehaviour
         for (int i = 0; i < approachCandidates.Count; i++)
         {
             Vector2Int candidateApproachGrid = approachCandidates[i];
+            if (gridManager != null && !gridManager.CanOccupyCell(candidateApproachGrid, enemy.transform, true))
+                continue;
+
             List<Vector2Int> candidatePath = pathfinder.FindPath(
                 enemyGrid,
                 candidateApproachGrid,
@@ -344,6 +357,9 @@ public class EnemyTurnController : MonoBehaviour
         switch (targetType)
         {
             case EnemyTargetType.Mine:
+                if (target is Mine typedMine)
+                    return gridManager != null ? typedMine.GetAnchorGrid(gridManager) : Vector2Int.zero;
+
                 if (target is PartyGridMover party)
                     return party.GetCurrentGrid();
 
@@ -516,5 +532,11 @@ public class EnemyTurnController : MonoBehaviour
 
         if (gridManager == null)
             gridManager = FindFirstObjectByType<GridManager>();
+
+        if (mineRegistry == null)
+            mineRegistry = FindFirstObjectByType<MineRegistry>();
+
+        if (itemRegistry == null)
+            itemRegistry = FindFirstObjectByType<ItemRegistry>();
     }
 }

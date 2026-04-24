@@ -50,6 +50,7 @@ public class EnemyFogVisibilitySystem : MonoBehaviour
                 continue;
 
             pair.Key.GridChanged -= HandleEnemyGridChanged;
+            pair.Key.MoveStepStarted -= HandleEnemyMoveStepStarted;
         }
 
         bindings.Clear();
@@ -106,6 +107,18 @@ public class EnemyFogVisibilitySystem : MonoBehaviour
         RefreshEnemy(enemy);
     }
 
+    private void HandleEnemyMoveStepStarted(EnemyUnit enemy, Vector2Int nextGrid)
+    {
+        if (enemy == null || fogGridManager == null)
+            return;
+
+        if (!bindings.TryGetValue(enemy, out EnemyVisibilityBinding binding))
+            return;
+
+        if (fogGridManager.IsVisible(nextGrid))
+            ApplyVisibility(binding, true);
+    }
+
     private void RefreshEnemy(EnemyUnit enemy)
     {
         if (enemy == null || fogGridManager == null)
@@ -132,6 +145,7 @@ public class EnemyFogVisibilitySystem : MonoBehaviour
 
         bindings.Add(enemy, binding);
         enemy.GridChanged += HandleEnemyGridChanged;
+        enemy.MoveStepStarted += HandleEnemyMoveStepStarted;
     }
 
     private static void ApplyVisibility(EnemyVisibilityBinding binding, bool isVisible)

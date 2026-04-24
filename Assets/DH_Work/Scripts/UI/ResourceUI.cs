@@ -5,9 +5,10 @@ public class ResourceUI : MonoBehaviour
 {
     [SerializeField] private ResourceManager resourceManager;
 
-    [SerializeField] private TMP_Text goldText;
-    [SerializeField] private TMP_Text woodText;
-    [SerializeField] private TMP_Text oreText;
+    [SerializeField] private TMP_Text moneyText;
+    [SerializeField] private TMP_Text chipText;
+    [SerializeField] private TMP_Text crystalText;
+    [SerializeField] private TMP_Text supplyText;
 
     void Update()
     {
@@ -16,8 +17,16 @@ public class ResourceUI : MonoBehaviour
 
     void UpdateUI()
     {
-        goldText.text = "Gold : "+ resourceManager.GetAmount(ResourceType.Gold).ToString();
-        woodText.text = "Wood : " + resourceManager.GetAmount(ResourceType.Wood).ToString();
-        oreText.text = "Ore : " + resourceManager.GetAmount(ResourceType.Ore).ToString();
+        if (moneyText != null)
+            moneyText.text = "Money : " + resourceManager.GetAmount(ResourceType.Money);
+
+        if (chipText != null)
+            chipText.text = "Chip : " + resourceManager.GetAmount(ResourceType.Chip);
+
+        if (crystalText != null)
+            crystalText.text = "Crystal : " + resourceManager.GetAmount(ResourceType.Crystal);
+
+        if (supplyText != null)
+            supplyText.text = "Supply : " + resourceManager.GetAmount(ResourceType.Supply);
     }
 }

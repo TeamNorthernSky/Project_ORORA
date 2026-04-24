@@ -4,7 +4,7 @@ public class CastleUnit : MonoBehaviour
 {
     [SerializeField] private string castleId = "castle_001";
     [SerializeField] private GridManager gridManager;
-    [SerializeField] private CastleRegistry castleRegistry;
+    private CastleRegistry castleRegistry;
 
     public string CastleId => castleId;
 

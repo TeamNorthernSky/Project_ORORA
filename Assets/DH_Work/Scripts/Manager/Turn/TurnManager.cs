@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 
 public class TurnManager : MonoBehaviour
@@ -12,6 +13,7 @@ public class TurnManager : MonoBehaviour
     [SerializeField] private ResourceManager resourceManager;
     [SerializeField] private EnemyTurnController enemyTurnController;
     [SerializeField] private TMP_Text turnStateText;
+    [SerializeField] private MineRegistry mineRegistry;
 
     private bool enemyTurnRunning;
 
@@ -83,8 +85,12 @@ public class TurnManager : MonoBehaviour
 
     private void ProduceClaimedMines()
     {
-        Mine[] mines = FindObjectsByType<Mine>(FindObjectsSortMode.None);
-        for (int i = 0; i < mines.Length; i++)
+        if (mineRegistry == null)
+            return;
+
+        IReadOnlyList<Mine> mines = mineRegistry.Mines;
+
+        for (int i = 0; i < mines.Count; i++)
         {
             Mine mine = mines[i];
             if (mine == null)
@@ -113,5 +119,11 @@ public class TurnManager : MonoBehaviour
             return;
 
         turnStateText.text = nextText;
+    }
+
+    private void OnValidate()
+    {
+        if (mineRegistry == null)
+            mineRegistry = FindFirstObjectByType<MineRegistry>();
     }
 }

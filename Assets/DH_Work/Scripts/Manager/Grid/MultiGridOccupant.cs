@@ -5,7 +5,7 @@ public class MultiGridOccupant : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private GridManager gridManager;
-    [SerializeField] private MultiGridOccupantRegistry occupantRegistry;
+    private MultiGridOccupantRegistry occupantRegistry;
 
     [Header("Grid Shape")]
     [SerializeField] private Vector2Int anchorGrid = Vector2Int.zero;

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 public class MinePanelUI : MonoBehaviour
 {
     [SerializeField] private GameObject panelRoot;
-    [SerializeField] private TMP_Text resourceTypeText;
+    [SerializeField] private TMP_Text mineTypeText;
     [SerializeField] private TMP_Text productionText;
     [SerializeField] private Button okButton;
     [SerializeField] private KeyCode closeKey = KeyCode.Escape;
@@ -48,11 +48,11 @@ public class MinePanelUI : MonoBehaviour
         if (mine == null)
             return;
 
-        if (resourceTypeText != null)
-            resourceTypeText.text = $"Resource : {mine.resourceType}";
+        if (mineTypeText != null)
+            mineTypeText.text = $"Type : {mine.GetMineTypeDisplayName()}";
 
         if (productionText != null)
-            productionText.text = $"Per Turn : {mine.resourcePerTurn}";
+            productionText.text = mine.GetProductionDisplayText();
 
         ShowPanel();
     }

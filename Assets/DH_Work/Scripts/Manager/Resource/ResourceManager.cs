@@ -4,17 +4,19 @@ using UnityEngine;
 
 public class ResourceManager : MonoBehaviour
 {
-    [SerializeField] private int gold;
-    [SerializeField] private int wood;
-    [SerializeField] private int ore;
+    [SerializeField] private int money;
+    [SerializeField] private int chip;
+    [SerializeField] private int crystal;
+    [SerializeField] private int supply;
 
     public int GetAmount(ResourceType type)
     {
         switch (type)
         {
-            case ResourceType.Gold: return gold;
-            case ResourceType.Wood: return wood;
-            case ResourceType.Ore: return ore;
+            case ResourceType.Money: return money;
+            case ResourceType.Chip: return chip;
+            case ResourceType.Crystal: return crystal;
+            case ResourceType.Supply: return supply;
             default: return 0;
         }
     }
@@ -25,14 +27,17 @@ public class ResourceManager : MonoBehaviour
 
         switch (type)
         {
-            case ResourceType.Gold:
-                gold += amount;
+            case ResourceType.Money:
+                money += amount;
                 break;
-            case ResourceType.Wood:
-                wood += amount;
+            case ResourceType.Chip:
+                chip += amount;
                 break;
-            case ResourceType.Ore:
-                ore += amount;
+            case ResourceType.Crystal:
+                crystal += amount;
+                break;
+            case ResourceType.Supply:
+                supply += amount;
                 break;
         }
     }
@@ -50,14 +55,17 @@ public class ResourceManager : MonoBehaviour
 
         switch (type)
         {
-            case ResourceType.Gold:
-                gold -= amount;
+            case ResourceType.Money:
+                money -= amount;
                 break;
-            case ResourceType.Wood:
-                wood -= amount;
+            case ResourceType.Chip:
+                chip -= amount;
                 break;
-            case ResourceType.Ore:
-                ore -= amount;
+            case ResourceType.Crystal:
+                crystal -= amount;
+                break;
+            case ResourceType.Supply:
+                supply -= amount;
                 break;
         }
 

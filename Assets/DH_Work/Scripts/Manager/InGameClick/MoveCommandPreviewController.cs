@@ -201,6 +201,9 @@ public class MoveCommandPreviewController
         if (activeMover == null || gridManager == null)
             return clickedGrid;
 
+        if (gridManager.TryGetMineObjectAtGrid(clickedGrid, out Mine mine))
+            return ResolveApproachGrid(activeMover, clickedGrid, mine.GetAnchorGrid(gridManager), mine.GetAdjacentInteractionCells(gridManager));
+
         if (!gridManager.TryGetCastleObjectAtGrid(clickedGrid, out CastleUnit castle))
             return clickedGrid;
 
@@ -208,12 +211,23 @@ public class MoveCommandPreviewController
         if (occupant == null)
             return clickedGrid;
 
-        Vector2Int moverGrid = activeMover.GetCurrentGrid();
-        if (occupant.IsAdjacentOuterCell(moverGrid))
-            return moverGrid;
+        return ResolveApproachGrid(activeMover, clickedGrid, castle.GetCurrentGrid(), occupant.GetAdjacentOuterCells());
+    }
 
-        IReadOnlyList<Vector2Int> approachCandidates = occupant.GetAdjacentOuterCells();
-        Vector2Int bestGrid = clickedGrid;
+    private Vector2Int ResolveApproachGrid(
+        PartyGridMover activeMover,
+        Vector2Int fallbackGrid,
+        Vector2Int targetGrid,
+        IReadOnlyList<Vector2Int> approachCandidates)
+    {
+        Vector2Int moverGrid = activeMover.GetCurrentGrid();
+        for (int i = 0; i < approachCandidates.Count; i++)
+        {
+            if (approachCandidates[i] == moverGrid)
+                return moverGrid;
+        }
+
+        Vector2Int bestGrid = fallbackGrid;
         List<Vector2Int> bestPath = null;
 
         for (int i = 0; i < approachCandidates.Count; i++)
@@ -232,14 +246,14 @@ public class MoveCommandPreviewController
 
             if (bestPath != null
                 && candidatePath.Count == bestPath.Count
-                && IsBetterCastleApproach(moverGrid, castle.GetCurrentGrid(), candidate, bestGrid))
+                && IsBetterCastleApproach(moverGrid, targetGrid, candidate, bestGrid))
             {
                 bestPath = candidatePath;
                 bestGrid = candidate;
             }
         }
 
-        return bestPath != null ? bestGrid : clickedGrid;
+        return bestPath != null ? bestGrid : fallbackGrid;
     }
 
     private List<Vector2Int> AdjustPathForSpecialDestination(List<Vector2Int> path)

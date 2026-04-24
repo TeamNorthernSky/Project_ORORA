@@ -7,6 +7,19 @@ public class ItemObject : MonoBehaviour
     public ResourceType resourceType;
     public int amount;
 
+    private ItemRegistry itemRegistry;
+
+    private void OnEnable()
+    {
+        ResolveRegistry();
+        itemRegistry?.Register(this);
+    }
+
+    private void OnDisable()
+    {
+        itemRegistry?.Unregister(this);
+    }
+
     public void ApplyInitialAmount(int nextAmount)
     {
         amount = nextAmount;
@@ -22,5 +35,11 @@ public class ItemObject : MonoBehaviour
     public void RemoveWithoutReward()
     {
         Destroy(gameObject);
+    }
+
+    private void ResolveRegistry()
+    {
+        if (itemRegistry == null)
+            itemRegistry = FindFirstObjectByType<ItemRegistry>();
     }
 }

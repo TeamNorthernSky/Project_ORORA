@@ -5,6 +5,7 @@ using UnityEngine;
 public class EnemyUnit : MonoBehaviour
 {
     public event System.Action<EnemyUnit, Vector2Int> GridChanged;
+    public event System.Action<EnemyUnit, Vector2Int> MoveStepStarted;
 
     [Header("Identity")]
     [SerializeField] private string enemyId = "enemy_001";
@@ -12,7 +13,6 @@ public class EnemyUnit : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private GridManager gridManager;
-    [SerializeField] private EnemyRegistry enemyRegistry;
     [SerializeField] private PersistentEnemyRepository persistentEnemyRepository;
 
     [Header("Move Settings")]
@@ -28,6 +28,7 @@ public class EnemyUnit : MonoBehaviour
     private float fixedY;
     private EnemyTargetType currentTargetType;
     private Component currentTarget;
+    private EnemyRegistry enemyRegistry;
 
     public string EnemyId => enemyId;
     public IReadOnlyList<int> CombatUnitIndices => combatUnitIndices;
@@ -115,6 +116,8 @@ public class EnemyUnit : MonoBehaviour
         for (int i = 1; i < path.Count; i++)
         {
             Vector2Int nextGrid = path[i];
+            MoveStepStarted?.Invoke(this, nextGrid);
+
             Vector3 target = gridManager.GridToWorldCenter(nextGrid);
             target.y = fixedY;
 

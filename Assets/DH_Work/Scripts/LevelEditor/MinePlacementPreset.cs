@@ -5,7 +5,7 @@ using UnityEngine;
     menuName = "DH Work/Level Editor/Mine Placement Preset")]
 public class MinePlacementPreset : ScriptableObject
 {
-    [SerializeField] private ResourceType resourceType = ResourceType.Ore;
+    [SerializeField] private ResourceType resourceType = ResourceType.Supply;
     [SerializeField] private int resourcePerTurn = 5;
     [SerializeField] private MineState initialState = MineState.Unclaimed;
 

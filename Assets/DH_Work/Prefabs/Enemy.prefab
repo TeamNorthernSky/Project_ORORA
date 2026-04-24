@@ -121,11 +121,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enemyId: enemy_001
+  combatUnitIndices: 640000006500000066000000
   gridManager: {fileID: 0}
-  enemyRegistry: {fileID: 0}
+  persistentEnemyRepository: {fileID: 0}
   moveSpeed: 4
   arriveThreshold: 0.01
   movePointsPerTurn: 5
   detectionRange: 10
-  resourceGroupWeight: 50
-  strategicGroupWeight: 50
+  targetingProfile: 1
