@@ -6,9 +6,15 @@ namespace Orora.ImageObjectForge
 {
     public class ImageObjectForgeWindow : EditorWindow
     {
-        public enum ToolMode { Brush, Pen, Marquee }
+        public enum ToolMode { Brush, Pen, Marquee, Outline }
         public enum BrushMode { Paint, Erase }
         public enum MarqueeShape { Rect, Ellipse }
+
+        // Outline 기본값
+        const float OutlineDefaultColorTol = 12f;
+        const float OutlineDefaultSigma = 1.0f;
+        const float OutlineDefaultCannyLow = 50f;
+        const float OutlineDefaultCannyHigh = 150f;
 
         const float SidebarWidth = 220f;
         const float ToolbarHeight = 28f;
@@ -54,6 +60,24 @@ namespace Orora.ImageObjectForge
         Vector2 _marqueeStartImg;           // 시작점 (이미지 y-up)
         Vector2 _marqueeCurImg;             // 현재 점
 
+        // Outline (외곽선 검출) 상태
+        bool _outlineActive;                                // 시드가 1개 이상 있고 미리보기 표시 중
+        readonly List<Vector2Int> _outlineSeeds = new List<Vector2Int>();
+        bool _outlineAdd = true;                            // 사이드바 모드 (영구)
+        bool _outlineEffectiveAdd = true;                   // 이번 시드 추가 시점에서 Alt 일회성 적용
+        bool _outlineEdgeAware = true;                      // Canny 가중치 사용
+        float _outlineColorTol = OutlineDefaultColorTol;    // LAB 거리 임계
+        float _outlineCannySigma = OutlineDefaultSigma;
+        float _outlineCannyLow = OutlineDefaultCannyLow;
+        float _outlineCannyHigh = OutlineDefaultCannyHigh;
+        ForgeOutlineDetect.SourceCache _outlineCache;
+        string _outlineCacheSourcePath;                     // 캐시가 어떤 SourceAssetPath 기준인지
+        float _outlineCachedSigma = -1f, _outlineCachedLow = -1f, _outlineCachedHigh = -1f; // 마지막 Canny 파라미터
+        byte[] _outlinePreviewMask;                         // 후보 마스크 (Fill Holes 적용 후)
+        Texture2D _outlinePreviewTex;
+        bool _outlineShowCanny;                             // Canny edge map 직접 표시
+        Texture2D _cannyEdgeTex;
+
         // 뷰 내비게이션
         bool _spaceDown;
         bool _panDragging;
@@ -77,6 +101,9 @@ namespace Orora.ImageObjectForge
 
         void OnDisable()
         {
+            ReleaseOutlinePreviewTex();
+            ReleaseCannyEdgeTex();
+            _outlineCache = null;
             _doc?.DisposeInternal();
         }
 
@@ -150,7 +177,11 @@ namespace Orora.ImageObjectForge
             {
                 if (ToggleButton(_tool == ToolMode.Brush, "Brush (B)")) SwitchTool(ToolMode.Brush);
                 if (ToggleButton(_tool == ToolMode.Pen, "Pen (P)")) SwitchTool(ToolMode.Pen);
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
                 if (ToggleButton(_tool == ToolMode.Marquee, "Marquee (M)")) SwitchTool(ToolMode.Marquee);
+                if (ToggleButton(_tool == ToolMode.Outline, "Outline (E)")) SwitchTool(ToolMode.Outline);
             }
 
             EditorGUILayout.Space(8);
@@ -161,7 +192,7 @@ namespace Orora.ImageObjectForge
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     if (ToggleButton(_brushMode == BrushMode.Paint, "Paint")) _brushMode = BrushMode.Paint;
-                    if (ToggleButton(_brushMode == BrushMode.Erase, "Erase (E)")) _brushMode = BrushMode.Erase;
+                    if (ToggleButton(_brushMode == BrushMode.Erase, "Erase")) _brushMode = BrushMode.Erase;
                 }
                 using (new EditorGUILayout.HorizontalScope())
                 {
@@ -190,6 +221,85 @@ namespace Orora.ImageObjectForge
                 EditorGUILayout.LabelField("Shift+드래그: 정사각/정원", EditorStyles.miniLabel);
                 EditorGUILayout.LabelField("Alt+드래그: Subtract 강제 (사이드바 무시)", EditorStyles.miniLabel);
                 EditorGUILayout.LabelField("Esc: 드래그 취소", EditorStyles.miniLabel);
+            }
+            else if (_tool == ToolMode.Outline)
+            {
+                EditorGUILayout.LabelField("Outline", EditorStyles.boldLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (ToggleButton(_outlineAdd, "Add (Paint)")) _outlineAdd = true;
+                    if (ToggleButton(!_outlineAdd, "Subtract (Erase)")) _outlineAdd = false;
+                }
+
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("Color Tolerance (LAB)", _outlineColorTol.ToString("0.0"));
+                float newTol = EditorGUILayout.Slider(_outlineColorTol, 1f, 80f);
+                if (!Mathf.Approximately(newTol, _outlineColorTol))
+                {
+                    _outlineColorTol = newTol;
+                    if (_outlineActive) RecomputeOutlinePreview();
+                }
+
+                bool newEdgeAware = EditorGUILayout.Toggle("Edge-aware (Canny)", _outlineEdgeAware);
+                if (newEdgeAware != _outlineEdgeAware)
+                {
+                    _outlineEdgeAware = newEdgeAware;
+                    if (_outlineEdgeAware) EnsureOutlineEdgeReady();
+                    if (_outlineActive) RecomputeOutlinePreview();
+                }
+
+                bool newShowCanny = EditorGUILayout.Toggle("Show Canny Edges", _outlineShowCanny);
+                if (newShowCanny != _outlineShowCanny)
+                {
+                    _outlineShowCanny = newShowCanny;
+                    if (_outlineShowCanny && _doc.HasImage)
+                    {
+                        EnsureOutlineCacheReady();
+                        EnsureOutlineEdgeReady();
+                        RebuildCannyEdgeTex();
+                    }
+                    else
+                    {
+                        ReleaseCannyEdgeTex();
+                    }
+                }
+
+                bool cannySlidersEnabled = _outlineEdgeAware || _outlineShowCanny;
+                using (new EditorGUI.DisabledScope(!cannySlidersEnabled))
+                {
+                    EditorGUILayout.LabelField("Canny σ", _outlineCannySigma.ToString("0.00"));
+                    float ns = EditorGUILayout.Slider(_outlineCannySigma, 0.5f, 3f);
+                    EditorGUILayout.LabelField("Canny Low", _outlineCannyLow.ToString("0"));
+                    float nl = EditorGUILayout.Slider(_outlineCannyLow, 0f, 200f);
+                    EditorGUILayout.LabelField("Canny High", _outlineCannyHigh.ToString("0"));
+                    float nh = EditorGUILayout.Slider(_outlineCannyHigh, 50f, 400f);
+                    if (nh < nl) nh = nl;
+                    bool cannyChanged = !Mathf.Approximately(ns, _outlineCannySigma)
+                                        || !Mathf.Approximately(nl, _outlineCannyLow)
+                                        || !Mathf.Approximately(nh, _outlineCannyHigh);
+                    _outlineCannySigma = ns;
+                    _outlineCannyLow = nl;
+                    _outlineCannyHigh = nh;
+                    if (cannyChanged && cannySlidersEnabled)
+                    {
+                        EnsureOutlineEdgeReady();
+                        if (_outlineShowCanny) RebuildCannyEdgeTex();
+                        if (_outlineActive && _outlineEdgeAware) RecomputeOutlinePreview();
+                    }
+                }
+
+                EditorGUILayout.Space(4);
+                GUI.enabled = _outlineActive;
+                if (GUILayout.Button("Confirm (Enter)", GUILayout.Height(24))) CommitOutline();
+                if (GUILayout.Button("Cancel (Esc)", GUILayout.Height(20))) ClearOutline();
+                GUI.enabled = true;
+
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField($"Seeds: {_outlineSeeds.Count}", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("클릭: 새 시드 (기존 초기화)", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("Shift+클릭: 시드 추가 (Union)", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("Alt+클릭: Subtract 강제 (사이드바 무시)", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("Enter: 확정 / Esc: 취소", EditorStyles.miniLabel);
             }
             else
             {
@@ -270,6 +380,28 @@ namespace Orora.ImageObjectForge
             if (_tool == ToolMode.Marquee && _marqueeActive)
             {
                 DrawMarqueePreviewClipped(canvasRect);
+            }
+
+            // Outline 미리보기 (Canny edges → 후보 마스크 오버레이 → 시드 마커)
+            if (_tool == ToolMode.Outline)
+            {
+                if (_outlineShowCanny && _cannyEdgeTex != null)
+                    GUI.DrawTexture(localImgRect, _cannyEdgeTex, ScaleMode.StretchToFill, true);
+                if (_outlineActive && _outlinePreviewTex != null)
+                    GUI.DrawTexture(localImgRect, _outlinePreviewTex, ScaleMode.StretchToFill, true);
+                if (_outlineSeeds.Count > 0)
+                {
+                    Color seedCol = _outlineEffectiveAdd
+                        ? new Color(0.25f, 1f, 0.4f, 1f)
+                        : new Color(1f, 0.3f, 0.3f, 1f);
+                    for (int i = 0; i < _outlineSeeds.Count; i++)
+                    {
+                        var s = _outlineSeeds[i];
+                        var sImg = new Vector2(s.x + 0.5f, s.y + 0.5f);
+                        var local = ImgToLocal(canvasRect, sImg);
+                        ForgeGfx.DrawSeedMarker(local, seedCol);
+                    }
+                }
             }
 
             // 브러시 커서
@@ -500,6 +632,12 @@ namespace Orora.ImageObjectForge
             if (_tool == ToolMode.Marquee && !_spaceDown)
             {
                 HandleMarqueeEvents(canvasRect, e, over);
+            }
+
+            // Outline (시드 클릭 + 미리보기 + 확정)
+            if (_tool == ToolMode.Outline && !_spaceDown)
+            {
+                HandleOutlineEvents(canvasRect, e, over);
             }
         }
 
@@ -806,6 +944,161 @@ namespace Orora.ImageObjectForge
             }
         }
 
+        // -------- Outline (외곽선 검출) --------
+        void HandleOutlineEvents(Rect canvasRect, Event e, bool over)
+        {
+            if (e.type == EventType.MouseDown && e.button == 0 && over)
+            {
+                var imgPt = _vp.ScreenToImage(canvasRect, e.mousePosition, _doc.Height);
+                int sx = Mathf.FloorToInt(imgPt.x);
+                int sy = Mathf.FloorToInt(imgPt.y);
+                if (sx < 0 || sx >= _doc.Width || sy < 0 || sy >= _doc.Height) return;
+
+                EnsureOutlineCacheReady();
+                if (_outlineEdgeAware) EnsureOutlineEdgeReady();
+
+                bool addSeed = e.shift && _outlineActive && _outlineSeeds.Count > 0;
+                if (!addSeed)
+                {
+                    _outlineSeeds.Clear();
+                    _outlineEffectiveAdd = e.alt ? false : _outlineAdd;
+                }
+                _outlineSeeds.Add(new Vector2Int(sx, sy));
+                _outlineActive = true;
+                RecomputeOutlinePreview();
+                e.Use(); Repaint();
+                return;
+            }
+        }
+
+        void EnsureOutlineCacheReady()
+        {
+            if (!_doc.HasImage) return;
+            if (_outlineCache != null && _outlineCacheSourcePath == _doc.SourceAssetPath
+                && _outlineCache.W == _doc.Width && _outlineCache.H == _doc.Height)
+                return;
+            _outlineCache = ForgeOutlineDetect.BuildCache(_doc.Source, false, _outlineCannySigma, _outlineCannyLow, _outlineCannyHigh);
+            _outlineCacheSourcePath = _doc.SourceAssetPath;
+            _outlineCachedSigma = -1f; _outlineCachedLow = -1f; _outlineCachedHigh = -1f;
+        }
+
+        void EnsureOutlineEdgeReady()
+        {
+            EnsureOutlineCacheReady();
+            if (_outlineCache == null) return;
+            if (_outlineCache.HasEdge
+                && Mathf.Approximately(_outlineCachedSigma, _outlineCannySigma)
+                && Mathf.Approximately(_outlineCachedLow, _outlineCannyLow)
+                && Mathf.Approximately(_outlineCachedHigh, _outlineCannyHigh))
+                return;
+            ForgeOutlineDetect.RecomputeEdge(_outlineCache, _outlineCannySigma, _outlineCannyLow, _outlineCannyHigh);
+            _outlineCachedSigma = _outlineCannySigma;
+            _outlineCachedLow = _outlineCannyLow;
+            _outlineCachedHigh = _outlineCannyHigh;
+        }
+
+        void RecomputeOutlinePreview()
+        {
+            if (_outlineCache == null || _outlineSeeds.Count == 0)
+            {
+                _outlinePreviewMask = null;
+                ReleaseOutlinePreviewTex();
+                _outlineActive = false;
+                return;
+            }
+            var mask = ForgeOutlineDetect.RegionGrow(_outlineCache, _outlineSeeds, _outlineColorTol, _outlineEdgeAware, out _);
+            ForgeOutlineDetect.FillHoles(mask, _outlineCache.W, _outlineCache.H);
+            _outlinePreviewMask = mask;
+            EnsureOutlinePreviewTex(_outlineCache.W, _outlineCache.H);
+            RebuildOutlinePreviewTex();
+        }
+
+        void EnsureOutlinePreviewTex(int W, int H)
+        {
+            if (_outlinePreviewTex != null && _outlinePreviewTex.width == W && _outlinePreviewTex.height == H) return;
+            ReleaseOutlinePreviewTex();
+            _outlinePreviewTex = new Texture2D(W, H, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp,
+                hideFlags = HideFlags.HideAndDontSave
+            };
+        }
+
+        void ReleaseOutlinePreviewTex()
+        {
+            if (_outlinePreviewTex != null) { Object.DestroyImmediate(_outlinePreviewTex); _outlinePreviewTex = null; }
+        }
+
+        void RebuildOutlinePreviewTex()
+        {
+            if (_outlinePreviewMask == null || _outlinePreviewTex == null) return;
+            int n = _outlinePreviewMask.Length;
+            Color32 on = _outlineEffectiveAdd
+                ? new Color32(60, 220, 90, 130)
+                : new Color32(255, 60, 60, 130);
+            Color32 off = new Color32(0, 0, 0, 0);
+            var cols = new Color32[n];
+            for (int i = 0; i < n; i++) cols[i] = _outlinePreviewMask[i] != 0 ? on : off;
+            _outlinePreviewTex.SetPixels32(cols);
+            _outlinePreviewTex.Apply(false);
+        }
+
+        void RebuildCannyEdgeTex()
+        {
+            if (_outlineCache == null || !_outlineCache.HasEdge || _outlineCache.EdgeMag == null) return;
+            int W = _outlineCache.W, H = _outlineCache.H;
+            if (_cannyEdgeTex == null || _cannyEdgeTex.width != W || _cannyEdgeTex.height != H)
+            {
+                ReleaseCannyEdgeTex();
+                _cannyEdgeTex = new Texture2D(W, H, TextureFormat.RGBA32, false)
+                {
+                    filterMode = FilterMode.Point,
+                    wrapMode = TextureWrapMode.Clamp,
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+            }
+            int n = W * H;
+            Color32 on = new Color32(255, 240, 0, 220);   // 옅은 노란색
+            Color32 off = new Color32(0, 0, 0, 0);
+            var cols = new Color32[n];
+            for (int i = 0; i < n; i++) cols[i] = _outlineCache.EdgeMag[i] != 0 ? on : off;
+            _cannyEdgeTex.SetPixels32(cols);
+            _cannyEdgeTex.Apply(false);
+        }
+
+        void ReleaseCannyEdgeTex()
+        {
+            if (_cannyEdgeTex != null) { Object.DestroyImmediate(_cannyEdgeTex); _cannyEdgeTex = null; }
+        }
+
+        void CommitOutline()
+        {
+            if (!_outlineActive || _outlinePreviewMask == null) { ClearOutline(); return; }
+            var pre = (byte[])_doc.Mask.Clone();
+            var dirty = ForgeOutlineDetect.ApplyToMask(_doc.Mask, _outlinePreviewMask, _doc.Width, _doc.Height, _outlineEffectiveAdd);
+            if (dirty.width > 0 && dirty.height > 0)
+            {
+                _undo.PushHinted(pre, _doc.Mask, _doc.Width, dirty);
+                _doc.RebuildOverlayRect(dirty);
+                SetStatus($"Outline {(_outlineEffectiveAdd ? "Add" : "Subtract")} 완료 (시드 {_outlineSeeds.Count}개)");
+            }
+            else
+            {
+                SetStatus("Outline: 변경 없음");
+            }
+            ClearOutline();
+            Repaint();
+        }
+
+        void ClearOutline()
+        {
+            _outlineActive = false;
+            _outlineSeeds.Clear();
+            _outlinePreviewMask = null;
+            ReleaseOutlinePreviewTex();
+        }
+
         // -------- Tool 전환 --------
         void SwitchTool(ToolMode next)
         {
@@ -813,6 +1106,7 @@ namespace Orora.ImageObjectForge
             // 진행 중이던 도구별 임시 상태 정리
             if (_marqueeActive) _marqueeActive = false;
             if (_penVerts.Count > 0) ClearPen();
+            if (_outlineActive || _outlineSeeds.Count > 0) ClearOutline();
             _tool = next;
             Repaint();
         }
@@ -857,14 +1151,10 @@ namespace Orora.ImageObjectForge
             if (e.keyCode == KeyCode.B) { SwitchTool(ToolMode.Brush); e.Use(); return; }
             if (e.keyCode == KeyCode.P) { SwitchTool(ToolMode.Pen); e.Use(); return; }
             if (e.keyCode == KeyCode.M) { SwitchTool(ToolMode.Marquee); e.Use(); return; }
+            if (e.keyCode == KeyCode.E) { SwitchTool(ToolMode.Outline); e.Use(); return; }
             if (e.keyCode == KeyCode.F && _doc.HasImage)
             {
                 _vp.Fit(_cachedCanvasRect, _doc.Width, _doc.Height); e.Use(); Repaint(); return;
-            }
-            if (e.keyCode == KeyCode.E && _tool == ToolMode.Brush)
-            {
-                _brushMode = _brushMode == BrushMode.Paint ? BrushMode.Erase : BrushMode.Paint;
-                e.Use(); Repaint(); return;
             }
             if (e.keyCode == KeyCode.LeftBracket) { _brushRadius = Mathf.Max(1f, _brushRadius - 2f); e.Use(); Repaint(); return; }
             if (e.keyCode == KeyCode.RightBracket) { _brushRadius = Mathf.Min(256f, _brushRadius + 2f); e.Use(); Repaint(); return; }
@@ -880,6 +1170,13 @@ namespace Orora.ImageObjectForge
                     e.Use(); Repaint(); return;
                 }
             }
+
+            if (_tool == ToolMode.Outline && _outlineActive)
+            {
+                if (e.keyCode == KeyCode.Escape) { ClearOutline(); e.Use(); Repaint(); return; }
+                if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
+                { CommitOutline(); e.Use(); Repaint(); return; }
+            }
         }
 
         // -------- Actions --------
@@ -890,8 +1187,18 @@ namespace Orora.ImageObjectForge
                 _doc.SetSource(tex, assetPath);
                 _undo.Clear();
                 ClearPen();
+                ClearOutline();
+                ReleaseCannyEdgeTex();
+                _outlineCache = null;
+                _outlineCacheSourcePath = null;
                 _vp.Fit(_cachedCanvasRect.width > 0 ? _cachedCanvasRect : new Rect(0, 0, position.width - SidebarWidth, position.height - ToolbarHeight - StatusHeight),
                         _doc.Width, _doc.Height);
+                if (_outlineShowCanny)
+                {
+                    EnsureOutlineCacheReady();
+                    EnsureOutlineEdgeReady();
+                    RebuildCannyEdgeTex();
+                }
                 SetStatus($"로드 완료: {assetPath}");
                 Repaint();
             }

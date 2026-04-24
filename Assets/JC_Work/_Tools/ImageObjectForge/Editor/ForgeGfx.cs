@@ -178,5 +178,17 @@ namespace Orora.ImageObjectForge
             GUI.DrawTexture(new Rect(center.x - size * 0.5f, center.y - size * 0.5f, size, size), RingTex, ScaleMode.StretchToFill, true);
             GUI.color = saved;
         }
+
+        // 시드 마커 — 작은 사각 + 십자
+        public static void DrawSeedMarker(Vector2 center, Color color, float size = 9f)
+        {
+            float h = size * 0.5f;
+            // 외곽 사각
+            DrawRectOutline(new Rect(center.x - h, center.y - h, size, size), color, 1f);
+            // 십자 (외곽보다 살짝 길게)
+            float ext = h + 2f;
+            DrawLine(new Vector2(center.x - ext, center.y), new Vector2(center.x + ext, center.y), color, 1.2f);
+            DrawLine(new Vector2(center.x, center.y - ext), new Vector2(center.x, center.y + ext), color, 1.2f);
+        }
     }
 }
