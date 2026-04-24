@@ -154,65 +154,256 @@ public static class TargetingHelper
             stage1.Add(unit);
         }
 
-        // [2단계] 사거리(boundary) 2차 필터링: 사거리 내 후보만 남김
-        var inRange = new List<BattleCharactor>(stage1.Count);
-        for (int i = 0; i < stage1.Count; i++)
-        {
-            BattleCharactor unit = stage1[i];
-            if (IsWithinBoundary(actor, unit, skill))
-            {
-                inRange.Add(unit);
-            }
-        }
+        // [2단계] 우선순위는 classSkillRangeLine만 사용합니다.
+        // baseTargets는 진영/생사 조건만 통과한 후보이며,
+        // 전열/후열 우선 필터는 여기서만 적용합니다.
+        List<BattleCharactor> baseTargets = GetAllValidTargets(stage1);
+        List<BattleCharactor> finalTargets = ApplyPriorityFilter(actor, baseTargets, skill);
 
-        // [3단계] 근접(사거리 0) 공격은 전열(x==0) 우선 (부활·힐에는 적용하지 않음)
-        if (!isHeal && !isRevive && skill.classSkillRange == 0)
+        for (int i = 0; i < finalTargets.Count; i++)
         {
-            bool hasFront = false;
-            for (int i = 0; i < inRange.Count; i++)
-            {
-                if (inRange[i] != null && inRange[i].IsInFrontRow)
-                {
-                    hasFront = true;
-                    break;
-                }
-            }
-
-            if (hasFront)
-            {
-                for (int i = inRange.Count - 1; i >= 0; i--)
-                {
-                    BattleCharactor unit = inRange[i];
-                    if (unit == null || !unit.IsInFrontRow)
-                    {
-                        inRange.RemoveAt(i);
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i < inRange.Count; i++)
-        {
-            result.Add(inRange[i]);
+            result.Add(finalTargets[i]);
         }
 
         return result;
     }
 
-    private static bool IsWithinBoundary(BattleCharactor actor, BattleCharactor target, SkillData skill)
+    private static List<BattleCharactor> ApplyPriorityFilter(BattleCharactor actor, List<BattleCharactor> baseTargets, SkillData skill)
     {
-        if (skill == null || skill.boundary == null || skill.boundary.Count == 0)
+        if (baseTargets == null || baseTargets.Count == 0)
         {
-            return true;
+            return new List<BattleCharactor>();
         }
 
-        if (!TryResolveCell(actor, out GridCellRef actorCell) || !TryResolveCell(target, out GridCellRef targetCell))
+        if (skill == null)
+        {
+            return GetAllValidTargets(baseTargets);
+        }
+
+        switch (skill.classSkillRangeLine)
+        {
+            case 0: // FrontFirst
+            {
+                List<BattleCharactor> frontTargets = GetFrontTargets(baseTargets);
+                return frontTargets.Count > 0 ? frontTargets : baseTargets;
+            }
+
+            case 1: // Any
+            {
+                return baseTargets;
+            }
+
+            case 2: // BackFirst
+            {
+                List<BattleCharactor> backTargets = GetBackTargets(baseTargets);
+                return backTargets.Count > 0 ? backTargets : baseTargets;
+            }
+
+            case 3: // CasterPositionBased
+            {
+                if (actor == null)
+                {
+                    return baseTargets;
+                }
+
+                // 시전자가 전열이면 전열 대상만 허용(없으면 fallback 전체).
+                // 시전자가 후열이면 전열/후열 구분 없이 전체 허용.
+                bool isCasterFront = actor.IsFrontRow();
+                if (!isCasterFront)
+                {
+                    return baseTargets;
+                }
+
+                var frontOnly = new List<BattleCharactor>();
+                for (int i = 0; i < baseTargets.Count; i++)
+                {
+                    BattleCharactor target = baseTargets[i];
+                    if (target == null || target.IsDead)
+                    {
+                        continue;
+                    }
+
+                    if (target.IsFrontRow())
+                    {
+                        frontOnly.Add(target);
+                    }
+                }
+
+                return frontOnly.Count > 0 ? frontOnly : baseTargets;
+            }
+
+
+            default:
+            {
+                return baseTargets;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 입력된 후보 중 동적 전열 유닛만 반환합니다.
+    /// 추후 "전열 우선" 타겟팅 룰의 1순위 필터로 사용합니다.
+    /// </summary>
+    public static List<BattleCharactor> GetFrontTargets(IEnumerable<BattleCharactor> candidates)
+    {
+        var result = new List<BattleCharactor>();
+        if (candidates == null)
+        {
+            return result;
+        }
+
+        foreach (BattleCharactor unit in candidates)
+        {
+            if (unit == null || unit.IsDead)
+            {
+                continue;
+            }
+
+            if (IsUnitInFrontRow(unit))
+            {
+                result.Add(unit);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 입력된 후보 중 동적 후열 유닛만 반환합니다.
+    /// 추후 "후열 우선" 타겟팅 룰의 1순위 필터로 사용합니다.
+    /// </summary>
+    public static List<BattleCharactor> GetBackTargets(IEnumerable<BattleCharactor> candidates)
+    {
+        var result = new List<BattleCharactor>();
+        if (candidates == null)
+        {
+            return result;
+        }
+
+        foreach (BattleCharactor unit in candidates)
+        {
+            if (unit == null || unit.IsDead)
+            {
+                continue;
+            }
+
+            if (IsUnitInBackRow(unit))
+            {
+                result.Add(unit);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// null/사망 제거만 적용된 기본 후보 목록입니다.
+    /// 전열/후열 우선 대상이 없을 때 fallback으로 재사용할 수 있습니다.
+    /// </summary>
+    public static List<BattleCharactor> GetAllValidTargets(IEnumerable<BattleCharactor> candidates)
+    {
+        var result = new List<BattleCharactor>();
+        if (candidates == null)
+        {
+            return result;
+        }
+
+        foreach (BattleCharactor unit in candidates)
+        {
+            if (unit == null || unit.IsDead)
+            {
+                continue;
+            }
+
+            result.Add(unit);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 동적 전열 판정:
+    /// - 아군(IsPlayer=true): 같은 진영 생존자 중 X 최대 행이 전열
+    /// - 적군(IsPlayer=false): 같은 진영 생존자 중 X 최소 행이 전열
+    /// </summary>
+    public static bool IsUnitInFrontRow(BattleCharactor unit)
+    {
+        if (!TryGetTeamRowBounds(unit, out int minX, out int maxX))
         {
             return false;
         }
 
-        Vector2Int relative = targetCell.Coords - actorCell.Coords;
-        return skill.boundary.Contains(relative);
+        if (!TryResolveCell(unit, out GridCellRef cell))
+        {
+            return false;
+        }
+
+        return unit.IsPlayer ? cell.Coords.x == maxX : cell.Coords.x == minX;
+    }
+
+    /// <summary>
+    /// 동적 후열 판정:
+    /// - 아군(IsPlayer=true): 같은 진영 생존자 중 X 최소 행이 후열
+    /// - 적군(IsPlayer=false): 같은 진영 생존자 중 X 최대 행이 후열
+    /// </summary>
+    public static bool IsUnitInBackRow(BattleCharactor unit)
+    {
+        if (!TryGetTeamRowBounds(unit, out int minX, out int maxX))
+        {
+            return false;
+        }
+
+        if (!TryResolveCell(unit, out GridCellRef cell))
+        {
+            return false;
+        }
+
+        return unit.IsPlayer ? cell.Coords.x == minX : cell.Coords.x == maxX;
+    }
+
+    private static bool TryGetTeamRowBounds(BattleCharactor pivot, out int minX, out int maxX)
+    {
+        minX = 0;
+        maxX = 0;
+        if (pivot == null || pivot.IsDead)
+        {
+            return false;
+        }
+
+        BattleCharactor[] all = Object.FindObjectsByType<BattleCharactor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        if (all == null || all.Length == 0)
+        {
+            return false;
+        }
+
+        bool hasAny = false;
+        for (int i = 0; i < all.Length; i++)
+        {
+            BattleCharactor unit = all[i];
+            if (unit == null || unit.IsDead || unit.IsPlayer != pivot.IsPlayer)
+            {
+                continue;
+            }
+
+            if (!TryResolveCell(unit, out GridCellRef cell))
+            {
+                continue;
+            }
+
+            int x = cell.Coords.x;
+            if (!hasAny)
+            {
+                minX = x;
+                maxX = x;
+                hasAny = true;
+                continue;
+            }
+
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+        }
+
+        return hasAny;
     }
 
     private static bool TryResolveCell(BattleCharactor unit, out GridCellRef cell)

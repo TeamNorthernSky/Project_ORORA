@@ -94,6 +94,16 @@ public class BattleSceneManager : MonoBehaviour
             }
             else
             {
+                EnemyScript enemyScript = battle.GetComponent<EnemyScript>();
+                if (enemyScript == null)
+                {
+                    Debug.LogWarning($"[BattleSceneManager] Enemy 유닛에 EnemyScript가 없어 AI 초기화를 건너뜁니다: {battle.UnitName} ({battle.name})");
+                }
+                else
+                {
+                    enemyScript.EnsureAIReady();
+                }
+
                 enemyBattleCharactors.Add(battle);
             }
         }
@@ -114,6 +124,7 @@ public class BattleSceneManager : MonoBehaviour
         }
 
         // 3. playerPlace / enemyPlace 하위 GridCell 수집
+        // - 씬에서 이미 절대 좌표(Grid_2_0, Grid_3_0 등)를 정의하므로 별도 오프셋 보정을 하지 않습니다.
         var allCells = new List<GridCellRef>();
         CollectCells(playerPlace, allCells);
         CollectCells(enemyPlace, allCells);
@@ -157,6 +168,9 @@ public class BattleSceneManager : MonoBehaviour
                     $"[BattleSceneManager] GridCell과 연결되지 않은 유닛: {unit.UnitName} ({unit.name})");
             }
         }
+
+        // 씬의 절대 좌표를 기준으로 캐시를 재구성해 좌표 조회 일관성을 보장합니다.
+        ASB.Work.BattleGrid.GridManager.Instance?.RebuildCache();
     }
 
     private void CollectCells(Transform root, List<GridCellRef> buffer)
@@ -177,6 +191,7 @@ public class BattleSceneManager : MonoBehaviour
 
             if (!buffer.Contains(c))
             {
+                // GridCell이 가진 절대 좌표를 그대로 사용합니다.
                 buffer.Add(c);
             }
         }

@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using ASBGridCell = ASB.Work.BattleGrid.GridCell;
+using ASBGridManager = ASB.Work.BattleGrid.GridManager;
 using UnityEngine;
 using UnityEngine.EventSystems;
-
+using ASB.Work.BattleGrid;
+using ASB.Work.Battle.SkillExecution;
 public enum PlayerActionState
 {
     Idle,
@@ -42,6 +45,7 @@ public class InputHandler : MonoBehaviour
     private BattleCharactor hoverTarget = null;
     private Outline hoverTargetOutline;
     private readonly HashSet<BattleCharactor> deathSubscribedUnits = new HashSet<BattleCharactor>();
+    private readonly List<ASBGridCell> highlightedCells = new List<ASBGridCell>();
 
     private void Awake()
     {
@@ -60,6 +64,7 @@ public class InputHandler : MonoBehaviour
     {
         UnbindAllUnitDeathEvents();
         ResetTargetingState();
+        ClearAoEPreview();
     }
 
     private void Update()
@@ -86,6 +91,7 @@ public class InputHandler : MonoBehaviour
 
         if (currentState != PlayerActionState.WaitingForTarget)
         {
+            ClearAoEPreview();
             return;
         }
 
@@ -102,6 +108,14 @@ public class InputHandler : MonoBehaviour
         }
 
         UpdateHoverTarget(actor);
+        if (hoverTarget != null && TryGetPendingSkillData(actor, out SkillData currentSelectedSkill))
+        {
+            UpdateAoEPreview(hoverTarget, currentSelectedSkill);
+        }
+        else
+        {
+            ClearAoEPreview();
+        }
 
         if (Input.GetMouseButtonDown(0))
         {
@@ -289,6 +303,142 @@ public class InputHandler : MonoBehaviour
         }
     }
 
+    private void UpdateAoEPreview(BattleCharactor hoverUnit, SkillData currentSelectedSkill)
+    {
+        // 진입 시 이전 프리뷰를 항상 정리하고 다시 그립니다.
+        ClearAoEPreview();
+
+        if (hoverUnit == null || currentSelectedSkill == null)
+        {
+            return;
+        }
+
+        if (!TryGetCurrentActor(out BattleCharactor actor))
+        {
+            return;
+        }
+
+        if (!validTargets.Contains(hoverUnit))
+        {
+            return;
+        }
+
+        // boundary 포함 유효 타겟 판정 재확인
+        if (!TargetingHelper.IsStillValidTarget(actor, pendingAction, hoverUnit))
+        {
+            return;
+        }
+
+        ASBGridManager gridManager = ASBGridManager.Instance;
+        if (gridManager == null)
+        {
+            return;
+        }
+
+        // 실행 파이프라인과 동일한 selector를 사용해 중심 타겟을 먼저 해석합니다.
+        var previewContext = new SkillExecutionContext
+        {
+            Caster = actor,
+            Skill = currentSelectedSkill,
+            SelectedTarget = hoverUnit,
+            SelectedCell = hoverUnit.OccupiedCell ?? gridManager.FindCellByUnit(hoverUnit)
+        };
+        ITargetSelector selector = SkillTargetSelectorRegistry.GetSelector(currentSelectedSkill.skillIndex);
+        BattleCharactor primaryTarget = selector.SelectTarget(previewContext) ?? hoverUnit;
+
+        ASBGridCell centerCell = primaryTarget != null
+            ? primaryTarget.OccupiedCell ?? gridManager.FindCellByUnit(primaryTarget)
+            : null;
+        if (centerCell == null)
+        {
+            return;
+        }
+
+        bool singleTarget = currentSelectedSkill.classSkillTarget == 0 ||
+                            currentSelectedSkill.boundary == null ||
+                            currentSelectedSkill.boundary.Count == 0;
+        if (singleTarget)
+        {
+            centerCell.SetHighlight();
+            highlightedCells.Add(centerCell);
+            return;
+        }
+
+        List<int> previewPattern = BuildPatternIncludingCenter(currentSelectedSkill.boundary);
+        HashSet<Vector2Int> hitCoords = SkillTargetingMapper.GetMultiTargetCoordinates(centerCell.Coords, previewPattern);
+        if (hitCoords == null || hitCoords.Count == 0)
+        {
+            return;
+        }
+
+        bool isTargetEnemySide = centerCell.Coords.x >= 2;
+        foreach (Vector2Int coord in hitCoords)
+        {
+            if (gridManager.TryGetCell(coord, out ASBGridCell cell) && cell != null)
+            {
+                bool isSplashEnemySide = cell.Coords.x >= 2;
+                // 프리뷰도 중심 타겟과 같은 진영 보드만 표시합니다.
+                if (isTargetEnemySide != isSplashEnemySide)
+                {
+                    continue;
+                }
+
+                cell.SetHighlight();
+                highlightedCells.Add(cell);
+            }
+        }
+    }
+
+    private bool TryGetPendingSkillData(BattleCharactor actor, out SkillData skillData)
+    {
+        skillData = null;
+        switch (pendingAction)
+        {
+            case PendingActionType.BasicAttack:
+                return false;
+
+            case PendingActionType.ClassSkill:
+                return TryGetSelectedSkill(actor, out skillData);
+
+            case PendingActionType.WeaponSkill:
+                if (actor == null || actor.EquippedWeaponData == null)
+                {
+                    return false;
+                }
+
+                skillData = actor.EquippedWeaponData.ToSkillData();
+                return skillData != null;
+
+            default:
+                return false;
+        }
+    }
+
+    private static List<int> BuildPatternIncludingCenter(List<int> sourcePattern)
+    {
+        List<int> pattern = sourcePattern != null ? new List<int>(sourcePattern) : new List<int>();
+        if (!pattern.Contains(0))
+        {
+            pattern.Insert(0, 0);
+        }
+
+        return pattern;
+    }
+
+    private void ClearAoEPreview()
+    {
+        for (int i = 0; i < highlightedCells.Count; i++)
+        {
+            ASBGridCell cell = highlightedCells[i];
+            if (cell != null)
+            {
+                cell.ClearHighlight();
+            }
+        }
+
+        highlightedCells.Clear();
+    }
+
     private BattleCharactor RaycastUnitUnderCursor()
     {
         var ray = raycastCamera.ScreenPointToRay(Input.mousePosition);
@@ -339,6 +489,7 @@ public class InputHandler : MonoBehaviour
 
     private void ResetTargetingState()
     {
+        ClearAoEPreview();
         SetHoverTarget(null);
         validTargets.Clear();
         pendingAction = PendingActionType.None;

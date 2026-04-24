@@ -8,9 +8,13 @@ namespace ASB.Work.BattleGrid
         [SerializeField] private Vector2Int coords;
 
         [SerializeField] private BattleCharactor occupyingUnit;
+        [Header("Visuals (Material Swap)")]
+        [SerializeField] private Renderer cellRenderer;
+        [SerializeField] private Material transparentMat;
+        [SerializeField] private Material redHighlightMat;
 
         public Vector2Int Coords => coords;
-        public bool IsFrontRow => coords.x == 0;
+        public bool IsFrontRow => coords.x == 1 || coords.x == 2;
 
         public BattleCharactor OccupyingUnit => occupyingUnit;
 
@@ -28,6 +32,15 @@ namespace ASB.Work.BattleGrid
         public void SetOccupyingUnit(BattleCharactor unit)
         {
             occupyingUnit = unit;
+        }
+
+        /// <summary>
+        /// 전투 보드 절대 좌표계를 강제 적용합니다.
+        /// 외부 호출부 호환을 위해 Coords 프로퍼티는 그대로 사용합니다.
+        /// </summary>
+        public void SetCoords(Vector2Int absoluteCoords)
+        {
+            coords = absoluteCoords;
         }
 
         public void ClearIfOccupying(BattleCharactor unit)
@@ -54,6 +67,26 @@ namespace ASB.Work.BattleGrid
             {
                 col.enabled = occupyingUnit != null;
             }
+        }
+
+        public void SetHighlight()
+        {
+            if (cellRenderer == null || redHighlightMat == null)
+            {
+                return;
+            }
+
+            cellRenderer.sharedMaterial = redHighlightMat;
+        }
+
+        public void ClearHighlight()
+        {
+            if (cellRenderer == null || transparentMat == null)
+            {
+                return;
+            }
+
+            cellRenderer.sharedMaterial = transparentMat;
         }
 
         private static bool TryParseCoordsFromName(string objectName, out Vector2Int parsed)

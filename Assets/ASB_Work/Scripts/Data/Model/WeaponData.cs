@@ -21,8 +21,10 @@ public class WeaponData
     public int WeaponSkillIndex;
     public string WeaponSkillName;
     public string WeaponSkillDescription;
+    public int IPCost;
     public int WeaponSkillEffect;
     public int WeaponSkillRange;
+    public int WeaponSkillRangeLine;
     public int WeaponSkillTarget;
     // TODO: 멀티타겟 실행 로직 추가
     public List<int> WeaponSkillMultiTarget = new List<int>();
@@ -53,44 +55,19 @@ public class WeaponData
             acquireLevel = 1,
             skillName = WeaponSkillName,
             description = WeaponSkillDescription,
+            ipCost = IPCost,
             classSkillEffect = WeaponSkillEffect,
             classSkillRange = WeaponSkillRange,
+            classSkillRangeLine = WeaponSkillRangeLine,
             classSkillTarget = WeaponSkillTarget,
-            multiTargetType = WeaponSkillMultiTargetType,
             multiTargetCount = WeaponSkillMultiTargetCount,
             skillValue = WeaponSkillValue,
             skillSubValue = WeaponSkillSubValue,
-            boundary = BuildManhattanBoundary(WeaponSkillRange),
-            aoePatternIndices = WeaponSkillMultiTarget != null
+            boundary = WeaponSkillMultiTarget != null
                 ? new List<int>(WeaponSkillMultiTarget)
                 : new List<int>()
         };
 
         return result;
-    }
-
-    private static List<Vector2Int> BuildManhattanBoundary(int range)
-    {
-        int safeRange = Mathf.Max(0, range);
-        var boundary = new List<Vector2Int>();
-
-        for (int x = -safeRange; x <= safeRange; x++)
-        {
-            for (int y = -safeRange; y <= safeRange; y++)
-            {
-                int dist = Mathf.Abs(x) + Mathf.Abs(y);
-                if (dist == 0)
-                {
-                    continue;
-                }
-
-                if (dist <= safeRange)
-                {
-                    boundary.Add(new Vector2Int(x, y));
-                }
-            }
-        }
-
-        return boundary;
     }
 }

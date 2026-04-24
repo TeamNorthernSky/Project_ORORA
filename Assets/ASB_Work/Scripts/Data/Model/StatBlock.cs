@@ -119,7 +119,7 @@ public struct StatBlock
 }
 
 
-// HP / Atk / DEF �� ���� ����ġ 
+// HP / Atk / DEF 
 [Serializable]
 public struct StatWeights
 {

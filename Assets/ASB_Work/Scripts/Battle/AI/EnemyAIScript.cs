@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 
 
@@ -12,14 +13,21 @@ namespace EnemyAI
         {
             if (self == null || targets == null || targets.Count == 0)
             {
+                //Debug.LogWarning(
+                //    $"[EnemyAI/Debug] DecideAction early return: selfNull={self == null}, targetsNull={targets == null}, targetsCount={(targets == null ? -1 : targets.Count)}");
                 return null;
             }
 
             BattleCharactor tauntSource = self.GetTauntSource();
+            bool tauntInTargets = tauntSource != null && targets.Contains(tauntSource);
+            //Debug.Log(
+            //    $"[EnemyAI/Debug] Taunt check: self={self.UnitName}, tauntSource={(tauntSource != null ? tauntSource.UnitName : "null")}, tauntDead={(tauntSource != null && tauntSource.IsDead)}, inTargets={tauntInTargets}");
             if (tauntSource != null
                 && !tauntSource.IsDead
-                && targets.Contains(tauntSource))
+                && tauntInTargets)
             {
+                Debug.Log(
+                    $"[EnemyAI/Debug] Taunt forced target selected: self={self.UnitName} -> target={tauntSource.UnitName}");
                 return BuildDecision(self, tauntSource);
             }
 
@@ -46,9 +54,13 @@ namespace EnemyAI
 
             if (chosenTarget == null)
             {
+                //Debug.LogWarning(
+                //    $"[EnemyAI/Debug] No chosen target after scan: self={self.UnitName}, targetsCount={targets.Count}");
                 return null;
             }
 
+            Debug.Log(
+                $"[EnemyAI/Debug] Lowest HP target selected: self={self.UnitName} -> target={chosenTarget.UnitName}, hp={chosenTarget.CurrentHp:0.#}");
             return BuildDecision(self, chosenTarget);
         }
 

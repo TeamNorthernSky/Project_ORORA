@@ -1,5 +1,7 @@
+using System;
 using UnityEngine;
 using ASB.Work.Battle.SkillExecution;
+using ASB.Work.Battle.Core;
 
 /// <summary>
 /// BattleAction 및 플레이어 입력에 의한 전투 실행. 데미지는 항상 target.TakeDamage로 적용합니다.
@@ -7,8 +9,62 @@ using ASB.Work.Battle.SkillExecution;
 [DisallowMultipleComponent]
 public class BattleManager : MonoBehaviour
 {
+    public static BattleManager Instance { get; private set; }
+
     private const int ClassSkillEffect_Heal = 1;
     private const int ClassSkillEffect_Revive = 2;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("[BattleManager] 중복 인스턴스가 감지되었습니다.");
+        }
+
+        Instance = this;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+
+    public float ApplyDamage(DamageContext context)
+    {
+        if (context.Caster == null || context.Target == null)
+        {
+            return 0f;
+        }
+
+        float finalDamage = CombatCalculator.CalculateDamage(context);
+        context.Target.TakeDamage(finalDamage);
+        Debug.Log($"[Combat] {context.Caster.UnitName} -> {context.Target.UnitName} dmg={finalDamage:F1}");
+        return finalDamage;
+    }
+
+    public void ApplyStatusEffect(StatusEffectContext context)
+    {
+        if (context.Caster == null || context.Target == null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(context.EffectType))
+        {
+            return;
+        }
+
+        if (context.EffectType.Equals("Taunt", StringComparison.OrdinalIgnoreCase))
+        {
+            SkillEffectHelper.SetTaunt(context.Caster, context.Target, context.DurationTurn);
+            return;
+        }
+
+        Debug.LogWarning($"[BattleManager] ApplyStatusEffect: 지원하지 않는 EffectType={context.EffectType}");
+    }
 
     /// <summary>ClassSkillSheet 행의 skillValue(예: 1.2 = 120%)로 그리드 스킬 피해를 계산합니다.</summary>
     public bool ExecuteGridSkill(BattleCharactor actor, BattleCharactor target, SkillData classSkillRow)
@@ -24,7 +80,12 @@ public class BattleManager : MonoBehaviour
         }
 
         bool reviveSkill = classSkillRow.classSkillEffect == ClassSkillEffect_Revive;
-        if (target.IsDead != reviveSkill)
+        if (target.IsDead && !reviveSkill)
+        {
+            return false;
+        }
+
+        if (!target.IsDead && reviveSkill)
         {
             return false;
         }
@@ -45,7 +106,12 @@ public class BattleManager : MonoBehaviour
             return false;
         }
 
-        if (actor.IsDead || target.IsDead)
+        if (actor.IsDead)
+        {
+            return false;
+        }
+
+        if (target.IsDead && skillData.classSkillEffect != ClassSkillEffect_Revive)
         {
             return false;
         }
@@ -60,9 +126,16 @@ public class BattleManager : MonoBehaviour
             return true;
         }
 
-        float raw = (actor.FinalStats.Atk * multiplier) - target.FinalStats.DEF;
-        float dmg = Mathf.Max(1f, raw);
-        target.TakeDamage(dmg);
+        var context = new DamageContext
+        {
+            Caster = actor,
+            Target = target,
+            SkillMultiplier = multiplier,
+            SkillIndex = skillData.skillIndex,
+            IsCritical = false
+        };
+        ApplyDamage(context);
+        float dmg = CombatCalculator.CalculateDamage(context);
         Debug.Log($"[Battle] GridSkill: {GetLabel(actor)} -> {GetLabel(target)} dmg={dmg:F1} (×{multiplier:0.##})");
         return true;
     }
@@ -93,8 +166,16 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
-        float dmg = CalculateGridSkillDamage(actor, target, skillPercent);
-        target.TakeDamage(dmg);
+        var context = new DamageContext
+        {
+            Caster = actor,
+            Target = target,
+            SkillMultiplier = multiplier,
+            SkillIndex = -2,
+            IsCritical = false
+        };
+        ApplyDamage(context);
+        float dmg = CombatCalculator.CalculateDamage(context);
 
         Debug.Log($"[Battle] GridSkill: {GetLabel(actor)} -> {GetLabel(target)} dmg={dmg:F1} ({skillPercent:0.##}%)");
     }
@@ -112,12 +193,20 @@ public class BattleManager : MonoBehaviour
             return false;
         }
 
-        float dmg = CalculateBasicAttackDamage(actor, target);
+        var context = new DamageContext
+        {
+            Caster = actor,
+            Target = target,
+            SkillMultiplier = 1.0f,
+            SkillIndex = -1,
+            IsCritical = false
+        };
+        ApplyDamage(context);
+        float dmg = CombatCalculator.CalculateDamage(context);
         string actorName = actor.UnitName;
         string targetName = target.UnitName;
 
         Debug.Log($"{actorName}이 {targetName}에게 {dmg:F1}만큼 피해를 입혔습니다.");
-        target.TakeDamage(dmg);
 
         if (target.IsDead)
         {
@@ -171,10 +260,19 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
-        float dmg = CalculateSkillDamage(actor, target, skillData);
+        float multiplier = Mathf.Max(0.01f, skillData.Power / 100f);
+        var context = new DamageContext
+        {
+            Caster = actor,
+            Target = target,
+            SkillMultiplier = multiplier,
+            SkillIndex = -3,
+            IsCritical = false
+        };
+        float dmg = CombatCalculator.CalculateDamage(context);
 
         Debug.Log($"[Battle] 스킬({skillData.DisplayName}): {GetLabel(actor)} -> {GetLabel(target)} dmg={dmg:F1}");
-        target.TakeDamage(dmg);
+        ApplyDamage(context);
 
         if (target.IsDead)
         {

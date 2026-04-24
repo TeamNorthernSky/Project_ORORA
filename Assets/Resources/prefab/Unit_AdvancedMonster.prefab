@@ -123,6 +123,7 @@ MonoBehaviour:
   outlineMode: 2
   outlineColor: {r: 1, g: 0, b: 0.94771194, a: 1}
   outlineWidth: 4
+  includeChildren: 1
   precomputeOutline: 0
   bakeKeys: []
   bakeValues: []
@@ -183,6 +184,7 @@ MonoBehaviour:
       Luck: 0
       Speed: 0
       CriticalRate: 0
+      CritMultiplier: 0
       CounterRate: 0
       AvoidRate: 0
     IsEnemyRow: 0
@@ -193,6 +195,7 @@ MonoBehaviour:
     Luck: 0
     Speed: 0
     CriticalRate: 0
+    CritMultiplier: 0
     CounterRate: 0
     AvoidRate: 0
   unitWeight:
@@ -218,9 +221,48 @@ MonoBehaviour:
   m_GameObject: {fileID: 7563937201503599213}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f58462792aaac5488cd265933320c4f, type: 3}
+  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitDataAsset: {fileID: 0}
-  teamType: 1
-  gridNumber: 1
+  unitName: Unit
+  teamType: 0
+  maxHp: 100
+  attack: 10
+  defense: 0
+  speed: 1
+  level: 1
+  unitCount: 1
+  unitWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  levelWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  classWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  finalStats:
+    HP: 102
+    Atk: 12
+    DEF: 2
+    Luck: 0
+    Speed: 1
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+  currentHp: 0
+  activeStatusEffects: []
+  activeSkill:
+    skillId: 
+    skillPercent: 100
+    skillBoundary: []
+  skillDataLoader: {fileID: 0}
+  equippedWeaponIndex: 0
+  availableWeapons: []
+  classSkillIndex: 1010
+  selectedSkillIndex: 0
+  availableSkills: []

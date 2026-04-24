@@ -11,6 +11,8 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
 {
     public UnitData enemyData;
     private EnemyAI.IEnemyAI currentAI;
+    [Header("Debug")]
+    [SerializeField] private bool enableAIDebugLog = true;
 
     public StatBlock currentStats;
 
@@ -81,13 +83,7 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
 
         EnemyData typedEnemyData = data as EnemyData;
         enemyData = typedEnemyData ?? data;
-        string aiType = typedEnemyData != null ? typedEnemyData.UnitAI : string.Empty;
-        int aiIndex = 0;
-        if (!string.IsNullOrWhiteSpace(aiType))
-        {
-            int.TryParse(aiType.Trim(), out aiIndex);
-        }
-        currentAI = EnemyAIFactory.CreateAI(aiIndex);
+        EnsureAIReady();
 
         string id = UnitID;
         string nm = data != null ? data.Name : "null";
@@ -102,12 +98,33 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
             yield break;
         }
 
+        if (!EnsureAIReady())
+        {
+            Debug.LogError($"[EnemyScript] AI 초기화 실패로 적 턴을 건너뜁니다: unit={self.UnitName}");
+            yield break;
+        }
+
         List<BattleCharactor> targets = flowManager != null
             ? flowManager.GetAlivePlayerUnits()
             : new List<BattleCharactor>();
 
+        if (enableAIDebugLog)
+        {
+            Debug.Log(
+                $"[EnemyAI/Debug] RunAITurn start: self={self.UnitName}, aiNull={currentAI == null}, targets={targets.Count} [{FormatTargets(targets)}]");
+        }
+
         EnemyActionDecision decision = currentAI != null ? currentAI.DecideAction(self, targets) : null;
         BattleCharactor target = decision != null ? decision.Target : null;
+
+        if (enableAIDebugLog)
+        {
+            string actionTypeLabel = decision != null ? decision.ActionType.ToString() : "DecisionNull";
+            string targetLabel = target != null ? target.UnitName : "null";
+            string skillLabel = decision != null && decision.SelectedSkill != null ? decision.SelectedSkill.skillName : "null";
+            Debug.Log(
+                $"[EnemyAI/Debug] DecideAction result: self={self.UnitName}, action={actionTypeLabel}, target={targetLabel}, selectedSkill={skillLabel}");
+        }
 
         if (target == null)
         {
@@ -118,7 +135,8 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
                 yield break;
             }
 
-            Debug.LogWarning($"[EnemyScript] AI 결정 실패. 기본 공격으로 대체합니다: unit={self.UnitName}");
+            Debug.LogWarning(
+                $"[EnemyScript] AI 결정 실패. 기본 공격으로 대체합니다: unit={self.UnitName}, aiNull={currentAI == null}, aliveTargets={targets.Count}, targetList=[{FormatTargets(targets)}]");
             battleManager.ExecuteBasicAttack(self, target);
             yield return new WaitForSeconds(1.5f);
             yield break;
@@ -160,6 +178,61 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
         }
 
         yield return new WaitForSeconds(1.5f);
+    }
+
+    public bool EnsureAIReady()
+    {
+        if (currentAI != null)
+        {
+            return true;
+        }
+
+        int aiIndex = ResolveAiIndex(enemyData);
+        currentAI = EnemyAIFactory.CreateAI(aiIndex);
+        bool success = currentAI != null;
+        if (enableAIDebugLog)
+        {
+            string aiType = (enemyData as EnemyData)?.UnitAI;
+            Debug.Log(
+                $"[EnemyAI/Debug] EnsureAIReady: unit={name}, aiTypeRaw='{aiType}', aiIndex={aiIndex}, success={success}");
+        }
+
+        return success;
+    }
+
+    private static int ResolveAiIndex(UnitData data)
+    {
+        EnemyData typedEnemyData = data as EnemyData;
+        string aiType = typedEnemyData != null ? typedEnemyData.UnitAI : string.Empty;
+        if (!string.IsNullOrWhiteSpace(aiType) && int.TryParse(aiType.Trim(), out int aiIndex))
+        {
+            return aiIndex;
+        }
+
+        return 20001;
+    }
+
+    private static string FormatTargets(List<BattleCharactor> targets)
+    {
+        if (targets == null || targets.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var labels = new List<string>(targets.Count);
+        for (int i = 0; i < targets.Count; i++)
+        {
+            BattleCharactor t = targets[i];
+            if (t == null)
+            {
+                labels.Add("null");
+                continue;
+            }
+
+            labels.Add($"{t.UnitName}(dead={t.IsDead},hp={t.CurrentHp:0.#},isPlayer={t.IsPlayer})");
+        }
+
+        return string.Join(", ", labels);
     }
 
     private void OnValidate()

@@ -7,5 +7,7 @@ public enum StatusEffectType
     defense_down,
     poison,
     bleed,
-    taunt
+    taunt,
+    stun,
+    healBan
 }

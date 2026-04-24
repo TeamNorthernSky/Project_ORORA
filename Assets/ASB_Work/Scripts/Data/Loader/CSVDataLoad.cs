@@ -562,7 +562,6 @@ public static class CSVLoader
         int range = ParseIntOrDefault(GetField(fields, baseCol + 3), 0);
         int target = ParseIntOrDefault(GetField(fields, baseCol + 4), 0);
         string multiRaw = GetField(fields, baseCol + 5);
-        int mtType = ParseIntOrDefault(GetField(fields, baseCol + 6), 0);
         int mtCount = ParseIntOrDefault(GetField(fields, baseCol + 7), 0);
         float skillVal = ParseFloatSafe(GetField(fields, baseCol + 8), 0f);
 
@@ -573,11 +572,14 @@ public static class CSVLoader
             acquireLevel = 1,
             skillName = skillName,
             description = description,
+            // EnemyDataSheet 스킬 슬롯에는 IPCost 컬럼이 없어 기본값 0을 사용합니다.
+            ipCost = 0,
             classSkillEffect = effect,
             classSkillRange = range,
+            // EnemyDataSheet에는 별도 우선순위 컬럼이 없으므로 기본값(Any=1)을 사용합니다.
+            classSkillRangeLine = 1,
             classSkillTarget = target,
-            boundary = BuildEnemySkillBoundary(multiRaw, range),
-            multiTargetType = mtType,
+            boundary = BuildEnemySkillBoundaryPatterns(multiRaw),
             multiTargetCount = mtCount,
             skillValue = skillVal,
             skillSubValue = 0f
@@ -586,44 +588,10 @@ public static class CSVLoader
         skills.Add(sd);
     }
 
-    /// <summary>멀티타겟 문자열이 {x,y} 형태면 ParseClassSkillMultiTarget, 아니면 Range를 맨해튼 거리로 boundary 생성.</summary>
-    private static List<Vector2Int> BuildEnemySkillBoundary(string multiTargetRaw, int rangeInt)
+    /// <summary>적 스킬 멀티타겟 원문을 SkillTargetingMapper 패턴 인덱스(List&lt;int&gt;)로 변환합니다.</summary>
+    private static List<int> BuildEnemySkillBoundaryPatterns(string multiTargetRaw)
     {
-        string m = multiTargetRaw?.Trim() ?? string.Empty;
-        if (m.Length >= 2 && m[0] == '{')
-        {
-            var parsed = ParseClassSkillMultiTarget(m);
-            if (parsed != null && parsed.Count > 0)
-            {
-                return parsed;
-            }
-        }
-
-        return BuildManhattanBoundaryFromRange(rangeInt);
-    }
-
-    private static List<Vector2Int> BuildManhattanBoundaryFromRange(int range)
-    {
-        int safeRange = Mathf.Max(0, range);
-        var boundary = new List<Vector2Int>();
-        for (int x = -safeRange; x <= safeRange; x++)
-        {
-            for (int y = -safeRange; y <= safeRange; y++)
-            {
-                int dist = Mathf.Abs(x) + Mathf.Abs(y);
-                if (dist == 0)
-                {
-                    continue;
-                }
-
-                if (dist <= safeRange)
-                {
-                    boundary.Add(new Vector2Int(x, y));
-                }
-            }
-        }
-
-        return boundary;
+        return ParseIntListField(multiTargetRaw);
     }
 
     private static List<float> ParseFloatListField(string raw)
@@ -709,15 +677,19 @@ public static class CSVLoader
                 acquireLevel = ParseIntOrDefault(GetField(fields, 2), 0),
                 skillName = GetField(fields, 3),
                 description = GetField(fields, 4),
-                classSkillEffect = ParseIntOrDefault(GetField(fields, 5), 0),
-                classSkillRange = ParseIntOrDefault(GetField(fields, 6), 0),
-                classSkillTarget = ParseIntOrDefault(GetField(fields, 7), 0),
-                boundary = ParseClassSkillMultiTarget(GetField(fields, 8)),
-                multiTargetType = ParseIntOrDefault(GetField(fields, 9), 0),
-                multiTargetCount = ParseIntOrDefault(GetField(fields, 10), 0),
-                skillValue = ParseFloatSafe(GetField(fields, 11), 1f),
-                skillSubValue = ParseFloatSafe(GetField(fields, 12), 0f),
-                aoePatternIndices = fields.Count > 13 ? ParseIntListField(GetField(fields, 13)) : new List<int>()
+                // 새 CSV 스키마: 5=IPCost, 6=Effect, 7=Range, 8=RangeLine ...
+                ipCost = ParseIntOrDefault(GetField(fields, 5), 0),
+                classSkillEffect = ParseIntOrDefault(GetField(fields, 6), 0),
+                classSkillRange = ParseIntOrDefault(GetField(fields, 7), 0),
+                // classSkillRangeLine: 우선순위 전용 필드(0=FrontFirst, 1=Any, 2=BackFirst)
+                // 파싱 실패/빈 값은 안전 기본값 1(Any)로 폴백합니다.
+                classSkillRangeLine = ParseIntOrDefault(GetField(fields, 8), 1),
+                classSkillTarget = ParseIntOrDefault(GetField(fields, 9), 0),
+                // boundary는 ClassSkillMultiTarget(10)을 SkillTargetingMapper 패턴 인덱스로 사용합니다.
+                boundary = ParseIntListField(GetField(fields, 10)),
+                multiTargetCount = ParseIntOrDefault(GetField(fields, 12), 0),
+                skillValue = ParseFloatSafe(GetField(fields, 13), 1f),
+                skillSubValue = ParseFloatSafe(GetField(fields, 14), 0f)
             };
 
             result.Add(row);
@@ -753,7 +725,8 @@ public static class CSVLoader
             }
 
             var fields = ParseCsvLine(line);
-            if (fields.Count < 4)
+            // WeaponSheet: 0~23 컬럼 고정(IPCost, WeaponSkillRangeLine 포함).
+            if (fields.Count < 24)
             {
                 continue;
             }
@@ -785,14 +758,16 @@ public static class CSVLoader
                 WeaponSkillIndex = ParseIntOrDefault(GetField(fields, 11), 0),
                 WeaponSkillName = GetField(fields, 12),
                 WeaponSkillDescription = GetField(fields, 13),
-                WeaponSkillEffect = ParseIntOrDefault(GetField(fields, 14), 0),
-                WeaponSkillRange = ParseIntOrDefault(GetField(fields, 15), 0),
-                WeaponSkillTarget = ParseIntOrDefault(GetField(fields, 16), 0),
-                WeaponSkillMultiTarget = ParseIntListField(GetField(fields, 17)),
-                WeaponSkillMultiTargetType = ParseIntOrDefault(GetField(fields, 18), 0),
-                WeaponSkillMultiTargetCount = ParseIntOrDefault(GetField(fields, 19), 0),
-                WeaponSkillValue = ParseFloatSafe(GetField(fields, 20), 0f),
-                WeaponSkillSubValue = ParseFloatSafe(GetField(fields, 21), 0f)
+                IPCost = ParseIntOrDefault(GetField(fields, 14), 0),
+                WeaponSkillEffect = ParseIntOrDefault(GetField(fields, 15), 0),
+                WeaponSkillRange = ParseIntOrDefault(GetField(fields, 16), 0),
+                WeaponSkillRangeLine = ParseIntOrDefault(GetField(fields, 17), 1),
+                WeaponSkillTarget = ParseIntOrDefault(GetField(fields, 18), 0),
+                WeaponSkillMultiTarget = ParseIntListField(GetField(fields, 19)),
+                WeaponSkillMultiTargetType = ParseIntOrDefault(GetField(fields, 20), 0),
+                WeaponSkillMultiTargetCount = ParseIntOrDefault(GetField(fields, 21), 0),
+                WeaponSkillValue = ParseFloatSafe(GetField(fields, 22), 0f),
+                WeaponSkillSubValue = ParseFloatSafe(GetField(fields, 23), 0f)
             };
 
             result.Add(row);
@@ -863,67 +838,6 @@ public static class CSVLoader
         }
 
         return isPercent ? value / 100f : value;
-    }
-
-    /// <summary>
-    /// ClassSkillMultiTarget: "{x1,y1,x2,y2,...}" 형태를 Vector2Int 리스트로 변환합니다.
-    /// 비어 있거나 형식이 맞지 않으면 빈 리스트를 반환하고 경고를 남깁니다.
-    /// </summary>
-    public static List<Vector2Int> ParseClassSkillMultiTarget(string raw)
-    {
-        var list = new List<Vector2Int>();
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            return list;
-        }
-
-        raw = raw.Trim().Trim('"').Trim();
-        if (raw.Length == 0)
-        {
-            return list;
-        }
-
-        if (raw[0] != '{' || raw[raw.Length - 1] != '}')
-        {
-            Debug.LogWarning($"[CSVLoader] ClassSkillMultiTarget 형식 오류(중괄호 필요): '{raw}'");
-            return list;
-        }
-
-        string inner = raw.Substring(1, raw.Length - 2).Trim();
-        if (inner.Length == 0)
-        {
-            return list;
-        }
-
-        var parts = inner.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length % 2 != 0)
-        {
-            //Debug.LogWarning($"[CSVLoader] ClassSkillMultiTarget 숫자 개수가 짝이 맞지 않음: '{raw}'");
-            return list;
-        }
-
-        for (int i = 0; i < parts.Length; i += 2)
-        {
-            string xs = parts[i].Trim();
-            string ys = parts[i + 1].Trim();
-            if (!int.TryParse(xs, NumberStyles.Integer, CultureInfo.InvariantCulture, out int x))
-            {
-                Debug.LogWarning($"[CSVLoader] ClassSkillMultiTarget 정수 파싱 실패(x): '{xs}' in '{raw}'");
-                list.Clear();
-                return list;
-            }
-
-            if (!int.TryParse(ys, NumberStyles.Integer, CultureInfo.InvariantCulture, out int y))
-            {
-                Debug.LogWarning($"[CSVLoader] ClassSkillMultiTarget 정수 파싱 실패(y): '{ys}' in '{raw}'");
-                list.Clear();
-                return list;
-            }
-
-            list.Add(new Vector2Int(x, y));
-        }
-
-        return list;
     }
 
     private static float ParseFloatSafe(string raw, float defaultValue)

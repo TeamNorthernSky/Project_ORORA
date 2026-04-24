@@ -231,7 +231,7 @@ GameObject:
   - component: {fileID: 51024762}
   - component: {fileID: 51024765}
   m_Layer: 8
-  m_Name: Grid_1_1
+  m_Name: Grid_0_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -336,8 +336,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 1, y: 1}
+  coords: {x: 0, y: 1}
   occupyingUnit: {fileID: 0}
+  cellRenderer: {fileID: 51024763}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
 --- !u!1 &56801847
 GameObject:
   m_ObjectHideFlags: 0
@@ -491,7 +494,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitName: Unit
+  unitName: AdvancedMonster
   teamType: 1
   maxHp: 100
   attack: 10
@@ -500,7 +503,7 @@ MonoBehaviour:
   level: 1
   unitCount: 1
   unitWeight:
-    HP: 1
+    HP: 1.5
     Atk: 1
     DEF: 1
   levelWeight:
@@ -512,7 +515,7 @@ MonoBehaviour:
     Atk: 1
     DEF: 1
   finalStats:
-    HP: 102
+    HP: 152
     Atk: 12
     DEF: 2
     Luck: 0
@@ -603,18 +606,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
---- !u!114 &175597879
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 175597874}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &175597882
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -629,28 +620,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   unitName: "\uC544\uCC98"
   teamType: 0
-  maxHp: 100
+  maxHp: 1
   attack: 10
   defense: 0
   speed: 1
   level: 1
   unitCount: 1
   unitWeight:
-    HP: 4.52
+    HP: 4.22
     Atk: 4.84
     DEF: 7.09
   levelWeight:
     HP: 1.32
     Atk: 3.3
-    DEF: 2.42
+    DEF: 3.01
   classWeight:
     HP: 1
     Atk: 1
     DEF: 1
   finalStats:
-    HP: 454.32
+    HP: 6.54
     Atk: 52.7
-    DEF: 3.42
+    DEF: 4.01
     Luck: 0
     Speed: 1
     CriticalRate: 0
@@ -749,8 +740,8 @@ MonoBehaviour:
   unitCsv: {fileID: 0}
   playerUnitCsv: {fileID: 4900000, guid: 32fabe508b336cc4990e4bc88f1d78ee, type: 3}
   enemyUnitCsv: {fileID: 4900000, guid: 75b7d0f12ff4976478d649b8bd8b2e44, type: 3}
-  classSkillSheetCsv: {fileID: 4900000, guid: aa40c91a648ed6c43ab0538e6ab3e1ac, type: 3}
-  weaponSheetCsv: {fileID: 4900000, guid: 6678f728aee96de4ca301c3dd99a7393, type: 3}
+  classSkillSheetCsv: {fileID: 4900000, guid: 0646140d7017c1447b2b35626d885ab8, type: 3}
+  weaponSheetCsv: {fileID: 4900000, guid: ea26b099547e06747b5254a226486eb9, type: 3}
 --- !u!114 &320332756
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -783,6 +774,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1832740941}
     m_Modifications:
+    - target: {fileID: 5572662073814544764, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
+        type: 3}
+      propertyPath: teamType
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5572662073814544764, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
+        type: 3}
+      propertyPath: unitName
+      value: LowerMonster
+      objectReference: {fileID: 0}
+    - target: {fileID: 6728097637861157263, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6728097637861157263, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: e5828c997272f934184edd74c883fcaa, type: 2}
     - target: {fileID: 6743325076284844202, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -856,19 +867,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 7563937201503599213, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1396920965}
-    - targetCorrespondingSourceObject: {fileID: 7563937201503599213, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1396920964}
-    - targetCorrespondingSourceObject: {fileID: 7563937201503599213, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1396920968}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7753f0ea7bf83d64ba8d577883cd7d60, type: 3}
 --- !u!1 &493354917 stripped
 GameObject:
@@ -891,9 +890,51 @@ MonoBehaviour:
   m_GameObject: {fileID: 493354917}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
+  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  unitName: "\uBA54\uC774\uC9C0"
+  teamType: 0
+  maxHp: 1
+  attack: 10
+  defense: 0
+  speed: 1
+  level: 1
+  unitCount: 1
+  unitWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  levelWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  classWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  finalStats:
+    HP: 3
+    Atk: 12
+    DEF: 2
+    Luck: 0
+    Speed: 1
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+  currentHp: 0
+  activeStatusEffects: []
+  activeSkill:
+    skillId: 
+    skillPercent: 100
+    skillBoundary: []
+  skillDataLoader: {fileID: 320332756}
+  equippedWeaponIndex: 0
+  availableWeapons: []
+  classSkillIndex: 1010
+  selectedSkillIndex: 0
+  availableSkills: []
 --- !u!1 &503365170
 GameObject:
   m_ObjectHideFlags: 0
@@ -945,7 +986,7 @@ GameObject:
   - component: {fileID: 515816966}
   - component: {fileID: 515816969}
   m_Layer: 8
-  m_Name: Grid_1_0
+  m_Name: Grid_0_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1051,8 +1092,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 1, y: 0}
-  occupyingUnit: {fileID: 175597879}
+  coords: {x: 0, y: 0}
+  occupyingUnit: {fileID: 175597882}
+  cellRenderer: {fileID: 515816967}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
 --- !u!1001 &584170578
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1218,7 +1262,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   autoStartOnInitialize: 1
-  enemyThinkSeconds: 3
   verboseLog: 1
   inputHandler: {fileID: 1540026209}
   includeInactiveUnitRootsInOutlineLookup: 1
@@ -1262,7 +1305,7 @@ GameObject:
   - component: {fileID: 771919884}
   - component: {fileID: 771919887}
   m_Layer: 9
-  m_Name: Grid_1_1
+  m_Name: Grid_3_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1367,8 +1410,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 1, y: 1}
+  coords: {x: 3, y: 1}
   occupyingUnit: {fileID: 0}
+  cellRenderer: {fileID: 771919885}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
 --- !u!1001 &870918798
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1542,14 +1588,11 @@ PrefabInstance:
       propertyPath: charactorData.baseStats.CriticalRate
       value: 5
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5822711424090221044, guid: 0794eea0d06dda54f921e3c87af19cd5, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 453319653275471567, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 175597879}
     - targetCorrespondingSourceObject: {fileID: 453319653275471567, guid: 0794eea0d06dda54f921e3c87af19cd5,
         type: 3}
       insertIndex: -1
@@ -1663,11 +1706,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   unitName: "\uC6CC\uB9AC\uC5B4"
   teamType: 0
-  maxHp: 100
+  maxHp: 1
   attack: 10
   defense: 0
-  speed: 1
-  level: 1
+  speed: 2
+  level: 25
   unitCount: 1
   unitWeight:
     HP: 1
@@ -1682,11 +1725,11 @@ MonoBehaviour:
     Atk: 1
     DEF: 1
   finalStats:
-    HP: 102
-    Atk: 12
-    DEF: 2
+    HP: 51
+    Atk: 60
+    DEF: 50
     Luck: 0
-    Speed: 1
+    Speed: 2
     CriticalRate: 0
     CritMultiplier: 1.5
     CounterRate: 0
@@ -1717,7 +1760,7 @@ GameObject:
   - component: {fileID: 997278434}
   - component: {fileID: 997278437}
   m_Layer: 9
-  m_Name: Grid_0_1
+  m_Name: Grid_2_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1822,8 +1865,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 0, y: 1}
+  coords: {x: 2, y: 1}
   occupyingUnit: {fileID: 0}
+  cellRenderer: {fileID: 997278435}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
 --- !u!1 &1002047752
 GameObject:
   m_ObjectHideFlags: 0
@@ -1961,6 +2007,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5274485026923046935, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca,
+        type: 3}
+      propertyPath: unitCount
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1984,7 +2035,7 @@ GameObject:
   - component: {fileID: 1185982873}
   - component: {fileID: 1185982876}
   m_Layer: 9
-  m_Name: Grid_0_2
+  m_Name: Grid_2_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2002,7 +2053,8 @@ Transform:
   m_LocalPosition: {x: 3.3, y: 0, z: -2}
   m_LocalScale: {x: 0.32999998, y: 1, z: 0.33}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1794758367}
   m_Father: {fileID: 1926818296}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!64 &1185982873
@@ -2089,8 +2141,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 0, y: 2}
-  occupyingUnit: {fileID: 0}
+  coords: {x: 2, y: 2}
+  occupyingUnit: {fileID: 1794758369}
+  cellRenderer: {fileID: 1185982874}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
 --- !u!1 &1348185592
 GameObject:
   m_ObjectHideFlags: 0
@@ -2223,7 +2278,7 @@ GameObject:
   - component: {fileID: 1387779106}
   - component: {fileID: 1387779109}
   m_Layer: 8
-  m_Name: Grid_0_1
+  m_Name: Grid_1_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2329,98 +2384,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 0, y: 1}
+  coords: {x: 1, y: 1}
   occupyingUnit: {fileID: 929773951}
---- !u!1 &1396920960 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7563937201503599213, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
-    type: 3}
-  m_PrefabInstance: {fileID: 330322749}
-  m_PrefabAsset: {fileID: 0}
+  cellRenderer: {fileID: 1387779107}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
 --- !u!4 &1396920961 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6743325076284844202, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
     type: 3}
   m_PrefabInstance: {fileID: 330322749}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1396920964
+--- !u!114 &1396920969 stripped
 MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 5572662073814544764, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
+    type: 3}
+  m_PrefabInstance: {fileID: 330322749}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1396920960}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fc997578c8c2b340aa8764d3f3d361e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1396920965
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1396920960}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1396920968
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1396920960}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitName: Unit
-  teamType: 1
-  maxHp: 100
-  attack: 10
-  defense: 0
-  speed: 1
-  level: 1
-  unitCount: 1
-  unitWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  levelWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  classWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  finalStats:
-    HP: 102
-    Atk: 12
-    DEF: 2
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  currentHp: 0
-  activeStatusEffects: []
-  activeSkill:
-    skillId: 
-    skillPercent: 100
-    skillBoundary: []
-  skillDataLoader: {fileID: 320332756}
-  equippedWeaponIndex: 0
-  availableWeapons: []
-  classSkillIndex: 1010
-  selectedSkillIndex: 0
-  availableSkills: []
 --- !u!1 &1414445549
 GameObject:
   m_ObjectHideFlags: 0
@@ -2435,7 +2421,7 @@ GameObject:
   - component: {fileID: 1414445551}
   - component: {fileID: 1414445554}
   m_Layer: 8
-  m_Name: Grid_1_2
+  m_Name: Grid_0_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2541,8 +2527,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 1, y: 2}
+  coords: {x: 0, y: 2}
   occupyingUnit: {fileID: 1483893783}
+  cellRenderer: {fileID: 1414445552}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
 --- !u!1 &1483893778 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6290960558266015020, guid: e540557cd11514240aafdf2c329798cb,
@@ -2648,7 +2637,7 @@ GameObject:
   - component: {fileID: 1511189584}
   - component: {fileID: 1511189587}
   m_Layer: 8
-  m_Name: Grid_0_0
+  m_Name: Grid_1_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2753,8 +2742,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 0, y: 0}
+  coords: {x: 1, y: 0}
   occupyingUnit: {fileID: 0}
+  cellRenderer: {fileID: 1511189585}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
 --- !u!1 &1540026208
 GameObject:
   m_ObjectHideFlags: 0
@@ -2784,7 +2776,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62745f4fda5e5de4f86aef7175362f96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  raycastCamera: {fileID: 0}
+  raycastCamera: {fileID: 1956195431}
   maxRayDistance: 200
   selectionRaycastMask:
     serializedVersion: 2
@@ -2916,7 +2908,7 @@ GameObject:
   - component: {fileID: 1596053937}
   - component: {fileID: 1596053940}
   m_Layer: 9
-  m_Name: Grid_1_0
+  m_Name: Grid_3_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3021,8 +3013,208 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 1, y: 0}
-  occupyingUnit: {fileID: 1396920965}
+  coords: {x: 3, y: 0}
+  occupyingUnit: {fileID: 0}
+  cellRenderer: {fileID: 1596053938}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
+--- !u!1 &1738284055
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1738284057}
+  - component: {fileID: 1738284056}
+  m_Layer: 0
+  m_Name: GridManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1738284056
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1738284055}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04e68369a46b3cb42851d2ec83a867fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &1738284057
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1738284055}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -5.97158, y: -2.760961, z: -1.3460727}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1794758366
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1185982872}
+    m_Modifications:
+    - target: {fileID: 3486639906996805074, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_Name
+      value: Unit_MiddleMonster
+      objectReference: {fileID: 0}
+    - target: {fileID: 3486639906996805074, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3486639906996805074, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1794758369}
+  m_SourcePrefab: {fileID: 100100000, guid: e4942fe50bbc7b946ac3cc9d7be21706, type: 3}
+--- !u!4 &1794758367 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+    type: 3}
+  m_PrefabInstance: {fileID: 1794758366}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1794758368 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3486639906996805074, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+    type: 3}
+  m_PrefabInstance: {fileID: 1794758366}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1794758369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1794758368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  unitName: MiddleMonster
+  teamType: 1
+  maxHp: 100
+  attack: 10
+  defense: 0
+  speed: 1
+  level: 1
+  unitCount: 1
+  unitWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  levelWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  classWeight:
+    HP: 1
+    Atk: 1
+    DEF: 1
+  finalStats:
+    HP: 102
+    Atk: 12
+    DEF: 2
+    Luck: 0
+    Speed: 1
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+  currentHp: 0
+  activeStatusEffects: []
+  activeSkill:
+    skillId: 
+    skillPercent: 100
+    skillBoundary: []
+  skillDataLoader: {fileID: 320332756}
+  equippedWeaponIndex: 0
+  availableWeapons: []
+  classSkillIndex: 1010
+  selectedSkillIndex: 0
+  availableSkills: []
 --- !u!1 &1832740940
 GameObject:
   m_ObjectHideFlags: 0
@@ -3037,7 +3229,7 @@ GameObject:
   - component: {fileID: 1832740942}
   - component: {fileID: 1832740945}
   m_Layer: 9
-  m_Name: Grid_0_0
+  m_Name: Grid_2_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3143,8 +3335,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 0, y: 0}
-  occupyingUnit: {fileID: 0}
+  coords: {x: 2, y: 0}
+  occupyingUnit: {fileID: 1396920969}
+  cellRenderer: {fileID: 1832740943}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
 --- !u!1 &1847199436
 GameObject:
   m_ObjectHideFlags: 0
@@ -3203,7 +3398,7 @@ GameObject:
   - component: {fileID: 1853290219}
   - component: {fileID: 1853290222}
   m_Layer: 8
-  m_Name: Grid_0_2
+  m_Name: Grid_1_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3309,8 +3504,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 0, y: 2}
+  coords: {x: 1, y: 2}
   occupyingUnit: {fileID: 493354922}
+  cellRenderer: {fileID: 1853290220}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
 --- !u!1 &1926818295
 GameObject:
   m_ObjectHideFlags: 0
@@ -3362,7 +3560,7 @@ GameObject:
   - component: {fileID: 1933058776}
   - component: {fileID: 1933058779}
   m_Layer: 9
-  m_Name: Grid_1_2
+  m_Name: Grid_3_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3468,8 +3666,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6503417cfad2fb479ddf77f08b2b0ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  coords: {x: 1, y: 2}
+  coords: {x: 3, y: 2}
   occupyingUnit: {fileID: 102285278}
+  cellRenderer: {fileID: 1933058777}
+  transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
+  redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
 --- !u!1 &1956195429
 GameObject:
   m_ObjectHideFlags: 0
@@ -3621,3 +3822,4 @@ SceneRoots:
   - {fileID: 621159267}
   - {fileID: 1540026210}
   - {fileID: 1847199438}
+  - {fileID: 1738284057}

@@ -1,4 +1,5 @@
 using UnityEngine;
+using ASB.Work.Battle.Core;
 
 namespace ASB.Work.Battle.SkillExecution
 {
@@ -14,12 +15,54 @@ namespace ASB.Work.Battle.SkillExecution
                 return 0f;
             }
 
-            float multiplier = Mathf.Max(0.01f, skillValue);
-            float raw = (caster.FinalStats.Atk * multiplier) - target.FinalStats.DEF;
-            float damage = Mathf.Max(1f, raw);
-            target.TakeDamage(damage);
-            return damage;
+            BattleManager battleManager = UnityEngine.Object.FindObjectOfType<BattleManager>();
+            if (battleManager == null)
+            {
+                Debug.LogWarning("[SkillEffect] BattleManager를 찾지 못해 데미지 적용을 건너뜁니다.");
+                return 0f;
+            }
+
+            var context = new DamageContext
+            {
+                Caster = caster,
+                Target = target,
+                SkillMultiplier = 0f,
+                SkillValue = skillValue,
+                SkillIndex = 0,
+                IsCritical = false
+            };
+
+            return battleManager.ApplyDamage(context);
         }
+
+        public static float ApplySkillDamage(BattleCharactor caster, BattleCharactor target, float skillValue)
+        {
+            if (caster == null || target == null)
+            {
+                return 0f;
+            }
+
+            BattleManager battleManager = UnityEngine.Object.FindObjectOfType<BattleManager>();
+            if (battleManager == null)
+            {
+                Debug.LogWarning("[SkillEffect] BattleManager를 찾지 못해 데미지 적용을 건너뜁니다.");
+                return 0f;
+            }
+
+            var context = new DamageContext
+            {
+                Caster = caster,
+                Target = target,
+                SkillMultiplier = 0f,
+                SkillValue = skillValue,
+                SkillIndex = 0,
+                IsCritical = false
+            };
+
+            return battleManager.ApplyDamage(context);
+        }
+
+
 
         public static float ApplyStandardHeal(BattleCharactor caster, BattleCharactor target, float skillValue)
         {
@@ -52,17 +95,20 @@ namespace ASB.Work.Battle.SkillExecution
             return success;
         }
 
-        public static float ResolveReviveHpRatio(float skillValue)
+
+        // 부활
+        public static float ResolveReviveHpRatio(float skillValue )
         {
             if (skillValue <= 0f)
             {
-                return 0.5f;
+                return 0.2f;
             }
 
             return skillValue <= 1f ? Mathf.Clamp01(skillValue) : Mathf.Clamp01(skillValue * 0.01f);
         }
 
 
+        //스턴
         public static void SetTaunt(BattleCharactor caster, BattleCharactor target, int DurationTurn)
         {
             var tauntEffect = new StatusEffectInstance
@@ -76,6 +122,44 @@ namespace ASB.Work.Battle.SkillExecution
 
             target.ApplyStatusEffect(tauntEffect);
         }
-        
+
+        public static void SetStun(BattleCharactor caster, BattleCharactor target, int durationTurn)
+        {
+            if (target == null || target.IsDead)
+            {
+                return;
+            }
+
+            var stunEffect = new StatusEffectInstance
+            {
+                effectType = StatusEffectType.stun,
+                category = StatusEffectCategory.debuff,
+                value = 0f,
+                remainingTurns = Mathf.Max(1, durationTurn),
+                source = caster
+            };
+
+            target.ApplyStatusEffect(stunEffect);
+        }
+
+        public static void SetHealBan(BattleCharactor caster, BattleCharactor target, int durationTurn)
+        {
+            if (target == null || target.IsDead)
+            {
+                return;
+            }
+
+            var healBanEffect = new StatusEffectInstance
+            {
+                effectType = StatusEffectType.healBan,
+                category = StatusEffectCategory.debuff,
+                value = 0f,
+                remainingTurns = Mathf.Max(1, durationTurn),
+                source = caster
+            };
+
+            target.ApplyStatusEffect(healBanEffect);
+        }
+
     }
 }

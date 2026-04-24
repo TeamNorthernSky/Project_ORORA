@@ -14,7 +14,7 @@ public class BattleFlowManager : MonoBehaviour
 {
     [Header("Turn/Loop")]
     [SerializeField] private bool autoStartOnInitialize = true;
-    [SerializeField] private float enemyThinkSeconds = 3f;
+    //[SerializeField] private float enemyThinkSeconds = 3f;
 
     [Header("Debug")]
     [SerializeField] private bool verboseLog = true;
@@ -75,9 +75,9 @@ public class BattleFlowManager : MonoBehaviour
         inputHandler?.BindUnitDeathEvents(participants);
 
         RebuildRuntimeLookup();
-        RefreshQueue();
         CurrentUnit = null;
         roundIndex = 0;
+        RefreshQueue();
 
         Log($"[BattleFlow] Initialize 완료. participants={participants.Count}, queue={turnQueue.Count}");
 
@@ -110,6 +110,9 @@ public class BattleFlowManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 생존 참가자만으로 턴 큐를 새로 구성합니다. 큐가 비었을 때(새 라운드)에만 호출됩니다.
+    /// </summary>
     public void RefreshQueue()
     {
         var ordered = participants
@@ -123,34 +126,35 @@ public class BattleFlowManager : MonoBehaviour
         Log($"[BattleFlow] Round {roundIndex} 시작. queue={turnQueue.Count}");
     }
 
+    /// <summary>
+    /// 큐에서 다음 행동 유닛을 꺼냅니다. 사망한 슬롯은 건너뛰고, 큐가 빌 때만 생존·진영을 검사한 뒤 필요 시 새 라운드를 시작합니다.
+    /// </summary>
     public BattleCharactor GetNextUnit()
     {
-        int safety = Mathf.Max(1, participants.Count) + 1;
-
-        while (safety-- > 0)
+        while (turnQueue != null && turnQueue.Count > 0)
         {
-            if (turnQueue == null || turnQueue.Count == 0)
+            BattleCharactor unit = turnQueue.Dequeue();
+            if (unit != null && !unit.IsDead)
             {
-                RefreshQueue();
-                if (turnQueue.Count == 0)
-                {
-                    CurrentUnit = null;
-                    return null;
-                }
+                return unit;
             }
-
-            var next = turnQueue.Dequeue();
-            if (next == null || next.IsDead)
-            {
-                continue;
-            }
-
-            CurrentUnit = next;
-            return next;
         }
 
-        CurrentUnit = null;
-        return null;
+        List<BattleCharactor> aliveUnits = participants.Where(u => u != null && !u.IsDead).ToList();
+        if (aliveUnits.Count == 0)
+        {
+            return null;
+        }
+
+        bool anyPlayerAlive = aliveUnits.Exists(u => u.IsPlayer);
+        bool anyEnemyAlive = aliveUnits.Exists(u => !u.IsPlayer);
+        if (!anyPlayerAlive || !anyEnemyAlive)
+        {
+            return null;
+        }
+
+        RefreshQueue();
+        return turnQueue != null && turnQueue.Count > 0 ? turnQueue.Dequeue() : null;
     }
 
     /// <summary>
@@ -177,30 +181,15 @@ public class BattleFlowManager : MonoBehaviour
     {
         while (true)
         {
-            if (turnQueue == null || turnQueue.Count == 0)
+            BattleCharactor unit = GetNextUnit();
+            if (unit == null)
             {
-                RefreshQueue();
-            }
-
-            if (turnQueue == null || turnQueue.Count == 0)
-            {
-                Log("[BattleFlow] 남은 유닛이 없어 루프 대기");
-                yield return null;
-                continue;
-            }
-
-            var unit = turnQueue.Dequeue();
-            if (unit == null || unit.IsDead)
-            {
-                continue;
+                Log("[BattleFlow] 전투 종료(생존 진영 없음 또는 참가자 전멸). BattleLoop 종료.");
+                battleLoopRoutine = null;
+                yield break;
             }
 
             CurrentUnit = unit;
-            if (unit.IsDead)
-            {
-                CurrentUnit = null;
-                continue;
-            }
 
             // 턴 전환 시 입력 상태(타겟팅/아웃라인)가 남지 않도록 항상 정리
             inputHandler?.ClearSelectionState();
@@ -217,42 +206,30 @@ public class BattleFlowManager : MonoBehaviour
                 continue;
             }
 
+            if (CurrentUnit.IsStunned)
+            {
+                Debug.Log($"[Stun] {CurrentUnit.UnitName}은(는) 기절 상태여서 턴을 건너뜁니다!");
+                CurrentUnit.AdvanceStatusEffectDuration();
+                SetOutline(unit, false);
+                CurrentUnit = null;
+                EndTurnSelectionCleanup();
+                yield return null;
+                continue;
+            }
+
             if (unit.IsPlayer)
             {
                 Log("[BattleFlow] 플레이어 턴: 적 선택 후 숫자키(1/2) 입력 대기");
                 BeginPlayerTurnSelectionCleanup();
                 playerActionResolved = false;
-                while (!playerActionResolved)
-                {
-                    if (CurrentUnit == null || CurrentUnit.IsDead)
-                    {
-                        break;
-                    }
-
-                    yield return null;
-                }
+                yield return new WaitUntil(() =>
+                    playerActionResolved
+                    || CurrentUnit == null
+                    || CurrentUnit.IsDead);
             }
             else
             {
-                EnemyScript enemyScript = CurrentUnit != null ? CurrentUnit.GetComponent<EnemyScript>() : null;
-                if (enemyScript != null)
-                {
-                    yield return StartCoroutine(enemyScript.RunAITurn(battleManager, this));
-                }
-                else
-                {
-                    Debug.LogWarning($"[BattleFlow] EnemyScript가 없어 기본 공격 fallback 실행: {GetUnitLabel(CurrentUnit)}");
-                    BattleCharactor fallbackTarget = participants.FirstOrDefault(p => p != null && p.IsPlayer && !p.IsDead);
-                    if (CurrentUnit != null && fallbackTarget != null && battleManager != null)
-                    {
-                        battleManager.ExecuteBasicAttack(CurrentUnit, fallbackTarget);
-                        yield return new WaitForSeconds(1.5f);
-                    }
-                    else
-                    {
-                        yield return null;
-                    }
-                }
+                yield return RunEnemyTurn(CurrentUnit);
             }
 
             SetOutline(unit, false);
@@ -264,6 +241,34 @@ public class BattleFlowManager : MonoBehaviour
             CurrentUnit = null;
             EndTurnSelectionCleanup();
             yield return null;
+        }
+    }
+
+    private IEnumerator RunEnemyTurn(BattleCharactor enemyUnit)
+    {
+        if (enemyUnit == null)
+        {
+            yield break;
+        }
+
+        EnemyScript enemyScript = enemyUnit.GetComponent<EnemyScript>();
+        if (enemyScript != null)
+        {
+            yield return StartCoroutine(enemyScript.RunAITurn(battleManager, this));
+        }
+        else
+        {
+            Debug.LogWarning($"[BattleFlow] EnemyScript가 없어 기본 공격 fallback 실행: {GetUnitLabel(enemyUnit)}");
+            BattleCharactor fallbackTarget = participants.FirstOrDefault(p => p != null && p.IsPlayer && !p.IsDead);
+            if (fallbackTarget != null && battleManager != null)
+            {
+                battleManager.ExecuteBasicAttack(enemyUnit, fallbackTarget);
+                yield return new WaitForSeconds(1.5f);
+            }
+            else
+            {
+                yield return null;
+            }
         }
     }
 
@@ -394,9 +399,6 @@ public class BattleFlowManager : MonoBehaviour
 
             CurrentUnit = null;
         }
-
-        // 마스터 participants 목록은 유지(시체 포함). 턴 큐만 생존자 기준으로 재구성.
-        RefreshQueue();
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using GridCellRef = ASB.Work.BattleGrid.GridCell;
 
@@ -68,6 +69,7 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     private GridCellRef occupiedCell;
     private bool isInitialized;
     private bool hasLoggedEmptyUnitNameWarning;
+    private Dictionary<Renderer, Color> originalColors = new Dictionary<Renderer, Color>();
 
     /// <summary>프로토타입 경로: SkillManager에서 가져온 후보 목록의 캐시 키(unitName|level).</summary>
     private string prototypeSkillsCacheKey;
@@ -84,6 +86,47 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     public bool IsPlayer { get; set; }
 
     public bool IsDead { get; private set; }
+    public bool IsStunned
+    {
+        get
+        {
+            if (IsDead || activeStatusEffects == null)
+            {
+                return false;
+            }
+
+            return activeStatusEffects.Any(e =>
+                e != null &&
+                e.effectType == StatusEffectType.stun &&
+                e.remainingTurns > 0);
+        }
+    }
+    public bool IsHealBanned
+    {
+        get
+        {
+            if (IsDead || activeStatusEffects == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < activeStatusEffects.Count; i++)
+            {
+                StatusEffectInstance effect = activeStatusEffects[i];
+                if (effect == null)
+                {
+                    continue;
+                }
+
+                if (effect.effectType == StatusEffectType.healBan && effect.remainingTurns > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
 
     public IUnitData UnitData => null;
     public string UnitId => string.IsNullOrWhiteSpace(unitName) || unitName == "Unit" ? gameObject.name : unitName;
@@ -109,7 +152,37 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
     public GridCellRef OccupiedCell => occupiedCell;
     public bool IsInitialized => isInitialized;
-    public bool IsInFrontRow => occupiedCell != null && occupiedCell.IsFrontRow;
+    /// <summary>
+    /// 절대 좌표 기반 동적 전열 판정.
+    /// 기존 하드코딩(x==0) 의존 제거를 위해 TargetingHelper 공용 로직을 사용합니다.
+    /// </summary>
+    public bool IsInFrontRow => TargetingHelper.IsUnitInFrontRow(this);
+
+    /// <summary>
+    /// 고정 좌표 기반 전열 판정.
+    /// - 플레이어 전열: x == 1
+    /// - 적 전열: x == 2
+    /// </summary>
+    public bool IsFrontRow()
+    {
+        GridCellRef cell = occupiedCell;
+        if (cell == null)
+        {
+            cell = ASB.Work.BattleGrid.GridManager.Instance?.FindCellByUnit(this);
+        }
+
+        if (cell == null)
+        {
+            return false;
+        }
+
+        if (IsPlayer)
+        {
+            return cell.Coords.x == 1;
+        }
+
+        return cell.Coords.x == 2;
+    }
 
     /// <summary>디버그용: 현재 계산에 쓰는 base 원본.</summary>
     public StatBlock RuntimeBaseStats => runtimeBaseStats;
@@ -134,6 +207,23 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
         if (activeStatusEffects == null)
         {
             activeStatusEffects = new List<StatusEffectInstance>();
+        }
+
+        originalColors.Clear();
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            Material material = renderer.material;
+            if (material != null && material.HasProperty("_Color"))
+            {
+                originalColors[renderer] = material.color;
+            }
         }
     }
 
@@ -271,6 +361,12 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     {
         if (IsDead)
         {
+            return;
+        }
+
+        if (IsHealBanned)
+        {
+            Debug.Log($"[HealBan] {UnitName}은(는) 힐 금지 상태여서 체력을 회복할 수 없습니다!");
             return;
         }
 
@@ -475,30 +571,17 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
     private void DisableVisuals()
     {
-        var renderers = GetComponentsInChildren<Renderer>(true);
-        for (int i = 0; i < renderers.Length; i++)
+        foreach (var renderer in originalColors.Keys)
         {
-            if (renderers[i] != null)
+            if (renderer == null)
             {
-                renderers[i].enabled = false;
+                continue;
             }
-        }
 
-        var colliders = GetComponentsInChildren<Collider>(true);
-        for (int i = 0; i < colliders.Length; i++)
-        {
-            if (colliders[i] != null)
+            Material material = renderer.material;
+            if (material != null && material.HasProperty("_Color"))
             {
-                colliders[i].enabled = false;
-            }
-        }
-
-        var colliders2D = GetComponentsInChildren<Collider2D>(true);
-        for (int i = 0; i < colliders2D.Length; i++)
-        {
-            if (colliders2D[i] != null)
-            {
-                colliders2D[i].enabled = false;
+                material.color = Color.black;
             }
         }
 
@@ -548,12 +631,19 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
     private void EnableVisuals()
     {
-        var renderers = GetComponentsInChildren<Renderer>(true);
-        for (int i = 0; i < renderers.Length; i++)
+        foreach (var kvp in originalColors)
         {
-            if (renderers[i] != null)
+            Renderer renderer = kvp.Key;
+            if (renderer == null)
             {
-                renderers[i].enabled = true;
+                continue;
+            }
+
+            renderer.enabled = true;
+            Material material = renderer.material;
+            if (material != null && material.HasProperty("_Color"))
+            {
+                material.color = kvp.Value;
             }
         }
 
@@ -608,6 +698,7 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
             if (cell != null)
             {
                 cell.SetOccupyingUnit(this);
+                ASB.Work.BattleGrid.GridManager.Instance?.RegisterUnitToCell(this, cell);
             }
 
             return;
@@ -622,6 +713,7 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
         if (occupiedCell != null)
         {
+            ASB.Work.BattleGrid.GridManager.Instance?.UnregisterUnit(this);
             occupiedCell.ClearIfOccupying(this);
         }
 
@@ -629,6 +721,7 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
         if (occupiedCell != null)
         {
             occupiedCell.SetOccupyingUnit(this);
+            ASB.Work.BattleGrid.GridManager.Instance?.RegisterUnitToCell(this, occupiedCell);
         }
     }
 
@@ -639,6 +732,7 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
     public void ClearOccupiedCell()
     {
+        ASB.Work.BattleGrid.GridManager.Instance?.UnregisterUnit(this);
         if (occupiedCell != null)
         {
             occupiedCell.ClearIfOccupying(this);
@@ -726,6 +820,11 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
     private static bool RequiresStatRecalculation(StatusEffectType effectType)
     {
+        if (effectType == StatusEffectType.healBan)
+        {
+            return false;
+        }
+
         return effectType == StatusEffectType.attack_up
                || effectType == StatusEffectType.attack_down
                || effectType == StatusEffectType.defense_up
