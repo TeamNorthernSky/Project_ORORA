@@ -18,17 +18,7 @@ MonoBehaviour:
   groundTilePlacements: []
   obstacleCells:
   - {x: 28, y: 28}
-  itemPlacements:
-  - gridPosition: {x: 10, y: 5}
-    resourceType: 1
-    amount: 3
-  minePlacements:
-  - gridPosition: {x: 20, y: 20}
-    resourceType: 0
-    resourcePerTurn: 1000
-    initialState: 0
-  partySpawns:
-  - partyId: party_001
-    gridPosition: {x: 24, y: 24}
-  - partyId: party_002
-    gridPosition: {x: 30, y: 24}
+  - {x: 28, y: 29}
+  itemPlacements: []
+  minePlacements: []
+  partySpawns: []

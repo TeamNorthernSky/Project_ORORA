@@ -12,10 +12,8 @@ public class EnemyTurnController : MonoBehaviour
     [SerializeField] private CombatEncounterManager combatEncounterManager;
     [SerializeField] private GridManager gridManager;
     [SerializeField] private MineRegistry mineRegistry;
-    [SerializeField] private ItemRegistry itemRegistry;
 
-    private readonly List<TargetCandidate> resourceCandidates = new List<TargetCandidate>();
-    private readonly List<TargetCandidate> strategicCandidates = new List<TargetCandidate>();
+    private readonly List<TargetCandidate> targetCandidates = new List<TargetCandidate>();
 
     private readonly struct TargetCandidate
     {
@@ -48,9 +46,6 @@ public class EnemyTurnController : MonoBehaviour
             if (HandleAdjacentMineInteraction(enemy))
                 continue;
 
-            if (HandleAdjacentItemInteraction(enemy))
-                continue;
-
             ValidateCurrentTarget(enemy);
 
             if (!enemy.HasTarget())
@@ -77,9 +72,6 @@ public class EnemyTurnController : MonoBehaviour
             if (HandleAdjacentMineInteraction(enemy))
                 continue;
 
-            if (HandleAdjacentItemInteraction(enemy))
-                continue;
-
             adjacentParty = FindAdjacentParty(enemy.GetCurrentGrid());
             if (adjacentParty != null && TryBeginCombat(adjacentParty, enemy))
                 yield break;
@@ -101,137 +93,47 @@ public class EnemyTurnController : MonoBehaviour
         Vector2Int targetGrid = GetTargetGrid(enemy.CurrentTargetType, enemy.CurrentTarget);
 
         if (IsTargetReached(enemyGrid, enemy.CurrentTargetType, enemy.CurrentTarget, targetGrid))
-        {
-            enemy.ClearTarget();
-            return;
-        }
-
-        if (GridManager.GridDistance(enemyGrid, targetGrid) > enemy.DetectionRange)
             enemy.ClearTarget();
     }
 
     private void AcquireTarget(EnemyUnit enemy)
     {
-        resourceCandidates.Clear();
-        strategicCandidates.Clear();
+        targetCandidates.Clear();
 
         Vector2Int enemyGrid = enemy.GetCurrentGrid();
-        CollectResourceCandidates(enemyGrid, enemy.DetectionRange);
-        CollectStrategicCandidates(enemyGrid, enemy.DetectionRange);
+        CollectTargetCandidates();
 
-        TargetCandidate? selectedCandidate = SelectCandidate(enemy, enemyGrid);
+        TargetCandidate? selectedCandidate = GetClosestCandidate(enemyGrid);
         if (selectedCandidate.HasValue)
         {
             enemy.SetTarget(selectedCandidate.Value.TargetType, selectedCandidate.Value.Target);
             return;
         }
 
-        CastleUnit fallbackCastle = castleRegistry != null ? castleRegistry.GetClosestCastle(enemyGrid) : null;
-        if (fallbackCastle != null)
-            enemy.SetTarget(EnemyTargetType.Castle, fallbackCastle);
-        else
-            enemy.ClearTarget();
+        enemy.ClearTarget();
     }
 
-    private TargetCandidate? SelectCandidate(EnemyUnit enemy, Vector2Int enemyGrid)
+    private void CollectTargetCandidates()
     {
-        bool hasResourceCandidates = resourceCandidates.Count > 0;
-        bool hasStrategicCandidates = strategicCandidates.Count > 0;
-
-        if (!hasResourceCandidates && !hasStrategicCandidates)
-            return null;
-
-        if (hasResourceCandidates && !hasStrategicCandidates)
-            return GetHighestPriorityCandidate(resourceCandidates, enemyGrid);
-
-        if (!hasResourceCandidates && hasStrategicCandidates)
-            return GetHighestPriorityCandidate(strategicCandidates, enemyGrid);
-
-        int totalWeight = enemy.ResourceGroupWeight + enemy.StrategicGroupWeight;
-        if (totalWeight <= 0)
-            return GetHighestPriorityCandidate(strategicCandidates, enemyGrid);
-
-        int roll = Random.Range(0, totalWeight);
-        bool chooseResourceGroup = roll < enemy.ResourceGroupWeight;
-
-        return chooseResourceGroup
-            ? GetHighestPriorityCandidate(resourceCandidates, enemyGrid)
-            : GetHighestPriorityCandidate(strategicCandidates, enemyGrid);
-    }
-
-    private TargetCandidate? GetHighestPriorityCandidate(List<TargetCandidate> candidates, Vector2Int enemyGrid)
-    {
-        if (candidates == null || candidates.Count == 0)
-            return null;
-
-        TargetCandidate? prioritizedCandidate = null;
-        for (int i = 0; i < candidates.Count; i++)
-        {
-            TargetCandidate candidate = candidates[i];
-            if (!prioritizedCandidate.HasValue)
-            {
-                prioritizedCandidate = candidate;
-                continue;
-            }
-
-            if (GetPriority(candidate.TargetType) < GetPriority(prioritizedCandidate.Value.TargetType))
-            {
-                prioritizedCandidate = candidate;
-                continue;
-            }
-
-            if (GetPriority(candidate.TargetType) == GetPriority(prioritizedCandidate.Value.TargetType)
-                && GridManager.GridDistance(enemyGrid, candidate.Grid)
-                    < GridManager.GridDistance(enemyGrid, prioritizedCandidate.Value.Grid))
-            {
-                prioritizedCandidate = candidate;
-            }
-        }
-
-        return prioritizedCandidate;
-    }
-
-    private void CollectResourceCandidates(Vector2Int enemyGrid, int detectionRange)
-    {
-        if (mineRegistry == null || itemRegistry == null)
+        if (gridManager == null)
             return;
 
-        IReadOnlyList<Mine> mines = mineRegistry.Mines;
-
-        for (int i = 0; i < mines.Count; i++)
+        if (mineRegistry != null)
         {
-            Mine mine = mines[i];
-            if (mine == null || gridManager == null)
-                continue;
+            IReadOnlyList<Mine> mines = mineRegistry.Mines;
+            for (int i = 0; i < mines.Count; i++)
+            {
+                Mine mine = mines[i];
+                if (mine == null || mine.IsEnemyClaimed)
+                    continue;
 
-            if (mine.IsEnemyClaimed)
-                continue;
-
-            Vector2Int targetGrid = mine.GetAnchorGrid(gridManager);
-            if (!IsWithinDetectionRange(enemyGrid, targetGrid, detectionRange) || IsAdjacent(enemyGrid, targetGrid))
-                continue;
-
-            resourceCandidates.Add(new TargetCandidate(EnemyTargetType.Mine, mine, targetGrid));
+                targetCandidates.Add(new TargetCandidate(
+                    EnemyTargetType.Mine,
+                    mine,
+                    mine.GetAnchorGrid(gridManager)));
+            }
         }
 
-        IReadOnlyList<ItemObject> items = itemRegistry.Items;
-
-        for (int i = 0; i < items.Count; i++)
-        {
-            ItemObject item = items[i];
-            if (item == null)
-                continue;
-
-            Vector2Int targetGrid = GetTargetGrid(EnemyTargetType.Item, item);
-            if (!IsWithinDetectionRange(enemyGrid, targetGrid, detectionRange) || IsAdjacent(enemyGrid, targetGrid))
-                continue;
-
-            resourceCandidates.Add(new TargetCandidate(EnemyTargetType.Item, item, targetGrid));
-        }
-    }
-
-    private void CollectStrategicCandidates(Vector2Int enemyGrid, int detectionRange)
-    {
         if (castleRegistry != null)
         {
             IReadOnlyList<CastleUnit> castles = castleRegistry.Castles;
@@ -241,28 +143,32 @@ public class EnemyTurnController : MonoBehaviour
                 if (castle == null)
                     continue;
 
-                Vector2Int targetGrid = castle.GetCurrentGrid();
-                if (!IsWithinDetectionRange(enemyGrid, targetGrid, detectionRange)
-                    || (gridManager != null && gridManager.IsAdjacentToCastle(enemyGrid, castle)))
-                    continue;
+                targetCandidates.Add(new TargetCandidate(
+                    EnemyTargetType.Castle,
+                    castle,
+                    castle.GetCurrentGrid()));
+            }
+        }
+    }
 
-                strategicCandidates.Add(new TargetCandidate(EnemyTargetType.Castle, castle, targetGrid));
+    private TargetCandidate? GetClosestCandidate(Vector2Int enemyGrid)
+    {
+        TargetCandidate? closestCandidate = null;
+        int closestDistance = int.MaxValue;
+
+        for (int i = 0; i < targetCandidates.Count; i++)
+        {
+            TargetCandidate candidate = targetCandidates[i];
+            int distance = GridManager.GridDistance(enemyGrid, candidate.Grid);
+
+            if (closestCandidate == null || distance < closestDistance)
+            {
+                closestCandidate = candidate;
+                closestDistance = distance;
             }
         }
 
-        PartyGridMover[] parties = partyRegistry.PartyMovers;
-        for (int i = 0; i < parties.Length; i++)
-        {
-            PartyGridMover party = parties[i];
-            if (party == null)
-                continue;
-
-            Vector2Int targetGrid = party.GetCurrentGrid();
-            if (!IsWithinDetectionRange(enemyGrid, targetGrid, detectionRange) || IsAdjacent(enemyGrid, targetGrid))
-                continue;
-
-            strategicCandidates.Add(new TargetCandidate(EnemyTargetType.Party, party, targetGrid));
-        }
+        return closestCandidate;
     }
 
     private PartyGridMover FindAdjacentParty(Vector2Int enemyGrid)
@@ -345,6 +251,9 @@ public class EnemyTurnController : MonoBehaviour
                 return new List<Vector2Int>(occupant.GetAdjacentOuterCells());
         }
 
+        if (targetType == EnemyTargetType.Mine && target is Mine mine)
+            return new List<Vector2Int>(mine.GetAdjacentInteractionCells(gridManager));
+
         List<Vector2Int> approachCandidates = new List<Vector2Int>(GridManager.Directions8.Length);
         for (int i = 0; i < GridManager.Directions8.Length; i++)
             approachCandidates.Add(targetGrid + GridManager.Directions8[i]);
@@ -357,34 +266,18 @@ public class EnemyTurnController : MonoBehaviour
         switch (targetType)
         {
             case EnemyTargetType.Mine:
-                if (target is Mine typedMine)
-                    return gridManager != null ? typedMine.GetAnchorGrid(gridManager) : Vector2Int.zero;
-
-                if (target is PartyGridMover party)
-                    return party.GetCurrentGrid();
-
+                if (target is Mine mine)
+                    return gridManager != null ? mine.GetAnchorGrid(gridManager) : Vector2Int.zero;
+                break;
+            case EnemyTargetType.Castle:
                 if (target is CastleUnit castle)
                     return castle.GetCurrentGrid();
-                break;
-            case EnemyTargetType.Item:
-            case EnemyTargetType.Party:
-            case EnemyTargetType.Castle:
-                if (target is PartyGridMover typedParty)
-                    return typedParty.GetCurrentGrid();
-
-                if (target is CastleUnit typedCastle)
-                    return typedCastle.GetCurrentGrid();
                 break;
         }
 
         return target != null && gridManager != null
             ? gridManager.WorldToGrid(target.transform.position)
             : Vector2Int.zero;
-    }
-
-    private static bool IsWithinDetectionRange(Vector2Int enemyGrid, Vector2Int targetGrid, int detectionRange)
-    {
-        return GridManager.GridDistance(enemyGrid, targetGrid) <= detectionRange;
     }
 
     private static bool IsAdjacent(Vector2Int a, Vector2Int b)
@@ -403,22 +296,17 @@ public class EnemyTurnController : MonoBehaviour
         if (targetType == EnemyTargetType.Castle && target is CastleUnit castle && gridManager != null)
             return gridManager.IsAdjacentToCastle(enemyGrid, castle);
 
-        return IsAdjacent(enemyGrid, targetGrid);
-    }
-
-    private static int GetPriority(EnemyTargetType targetType)
-    {
-        switch (targetType)
+        if (targetType == EnemyTargetType.Mine && target is Mine mine)
         {
-            case EnemyTargetType.Mine:
-            case EnemyTargetType.Castle:
-                return 0;
-            case EnemyTargetType.Item:
-            case EnemyTargetType.Party:
-                return 1;
-            default:
-                return int.MaxValue;
+            IReadOnlyList<Vector2Int> interactionCells = mine.GetAdjacentInteractionCells(gridManager);
+            for (int i = 0; i < interactionCells.Count; i++)
+            {
+                if (interactionCells[i] == enemyGrid)
+                    return true;
+            }
         }
+
+        return IsAdjacent(enemyGrid, targetGrid);
     }
 
     private static List<Vector2Int> TrimPathToMovePoints(List<Vector2Int> path, int movePoints)
@@ -432,24 +320,6 @@ public class EnemyTurnController : MonoBehaviour
             return path;
 
         return path.GetRange(0, allowedNodeCount);
-    }
-
-    private bool HandleAdjacentItemInteraction(EnemyUnit enemy)
-    {
-        if (enemy == null || gridManager == null)
-            return false;
-
-        if (!gridManager.TryGetAdjacentItemGrid(enemy.GetCurrentGrid(), out Vector2Int itemGrid))
-            return false;
-
-        if (!gridManager.TryGetItemObjectAtGrid(itemGrid, out ItemObject item))
-            return false;
-
-        if (enemy.CurrentTarget == item)
-            enemy.ClearTarget();
-
-        item.RemoveWithoutReward();
-        return true;
     }
 
     private bool HandleAdjacentMineInteraction(EnemyUnit enemy)
@@ -535,8 +405,5 @@ public class EnemyTurnController : MonoBehaviour
 
         if (mineRegistry == null)
             mineRegistry = FindFirstObjectByType<MineRegistry>();
-
-        if (itemRegistry == null)
-            itemRegistry = FindFirstObjectByType<ItemRegistry>();
     }
 }
