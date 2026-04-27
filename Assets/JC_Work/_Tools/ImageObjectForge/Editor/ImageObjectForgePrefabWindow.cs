@@ -35,6 +35,7 @@ namespace Orora.ImageObjectForge
         ForgePrefabFactory.PrefabKind _kind = ForgePrefabFactory.PrefabKind.Button;
 
         // Button 전용
+        GameObject _basePrefab;
         TMP_FontAsset _font;
         string _buttonText = "Button";
         bool _useFilenameAsText = true;
@@ -68,6 +69,7 @@ namespace Orora.ImageObjectForge
         void OnEnable()
         {
             if (_font == null) _font = ForgePrefabFactory.LoadDefaultFont();
+            if (_basePrefab == null) _basePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ForgePrefabFactory.BasePrefabPath);
         }
 
         void OnGUI()
@@ -145,6 +147,21 @@ namespace Orora.ImageObjectForge
             // -------- Button 전용 --------
             if (_kind == ForgePrefabFactory.PrefabKind.Button)
             {
+                EditorGUILayout.Space(6);
+                using (new EditorGUILayout.VerticalScope(GUI.skin.box))
+                {
+                    EditorGUILayout.LabelField("Button Base", EditorStyles.boldLabel);
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        _basePrefab = (GameObject)EditorGUILayout.ObjectField("Base Prefab", _basePrefab, typeof(GameObject), false);
+                        if (GUILayout.Button("Reset", GUILayout.Width(60)))
+                        {
+                            _basePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ForgePrefabFactory.BasePrefabPath);
+                        }
+                    }
+                    EditorGUILayout.LabelField("  비우면 기본 베이스 사용: " + ForgePrefabFactory.BasePrefabPath, EditorStyles.miniLabel);
+                }
+
                 EditorGUILayout.Space(6);
                 using (new EditorGUILayout.VerticalScope(GUI.skin.box))
                 {
@@ -302,6 +319,7 @@ namespace Orora.ImageObjectForge
             var opts = new ForgePrefabFactory.Options
             {
                 Kind = _kind,
+                BasePrefab = _basePrefab,
                 Font = _font,
                 ButtonText = _buttonText,
                 FontSize = _fontSize,

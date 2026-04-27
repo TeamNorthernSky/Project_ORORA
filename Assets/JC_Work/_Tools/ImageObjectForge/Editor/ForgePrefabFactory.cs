@@ -12,6 +12,7 @@ namespace Orora.ImageObjectForge
     {
         public const string PrefabsDir = ForgeIO.ToolRoot + "/Prefabs";
         public const string DefaultFontAssetPath = "Assets/JC_Work/Assets_jc/Maplestory Light SDF.asset";
+        public const string BasePrefabPath = "Assets/JC_Work/__ProtoType/Prefabs/UI/UIButtonBase.prefab";
 
         public enum PrefabKind { Button, Label, SpriteRenderer }
 
@@ -21,6 +22,7 @@ namespace Orora.ImageObjectForge
             public Sprite SourceSprite;           // 필수
             public string NameOverride;           // null이면 sprite texture 이름 사용
             // Button 전용
+            public GameObject BasePrefab;         // null이면 BasePrefabPath의 UIButtonBase 사용
             public TMP_FontAsset Font;
             public string ButtonText = "Button";
             public float FontSize = 14f;
@@ -45,6 +47,7 @@ namespace Orora.ImageObjectForge
                     Kind = opts.Kind,
                     SourceSprite = sp,
                     NameOverride = null,
+                    BasePrefab = opts.BasePrefab,
                     Font = opts.Font,
                     ButtonText = useSpriteNameAsButtonText ? sp.texture.name : opts.ButtonText,
                     FontSize = opts.FontSize,
@@ -90,68 +93,77 @@ namespace Orora.ImageObjectForge
         }
 
         // -------- Button --------
+        // 베이스 프리팹(UIButtonBase)을 인스턴스화 → sprite/이름/크기/Label 텍스트 override.
+        // 호출자(Create)가 SaveAsPrefabAsset에 넘기면 자동으로 Prefab Variant로 저장됨.
         static GameObject BuildButton(Options opts)
         {
-            var size = ResolveSize(opts);
-            var go = new GameObject(opts.SourceSprite.texture.name, typeof(RectTransform));
-            var rt = go.GetComponent<RectTransform>();
-            ApplyTopLeftAnchor(rt);
-            rt.sizeDelta = size;
-
-            var img = go.AddComponent<Image>();
-            img.sprite = opts.SourceSprite;
-            img.raycastTarget = true;
-
-            // 스프라이트 텍스처 Readable 보장 (런타임 alpha hit test에 필요).
-            if (opts.SourceSprite != null)
+            var basePrefab = opts.BasePrefab != null
+                ? opts.BasePrefab
+                : AssetDatabase.LoadAssetAtPath<GameObject>(BasePrefabPath);
+            if (basePrefab == null)
             {
-                var spritePath = AssetDatabase.GetAssetPath(opts.SourceSprite);
-                if (!string.IsNullOrEmpty(spritePath))
+                Debug.LogError("[ImageObjectForge] BasePrefab을 찾지 못했습니다. 경로: " + BasePrefabPath);
+                return null;
+            }
+
+            // 스프라이트 텍스처 Readable 보장 (alpha hit test에 필요)
+            EnsureSpriteReadable(opts);
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(basePrefab);
+            if (instance == null)
+            {
+                Debug.LogError("[ImageObjectForge] BasePrefab 인스턴스화 실패");
+                return null;
+            }
+            instance.name = opts.SourceSprite.texture.name;
+
+            // RectTransform — 좌상단 표준 + 크기
+            var rt = instance.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                ApplyTopLeftAnchor(rt);
+                rt.sizeDelta = ResolveSize(opts);
+            }
+
+            // Image — sprite override (color는 베이스 흰색 그대로)
+            var img = instance.GetComponent<Image>();
+            if (img != null)
+            {
+                img.sprite = opts.SourceSprite;
+                img.raycastTarget = true;
+            }
+
+            // Label 자식 텍스트 override (베이스 자식 이름 = "Label")
+            var labelTr = instance.transform.Find("Label");
+            if (labelTr != null)
+            {
+                var tmp = labelTr.GetComponent<TextMeshProUGUI>();
+                if (tmp != null)
                 {
-                    var importer = AssetImporter.GetAtPath(spritePath) as TextureImporter;
-                    if (importer != null && !importer.isReadable)
-                    {
-                        importer.isReadable = true;
-                        importer.SaveAndReimport();
-                        var reloaded = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
-                        if (reloaded != null)
-                        {
-                            opts.SourceSprite = reloaded;
-                            img.sprite = reloaded;
-                        }
-                    }
+                    tmp.text = opts.ButtonText ?? "Button";
+                    if (opts.FontSize > 0f) tmp.fontSize = opts.FontSize;
+                    tmp.color = opts.TextColor;
+                    var font = opts.Font != null ? opts.Font : LoadDefaultFont();
+                    if (font != null) tmp.font = font;
                 }
             }
 
-            // alphaHitTestMinimumThreshold는 직렬화 안됨.
-            // 런타임에 값을 재설정할 전용 컴포넌트를 부착.
-            var aht = go.AddComponent<AlphaHitThreshold>();
-            aht.threshold = 0.5f;
+            return instance;
+        }
 
-            var btn = go.AddComponent<Button>();
-            btn.targetGraphic = img;
-            // 컬러 틴트 기본 유지 (Unity Button 디폴트)
-
-            // 자식 Text (TMP)
-            var textGO = new GameObject(go.name + "Text", typeof(RectTransform));
-            textGO.transform.SetParent(go.transform, false);
-            var textRT = textGO.GetComponent<RectTransform>();
-            textRT.anchorMin = Vector2.zero;
-            textRT.anchorMax = Vector2.one;
-            textRT.offsetMin = Vector2.zero;
-            textRT.offsetMax = Vector2.zero;
-
-            var tmp = textGO.AddComponent<TextMeshProUGUI>();
-            tmp.text = opts.ButtonText ?? "Button";
-            tmp.fontSize = opts.FontSize;
-            tmp.color = opts.TextColor;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.raycastTarget = false;
-
-            var font = opts.Font != null ? opts.Font : LoadDefaultFont();
-            if (font != null) tmp.font = font;
-
-            return go;
+        static void EnsureSpriteReadable(Options opts)
+        {
+            if (opts.SourceSprite == null) return;
+            var spritePath = AssetDatabase.GetAssetPath(opts.SourceSprite);
+            if (string.IsNullOrEmpty(spritePath)) return;
+            var importer = AssetImporter.GetAtPath(spritePath) as TextureImporter;
+            if (importer != null && !importer.isReadable)
+            {
+                importer.isReadable = true;
+                importer.SaveAndReimport();
+                var reloaded = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+                if (reloaded != null) opts.SourceSprite = reloaded;
+            }
         }
 
         // -------- Label (Image 단독) --------
