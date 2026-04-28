@@ -1,11 +1,13 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class TurnFogController : MonoBehaviour
 {
     [SerializeField] private TurnManager turnManager;
     [SerializeField] private FogGridManager fogGridManager;
     [SerializeField] private PartyFogRevealer partyFogRevealer;
-    [SerializeField] private MineFogRevealer mineFogRevealer;
+    [FormerlySerializedAs("mineFogRevealer")]
+    [SerializeField] private OutpostFogRevealer outpostFogRevealer;
     [SerializeField] private CastleFogRevealer castleFogRevealer;
 
     private void OnEnable()
@@ -39,7 +41,7 @@ public class TurnFogController : MonoBehaviour
         fogGridManager.SetCurrentDay(currentDay);
         fogGridManager.ApplyDayProgression();
         partyFogRevealer?.RevealAllCurrentPartyPositions();
-        mineFogRevealer?.RevealAllClaimedMines();
+        outpostFogRevealer?.RevealAllClaimedOutposts();
         castleFogRevealer?.RevealAllCastles();
     }
 }

@@ -1,4 +1,4 @@
-public enum MineType
+public enum OutpostType
 {
     Bank,
     Composite

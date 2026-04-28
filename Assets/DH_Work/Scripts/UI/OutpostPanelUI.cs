@@ -1,11 +1,13 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Serialization;
 
-public class MinePanelUI : MonoBehaviour
+public class OutpostPanelUI : MonoBehaviour
 {
     [SerializeField] private GameObject panelRoot;
-    [SerializeField] private TMP_Text mineTypeText;
+    [FormerlySerializedAs("mineTypeText")]
+    [SerializeField] private TMP_Text outpostTypeText;
     [SerializeField] private TMP_Text productionText;
     [SerializeField] private Button okButton;
     [SerializeField] private KeyCode closeKey = KeyCode.Escape;
@@ -20,12 +22,12 @@ public class MinePanelUI : MonoBehaviour
 
     private void OnEnable()
     {
-        Mine.MineClaimed += HandleMineClaimed;
+        Outpost.OutpostClaimed += HandleOutpostClaimed;
     }
 
     private void OnDisable()
     {
-        Mine.MineClaimed -= HandleMineClaimed;
+        Outpost.OutpostClaimed -= HandleOutpostClaimed;
     }
 
     private void OnDestroy()
@@ -43,16 +45,16 @@ public class MinePanelUI : MonoBehaviour
             HidePanel();
     }
 
-    private void HandleMineClaimed(Mine mine)
+    private void HandleOutpostClaimed(Outpost outpost)
     {
-        if (mine == null)
+        if (outpost == null)
             return;
 
-        if (mineTypeText != null)
-            mineTypeText.text = $"Type : {mine.GetMineTypeDisplayName()}";
+        if (outpostTypeText != null)
+            outpostTypeText.text = $"Type : {outpost.GetOutpostTypeDisplayName()}";
 
         if (productionText != null)
-            productionText.text = mine.GetProductionDisplayText();
+            productionText.text = outpost.GetProductionDisplayText();
 
         ShowPanel();
     }

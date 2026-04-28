@@ -201,8 +201,8 @@ public class MoveCommandPreviewController
         if (activeMover == null || gridManager == null)
             return clickedGrid;
 
-        if (gridManager.TryGetMineObjectAtGrid(clickedGrid, out Mine mine))
-            return ResolveApproachGrid(activeMover, clickedGrid, mine.GetAnchorGrid(gridManager), mine.GetAdjacentInteractionCells(gridManager));
+        if (gridManager.TryGetOutpostObjectAtGrid(clickedGrid, out Outpost outpost))
+            return ResolveApproachGrid(activeMover, clickedGrid, outpost.GetAnchorGrid(gridManager), outpost.GetAdjacentInteractionCells(gridManager));
 
         if (!gridManager.TryGetCastleObjectAtGrid(clickedGrid, out CastleUnit castle))
             return clickedGrid;

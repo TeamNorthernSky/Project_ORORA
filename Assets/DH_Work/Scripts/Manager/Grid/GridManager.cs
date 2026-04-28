@@ -32,13 +32,15 @@ public class GridManager : MonoBehaviour
     [Tooltip("이 레이어에 있는 콜라이더는 장애물로 간주합니다.")]
     [SerializeField] private LayerMask obstacleLayerMask;
     [SerializeField] private LayerMask itemLayerMask;
-    [SerializeField] private LayerMask mineLayerMask;
+    [FormerlySerializedAs("mineLayerMask")]
+    [SerializeField] private LayerMask outpostLayerMask;
     [SerializeField] private LayerMask playerLayerMask;
     [SerializeField] private LayerMask enemyLayerMask;
     [SerializeField] private LayerMask castleLayerMask;
     [SerializeField] private FogGridManager fogGridManager;
     [SerializeField] private CastleRegistry castleRegistry;
-    [SerializeField] private MineRegistry mineRegistry;
+    [FormerlySerializedAs("mineRegistry")]
+    [SerializeField] private OutpostRegistry outpostRegistry;
     [SerializeField] private MultiGridOccupantRegistry multiGridOccupantRegistry;
     [SerializeField] private bool restrictMovementToVisibleCells = true;
     [Tooltip("셀 워커블 검사 시, 셀 크기 대비 체크 박스 비율(너무 크면 오탐, 너무 작으면 통과).")]
@@ -83,8 +85,8 @@ public class GridManager : MonoBehaviour
         if (castleRegistry == null)
             castleRegistry = FindFirstObjectByType<CastleRegistry>();
 
-        if (mineRegistry == null)
-            mineRegistry = FindFirstObjectByType<MineRegistry>();
+        if (outpostRegistry == null)
+            outpostRegistry = FindFirstObjectByType<OutpostRegistry>();
 
         if (multiGridOccupantRegistry == null)
             multiGridOccupantRegistry = FindFirstObjectByType<MultiGridOccupantRegistry>();
@@ -98,8 +100,8 @@ public class GridManager : MonoBehaviour
         if (castleRegistry == null)
             castleRegistry = FindFirstObjectByType<CastleRegistry>();
 
-        if (mineRegistry == null)
-            mineRegistry = FindFirstObjectByType<MineRegistry>();
+        if (outpostRegistry == null)
+            outpostRegistry = FindFirstObjectByType<OutpostRegistry>();
 
         if (multiGridOccupantRegistry == null)
             multiGridOccupantRegistry = FindFirstObjectByType<MultiGridOccupantRegistry>();
@@ -185,9 +187,9 @@ public class GridManager : MonoBehaviour
         return false;
     }
 
-    public bool HasMine(Vector2Int grid)
+    public bool HasOutpost(Vector2Int grid)
     {
-        return TryGetMineObjectAtGrid(grid, out _);
+        return TryGetOutpostObjectAtGrid(grid, out _);
     }
 
     public bool HasEnemy(Vector2Int grid, Transform selfTransform = null)
@@ -206,21 +208,21 @@ public class GridManager : MonoBehaviour
             || TryGetCastleByMultiGrid(grid, out _, selfTransform);
     }
 
-    public bool TryGetMineObjectAtGrid(Vector2Int grid, out Mine mine)
+    public bool TryGetOutpostObjectAtGrid(Vector2Int grid, out Outpost outpost)
     {
-        mine = null;
+        outpost = null;
 
-        IReadOnlyList<Mine> mines = mineRegistry != null
-            ? mineRegistry.Mines
-            : FindObjectsByType<Mine>(FindObjectsSortMode.None);
+        IReadOnlyList<Outpost> outposts = outpostRegistry != null
+            ? outpostRegistry.Outposts
+            : FindObjectsByType<Outpost>(FindObjectsSortMode.None);
 
-        for (int i = 0; i < mines.Count; i++)
+        for (int i = 0; i < outposts.Count; i++)
         {
-            Mine candidate = mines[i];
+            Outpost candidate = outposts[i];
             if (candidate == null || !candidate.OccupiesGrid(grid, this))
                 continue;
 
-            mine = candidate;
+            outpost = candidate;
             return true;
         }
 
@@ -228,7 +230,7 @@ public class GridManager : MonoBehaviour
         center.y = GetLandSurfaceY() + 0.5f;
 
         Vector3 halfExtents = new Vector3(cellSize * 0.5f * obstacleCheckFill, 0.5f, cellSize * 0.5f * obstacleCheckFill);
-        Collider[] cols = Physics.OverlapBox(center, halfExtents, Quaternion.identity, mineLayerMask);
+        Collider[] cols = Physics.OverlapBox(center, halfExtents, Quaternion.identity, outpostLayerMask);
 
         for (int i = 0; i < cols.Length; i++)
         {
@@ -236,8 +238,8 @@ public class GridManager : MonoBehaviour
             if (col == null)
                 continue;
 
-            mine = col.GetComponentInParent<Mine>();
-            if (mine != null)
+            outpost = col.GetComponentInParent<Outpost>();
+            if (outpost != null)
                 return true;
         }
 
@@ -292,14 +294,14 @@ public class GridManager : MonoBehaviour
         return TryGetCastleByMultiGrid(grid, out castle);
     }
 
-    public bool HasItemOrMine(Vector2Int grid)
+    public bool HasItemOrOutpost(Vector2Int grid)
     {
-        return HasItem(grid) || HasMine(grid);
+        return HasItem(grid) || HasOutpost(grid);
     }
 
     public bool HasInteractionTarget(Vector2Int grid)
     {
-        return HasItem(grid) || HasMine(grid) || HasEnemy(grid) || HasCastle(grid);
+        return HasItem(grid) || HasOutpost(grid) || HasEnemy(grid) || HasCastle(grid);
     }
 
     public bool IsVisibleCell(Vector2Int grid)
@@ -326,19 +328,19 @@ public class GridManager : MonoBehaviour
         return false;
     }
 
-    public bool TryGetAdjacentMineGrid(Vector2Int grid, out Vector2Int mineGrid)
+    public bool TryGetAdjacentOutpostGrid(Vector2Int grid, out Vector2Int outpostGrid)
     {
         for (int i = 0; i < directions8.Length; i++)
         {
             Vector2Int candidate = grid + directions8[i];
-            if (TryGetMineObjectAtGrid(candidate, out _))
+            if (TryGetOutpostObjectAtGrid(candidate, out _))
             {
-                mineGrid = candidate;
+                outpostGrid = candidate;
                 return true;
             }
         }
 
-        mineGrid = grid;
+        outpostGrid = grid;
         return false;
     }
 
@@ -414,7 +416,7 @@ public class GridManager : MonoBehaviour
         if (HasCastle(grid, selfTransform))
             return false;
 
-        return !HasItemOrMine(grid);
+        return !HasItemOrOutpost(grid);
     }
 
     public bool CanOccupyCell(Vector2Int grid, Transform selfTransform = null, bool ignoreFogVisibility = false)
@@ -437,7 +439,7 @@ public class GridManager : MonoBehaviour
         if (HasCastle(grid, selfTransform))
             return false;
 
-        return !HasItemOrMine(grid);
+        return !HasItemOrOutpost(grid);
     }
 
     private bool HasBlockingCollider(Vector2Int grid, LayerMask layerMask)

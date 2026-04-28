@@ -47,7 +47,7 @@ public class PartyInteractionController
 
         HandleAdjacentCastleProximity(enteredGrid);
         HandleAdjacentItemProximity(enteredGrid);
-        HandleAdjacentMineProximity(enteredGrid);
+        HandleAdjacentOutpostProximity(enteredGrid);
     }
 
     public void Dispose()
@@ -64,18 +64,18 @@ public class PartyInteractionController
         OnAdjacentItemCellEntered(itemGrid);
     }
 
-    private void HandleAdjacentMineProximity(Vector2Int enteredGrid)
+    private void HandleAdjacentOutpostProximity(Vector2Int enteredGrid)
     {
-        if (!gridManager.TryGetAdjacentMineGrid(enteredGrid, out Vector2Int mineGrid))
+        if (!gridManager.TryGetAdjacentOutpostGrid(enteredGrid, out Vector2Int outpostGrid))
             return;
 
-        if (!gridManager.TryGetMineObjectAtGrid(mineGrid, out Mine mine))
+        if (!gridManager.TryGetOutpostObjectAtGrid(outpostGrid, out Outpost outpost))
             return;
 
-        if (!mine.IsClaimableByPlayer)
+        if (!outpost.IsClaimableByPlayer)
             return;
 
-        BeginAdjacentMineClaim(mineGrid);
+        BeginAdjacentOutpostClaim(outpostGrid);
     }
 
     private bool HandleAdjacentEnemyProximity(Vector2Int enteredGrid)
@@ -112,12 +112,12 @@ public class PartyInteractionController
         AdjacentItemCellEntered?.Invoke(itemGrid);
     }
 
-    private void BeginAdjacentMineClaim(Vector2Int mineGrid)
+    private void BeginAdjacentOutpostClaim(Vector2Int outpostGrid)
     {
         CancelPendingInteraction();
 
         IsInputLocked = true;
-        pendingInteractionCoroutine = coroutineOwner.StartCoroutine(InvokeDelayedMineClaim(mineGrid));
+        pendingInteractionCoroutine = coroutineOwner.StartCoroutine(InvokeDelayedOutpostClaim(outpostGrid));
     }
 
     private IEnumerator InvokeDelayedItemPickup(Vector2Int itemGrid)
@@ -149,7 +149,7 @@ public class PartyInteractionController
         IsInputLocked = false;
     }
 
-    private IEnumerator InvokeDelayedMineClaim(Vector2Int mineGrid)
+    private IEnumerator InvokeDelayedOutpostClaim(Vector2Int outpostGrid)
     {
         yield return new WaitForSeconds(itemPickupDelay);
 
@@ -161,21 +161,21 @@ public class PartyInteractionController
             yield break;
         }
 
-        Vector2Int currentGrid = currentGridProvider != null ? currentGridProvider() : mineGrid;
-        if (!IsAdjacentOrSame(currentGrid, mineGrid))
+        Vector2Int currentGrid = currentGridProvider != null ? currentGridProvider() : outpostGrid;
+        if (!IsAdjacentOrSame(currentGrid, outpostGrid))
         {
             IsInputLocked = false;
             yield break;
         }
 
-        if (!gridManager.TryGetMineObjectAtGrid(mineGrid, out Mine mine))
+        if (!gridManager.TryGetOutpostObjectAtGrid(outpostGrid, out Outpost outpost))
         {
             IsInputLocked = false;
             yield break;
         }
 
-        if (mine.IsClaimableByPlayer)
-            mine.MineClaim();
+        if (outpost.IsClaimableByPlayer)
+            outpost.Claim();
 
         IsInputLocked = false;
     }

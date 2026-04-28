@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Serialization;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -17,7 +18,8 @@ public class LevelEditorController : MonoBehaviour
     [Header("Brush")]
     [SerializeField] private LevelEditorBrushType brushType = LevelEditorBrushType.Obstacle;
     [SerializeField] private ItemPlacementPreset itemPreset;
-    [SerializeField] private MinePlacementPreset minePreset;
+    [FormerlySerializedAs("minePreset")]
+    [SerializeField] private OutpostPlacementPreset outpostPreset;
     [SerializeField] private string partyId = "party_001";
 
     [Header("Behaviour")]
@@ -30,7 +32,8 @@ public class LevelEditorController : MonoBehaviour
     [SerializeField] private Color hoverColor = new Color(1f, 1f, 0f, 0.75f);
     [SerializeField] private Color obstacleColor = new Color(1f, 0.3f, 0.3f, 0.75f);
     [SerializeField] private Color itemColor = new Color(0.2f, 0.9f, 0.3f, 0.75f);
-    [SerializeField] private Color mineColor = new Color(0.2f, 0.8f, 1f, 0.75f);
+    [FormerlySerializedAs("mineColor")]
+    [SerializeField] private Color outpostColor = new Color(0.2f, 0.8f, 1f, 0.75f);
     [SerializeField] private Color spawnColor = new Color(1f, 0.6f, 0.2f, 0.75f);
 
     private Vector2Int? hoveredGrid;
@@ -99,15 +102,15 @@ public class LevelEditorController : MonoBehaviour
 
                 levelData.SetItem(grid, itemPreset.ResourceType, Mathf.Max(1, itemPreset.Amount));
                 break;
-            case LevelEditorBrushType.Mine:
-                if (minePreset == null)
+            case LevelEditorBrushType.Outpost:
+                if (outpostPreset == null)
                     return;
 
-                levelData.SetMine(
+                levelData.SetOutpost(
                     grid,
-                    minePreset.ResourceType,
-                    Mathf.Max(1, minePreset.ResourcePerTurn),
-                    minePreset.InitialState);
+                    outpostPreset.ResourceType,
+                    Mathf.Max(1, outpostPreset.ResourcePerTurn),
+                    outpostPreset.InitialState);
                 break;
             case LevelEditorBrushType.PartySpawn:
                 levelData.SetPartySpawn(grid, partyId);
@@ -155,8 +158,8 @@ public class LevelEditorController : MonoBehaviour
         for (int i = 0; i < levelData.ItemPlacements.Count; i++)
             DrawCell(levelData.ItemPlacements[i].GridPosition, itemColor, y, size);
 
-        for (int i = 0; i < levelData.MinePlacements.Count; i++)
-            DrawCell(levelData.MinePlacements[i].GridPosition, mineColor, y, size);
+        for (int i = 0; i < levelData.OutpostPlacements.Count; i++)
+            DrawCell(levelData.OutpostPlacements[i].GridPosition, outpostColor, y, size);
 
         for (int i = 0; i < levelData.PartySpawns.Count; i++)
             DrawCell(levelData.PartySpawns[i].GridPosition, spawnColor, y, size);

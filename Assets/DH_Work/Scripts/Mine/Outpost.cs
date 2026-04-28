@@ -1,15 +1,18 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-public class Mine : MonoBehaviour
+public class Outpost : MonoBehaviour
 {
-    public static event Action<Mine> MineClaimed;
+    public static event Action<Outpost> OutpostClaimed;
 
     [Header("Data")]
-    [SerializeField] private MineType mineType = MineType.Bank;
+    [FormerlySerializedAs("mineType")]
+    [SerializeField] private OutpostType outpostType = OutpostType.Bank;
     public int resourcePerTurn;
-    public MineState mineState = MineState.Unclaimed;
+    [FormerlySerializedAs("mineState")]
+    public OutpostState outpostState = OutpostState.Unclaimed;
 
     [Header("Visual")]
     [SerializeField] private Renderer targetRenderer;
@@ -17,12 +20,12 @@ public class Mine : MonoBehaviour
     [SerializeField] private Material enemyClaimedMaterial;
     [SerializeField] private Material claimedMaterial;
     private MultiGridOccupant multiGridOccupant;
-    private MineRegistry mineRegistry;
+    private OutpostRegistry outpostRegistry;
 
-    public bool IsClaimableByPlayer => mineState == MineState.Unclaimed || mineState == MineState.EnemyClaimed;
-    public bool IsPlayerClaimed => mineState == MineState.Claimed;
-    public bool IsEnemyClaimed => mineState == MineState.EnemyClaimed;
-    public MineType MineType => mineType;
+    public bool IsClaimableByPlayer => outpostState == OutpostState.Unclaimed || outpostState == OutpostState.EnemyClaimed;
+    public bool IsPlayerClaimed => outpostState == OutpostState.Claimed;
+    public bool IsEnemyClaimed => outpostState == OutpostState.EnemyClaimed;
+    public OutpostType OutpostType => outpostType;
 
     private void Awake()
     {
@@ -36,31 +39,31 @@ public class Mine : MonoBehaviour
 
     private void OnEnable()
     {
-        ResolveRegistry();
-        mineRegistry?.Register(this);
+        ResolveOutpostRegistry();
+        outpostRegistry?.Register(this);
     }
 
     private void OnDisable()
     {
-        mineRegistry?.Unregister(this);
+        outpostRegistry?.Unregister(this);
     }
 
-    public void MineClaim()
+    public void Claim()
     {
         if (IsClaimableByPlayer)
         {
-            mineState = MineState.Claimed;
+            outpostState = OutpostState.Claimed;
             ApplyStateMaterial();
-            MineClaimed?.Invoke(this);
+            OutpostClaimed?.Invoke(this);
         }
     }
 
     public void EnemyClaim()
     {
-        if (mineState == MineState.EnemyClaimed)
+        if (outpostState == OutpostState.EnemyClaimed)
             return;
 
-        mineState = MineState.EnemyClaimed;
+        outpostState = OutpostState.EnemyClaimed;
         ApplyStateMaterial();
     }
 
@@ -72,12 +75,12 @@ public class Mine : MonoBehaviour
         if (resourceManager == null || resourcePerTurn <= 0)
             return;
 
-        switch (mineType)
+        switch (outpostType)
         {
-            case MineType.Bank:
+            case OutpostType.Bank:
                 resourceManager.AddResource(ResourceType.Money, resourcePerTurn);
                 break;
-            case MineType.Composite:
+            case OutpostType.Composite:
                 resourceManager.AddResource(ResourceType.Chip, resourcePerTurn);
                 resourceManager.AddResource(ResourceType.Crystal, resourcePerTurn);
                 resourceManager.AddResource(ResourceType.Supply, resourcePerTurn);
@@ -85,10 +88,10 @@ public class Mine : MonoBehaviour
         }
     }
 
-    public void ApplyInitialData(int nextResourcePerTurn, MineState nextState)
+    public void ApplyInitialData(int nextResourcePerTurn, OutpostState nextState)
     {
         resourcePerTurn = nextResourcePerTurn;
-        mineState = nextState;
+        outpostState = nextState;
         ApplyStateMaterial();
     }
 
@@ -97,10 +100,10 @@ public class Mine : MonoBehaviour
         if (targetRenderer == null)
             return;
 
-        Material nextMaterial = mineState switch
+        Material nextMaterial = outpostState switch
         {
-            MineState.Claimed => claimedMaterial,
-            MineState.EnemyClaimed => enemyClaimedMaterial,
+            OutpostState.Claimed => claimedMaterial,
+            OutpostState.EnemyClaimed => enemyClaimedMaterial,
             _ => unclaimedMaterial
         };
         if (nextMaterial == null)
@@ -109,10 +112,10 @@ public class Mine : MonoBehaviour
         targetRenderer.material = nextMaterial;
     }
 
-    private void ResolveRegistry()
+    private void ResolveOutpostRegistry()
     {
-        if (mineRegistry == null)
-            mineRegistry = FindFirstObjectByType<MineRegistry>();
+        if (outpostRegistry == null)
+            outpostRegistry = FindFirstObjectByType<OutpostRegistry>();
     }
 
     public Vector2Int GetAnchorGrid(GridManager gridManager)
@@ -146,22 +149,22 @@ public class Mine : MonoBehaviour
         return adjacentCells;
     }
 
-    public string GetMineTypeDisplayName()
+    public string GetOutpostTypeDisplayName()
     {
-        return mineType switch
+        return outpostType switch
         {
-            MineType.Bank => "Bank",
-            MineType.Composite => "Composite",
-            _ => mineType.ToString()
+            OutpostType.Bank => "Bank",
+            OutpostType.Composite => "Composite",
+            _ => outpostType.ToString()
         };
     }
 
     public string GetProductionDisplayText()
     {
-        return mineType switch
+        return outpostType switch
         {
-            MineType.Bank => $"Money +{resourcePerTurn} / turn",
-            MineType.Composite => $"Chip +{resourcePerTurn}, Crystal +{resourcePerTurn}, Supply +{resourcePerTurn} / turn",
+            OutpostType.Bank => $"Money +{resourcePerTurn} / turn",
+            OutpostType.Composite => $"Chip +{resourcePerTurn}, Crystal +{resourcePerTurn}, Supply +{resourcePerTurn} / turn",
             _ => string.Empty
         };
     }

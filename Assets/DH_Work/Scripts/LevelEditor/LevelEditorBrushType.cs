@@ -2,7 +2,7 @@ public enum LevelEditorBrushType
 {
     Obstacle,
     Item,
-    Mine,
+    Outpost,
     PartySpawn,
     Erase
 }

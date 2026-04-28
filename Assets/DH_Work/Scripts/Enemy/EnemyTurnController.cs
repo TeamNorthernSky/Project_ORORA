@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class EnemyTurnController : MonoBehaviour
 {
@@ -11,7 +12,8 @@ public class EnemyTurnController : MonoBehaviour
     [SerializeField] private AStarPathfinder pathfinder;
     [SerializeField] private CombatEncounterManager combatEncounterManager;
     [SerializeField] private GridManager gridManager;
-    [SerializeField] private MineRegistry mineRegistry;
+    [FormerlySerializedAs("mineRegistry")]
+    [SerializeField] private OutpostRegistry outpostRegistry;
 
     private readonly List<TargetCandidate> targetCandidates = new List<TargetCandidate>();
 
@@ -43,7 +45,7 @@ public class EnemyTurnController : MonoBehaviour
             if (enemy == null)
                 continue;
 
-            if (HandleAdjacentMineInteraction(enemy))
+            if (HandleAdjacentOutpostInteraction(enemy))
                 continue;
 
             ValidateCurrentTarget(enemy);
@@ -69,7 +71,7 @@ public class EnemyTurnController : MonoBehaviour
             if (movePath != null && movePath.Count > 1)
                 yield return enemy.MoveAlongPath(movePath);
 
-            if (HandleAdjacentMineInteraction(enemy))
+            if (HandleAdjacentOutpostInteraction(enemy))
                 continue;
 
             adjacentParty = FindAdjacentParty(enemy.GetCurrentGrid());
@@ -118,19 +120,19 @@ public class EnemyTurnController : MonoBehaviour
         if (gridManager == null)
             return;
 
-        if (mineRegistry != null)
+        if (outpostRegistry != null)
         {
-            IReadOnlyList<Mine> mines = mineRegistry.Mines;
-            for (int i = 0; i < mines.Count; i++)
+            IReadOnlyList<Outpost> outposts = outpostRegistry.Outposts;
+            for (int i = 0; i < outposts.Count; i++)
             {
-                Mine mine = mines[i];
-                if (mine == null || mine.IsEnemyClaimed)
+                Outpost outpost = outposts[i];
+                if (outpost == null || outpost.IsEnemyClaimed)
                     continue;
 
                 targetCandidates.Add(new TargetCandidate(
-                    EnemyTargetType.Mine,
-                    mine,
-                    mine.GetAnchorGrid(gridManager)));
+                    EnemyTargetType.Outpost,
+                    outpost,
+                    outpost.GetAnchorGrid(gridManager)));
             }
         }
 
@@ -251,8 +253,8 @@ public class EnemyTurnController : MonoBehaviour
                 return new List<Vector2Int>(occupant.GetAdjacentOuterCells());
         }
 
-        if (targetType == EnemyTargetType.Mine && target is Mine mine)
-            return new List<Vector2Int>(mine.GetAdjacentInteractionCells(gridManager));
+        if (targetType == EnemyTargetType.Outpost && target is Outpost outpost)
+            return new List<Vector2Int>(outpost.GetAdjacentInteractionCells(gridManager));
 
         List<Vector2Int> approachCandidates = new List<Vector2Int>(GridManager.Directions8.Length);
         for (int i = 0; i < GridManager.Directions8.Length; i++)
@@ -265,9 +267,9 @@ public class EnemyTurnController : MonoBehaviour
     {
         switch (targetType)
         {
-            case EnemyTargetType.Mine:
-                if (target is Mine mine)
-                    return gridManager != null ? mine.GetAnchorGrid(gridManager) : Vector2Int.zero;
+            case EnemyTargetType.Outpost:
+                if (target is Outpost outpost)
+                    return gridManager != null ? outpost.GetAnchorGrid(gridManager) : Vector2Int.zero;
                 break;
             case EnemyTargetType.Castle:
                 if (target is CastleUnit castle)
@@ -296,9 +298,9 @@ public class EnemyTurnController : MonoBehaviour
         if (targetType == EnemyTargetType.Castle && target is CastleUnit castle && gridManager != null)
             return gridManager.IsAdjacentToCastle(enemyGrid, castle);
 
-        if (targetType == EnemyTargetType.Mine && target is Mine mine)
+        if (targetType == EnemyTargetType.Outpost && target is Outpost outpost)
         {
-            IReadOnlyList<Vector2Int> interactionCells = mine.GetAdjacentInteractionCells(gridManager);
+            IReadOnlyList<Vector2Int> interactionCells = outpost.GetAdjacentInteractionCells(gridManager);
             for (int i = 0; i < interactionCells.Count; i++)
             {
                 if (interactionCells[i] == enemyGrid)
@@ -322,24 +324,24 @@ public class EnemyTurnController : MonoBehaviour
         return path.GetRange(0, allowedNodeCount);
     }
 
-    private bool HandleAdjacentMineInteraction(EnemyUnit enemy)
+    private bool HandleAdjacentOutpostInteraction(EnemyUnit enemy)
     {
         if (enemy == null || gridManager == null)
             return false;
 
-        if (!gridManager.TryGetAdjacentMineGrid(enemy.GetCurrentGrid(), out Vector2Int mineGrid))
+        if (!gridManager.TryGetAdjacentOutpostGrid(enemy.GetCurrentGrid(), out Vector2Int outpostGrid))
             return false;
 
-        if (!gridManager.TryGetMineObjectAtGrid(mineGrid, out Mine mine))
+        if (!gridManager.TryGetOutpostObjectAtGrid(outpostGrid, out Outpost outpost))
             return false;
 
-        if (mine.IsEnemyClaimed)
+        if (outpost.IsEnemyClaimed)
             return false;
 
-        if (enemy.CurrentTarget == mine)
+        if (enemy.CurrentTarget == outpost)
             enemy.ClearTarget();
 
-        mine.EnemyClaim();
+        outpost.EnemyClaim();
         return true;
     }
 
@@ -403,7 +405,7 @@ public class EnemyTurnController : MonoBehaviour
         if (gridManager == null)
             gridManager = FindFirstObjectByType<GridManager>();
 
-        if (mineRegistry == null)
-            mineRegistry = FindFirstObjectByType<MineRegistry>();
+        if (outpostRegistry == null)
+            outpostRegistry = FindFirstObjectByType<OutpostRegistry>();
     }
 }

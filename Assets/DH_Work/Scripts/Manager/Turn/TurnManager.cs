@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using UnityEngine.Serialization;
 
 public class TurnManager : MonoBehaviour
 {
@@ -13,7 +14,8 @@ public class TurnManager : MonoBehaviour
     [SerializeField] private ResourceManager resourceManager;
     [SerializeField] private EnemyTurnController enemyTurnController;
     [SerializeField] private TMP_Text turnStateText;
-    [SerializeField] private MineRegistry mineRegistry;
+    [FormerlySerializedAs("mineRegistry")]
+    [SerializeField] private OutpostRegistry outpostRegistry;
 
     private bool enemyTurnRunning;
 
@@ -55,7 +57,7 @@ public class TurnManager : MonoBehaviour
     private void EndEnemyTurn()
     {
         AdvanceDay();
-        ProduceClaimedMines();
+        ProduceClaimedOutposts();
         StartPlayerTurn();
     }
 
@@ -83,20 +85,20 @@ public class TurnManager : MonoBehaviour
         DayAdvanced?.Invoke(day);
     }
 
-    private void ProduceClaimedMines()
+    private void ProduceClaimedOutposts()
     {
-        if (mineRegistry == null)
+        if (outpostRegistry == null)
             return;
 
-        IReadOnlyList<Mine> mines = mineRegistry.Mines;
+        IReadOnlyList<Outpost> outposts = outpostRegistry.Outposts;
 
-        for (int i = 0; i < mines.Count; i++)
+        for (int i = 0; i < outposts.Count; i++)
         {
-            Mine mine = mines[i];
-            if (mine == null)
+            Outpost outpost = outposts[i];
+            if (outpost == null)
                 continue;
 
-            mine.ProduceForTurn(resourceManager);
+            outpost.ProduceForTurn(resourceManager);
         }
     }
 
@@ -123,7 +125,7 @@ public class TurnManager : MonoBehaviour
 
     private void OnValidate()
     {
-        if (mineRegistry == null)
-            mineRegistry = FindFirstObjectByType<MineRegistry>();
+        if (outpostRegistry == null)
+            outpostRegistry = FindFirstObjectByType<OutpostRegistry>();
     }
 }

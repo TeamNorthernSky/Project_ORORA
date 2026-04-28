@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class LevelPrefabRegistry : MonoBehaviour
 {
@@ -10,8 +11,9 @@ public class LevelPrefabRegistry : MonoBehaviour
     [Header("Item Prefabs")]
     [SerializeField] private List<ItemPrefabEntry> itemPrefabs = new List<ItemPrefabEntry>();
 
-    [Header("Mine Prefabs")]
-    [SerializeField] private List<MinePrefabEntry> minePrefabs = new List<MinePrefabEntry>();
+    [Header("Outpost Prefabs")]
+    [FormerlySerializedAs("minePrefabs")]
+    [SerializeField] private List<OutpostPrefabEntry> outpostPrefabs = new List<OutpostPrefabEntry>();
 
     public GameObject ObstaclePrefab => obstaclePrefab;
 
@@ -30,14 +32,14 @@ public class LevelPrefabRegistry : MonoBehaviour
         return false;
     }
 
-    public bool TryGetMinePrefab(ResourceType resourceType, out Mine prefab)
+    public bool TryGetOutpostPrefab(ResourceType resourceType, out Outpost prefab)
     {
-        for (int i = 0; i < minePrefabs.Count; i++)
+        for (int i = 0; i < outpostPrefabs.Count; i++)
         {
-            if (minePrefabs[i].ResourceType != resourceType)
+            if (outpostPrefabs[i].ResourceType != resourceType)
                 continue;
 
-            prefab = minePrefabs[i].Prefab;
+            prefab = outpostPrefabs[i].Prefab;
             return prefab != null;
         }
 
@@ -57,11 +59,11 @@ public struct ItemPrefabEntry
 }
 
 [Serializable]
-public struct MinePrefabEntry
+public struct OutpostPrefabEntry
 {
     [SerializeField] private ResourceType resourceType;
-    [SerializeField] private Mine prefab;
+    [SerializeField] private Outpost prefab;
 
     public ResourceType ResourceType => resourceType;
-    public Mine Prefab => prefab;
+    public Outpost Prefab => prefab;
 }

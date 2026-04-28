@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(
     fileName = "LevelData",
@@ -18,7 +19,8 @@ public class LevelData : ScriptableObject
     [SerializeField] private List<TilePlacementData> groundTilePlacements = new List<TilePlacementData>();
     [SerializeField] private List<Vector2Int> obstacleCells = new List<Vector2Int>();
     [SerializeField] private List<ItemPlacementData> itemPlacements = new List<ItemPlacementData>();
-    [SerializeField] private List<MinePlacementData> minePlacements = new List<MinePlacementData>();
+    [FormerlySerializedAs("minePlacements")]
+    [SerializeField] private List<OutpostPlacementData> outpostPlacements = new List<OutpostPlacementData>();
     [SerializeField] private List<PartySpawnData> partySpawns = new List<PartySpawnData>();
 
     public string LevelId => levelId;
@@ -29,7 +31,7 @@ public class LevelData : ScriptableObject
     public IReadOnlyList<TilePlacementData> GroundTilePlacements => groundTilePlacements;
     public IReadOnlyList<Vector2Int> ObstacleCells => obstacleCells;
     public IReadOnlyList<ItemPlacementData> ItemPlacements => itemPlacements;
-    public IReadOnlyList<MinePlacementData> MinePlacements => minePlacements;
+    public IReadOnlyList<OutpostPlacementData> OutpostPlacements => outpostPlacements;
     public IReadOnlyList<PartySpawnData> PartySpawns => partySpawns;
 
     public bool IsInsideGrid(Vector2Int grid)
@@ -64,11 +66,11 @@ public class LevelData : ScriptableObject
         return false;
     }
 
-    public bool HasMineAt(Vector2Int grid)
+    public bool HasOutpostAt(Vector2Int grid)
     {
-        for (int i = 0; i < minePlacements.Count; i++)
+        for (int i = 0; i < outpostPlacements.Count; i++)
         {
-            if (minePlacements[i].GridPosition == grid)
+            if (outpostPlacements[i].GridPosition == grid)
                 return true;
         }
 
@@ -133,13 +135,13 @@ public class LevelData : ScriptableObject
         itemPlacements.Add(new ItemPlacementData(grid, resourceType, amount));
     }
 
-    public void SetMine(Vector2Int grid, ResourceType resourceType, int resourcePerTurn, MineState initialState)
+    public void SetOutpost(Vector2Int grid, ResourceType resourceType, int resourcePerTurn, OutpostState initialState)
     {
         if (!IsInsideGrid(grid))
             return;
 
         RemoveAllPlacementsAt(grid);
-        minePlacements.Add(new MinePlacementData(grid, resourceType, resourcePerTurn, initialState));
+        outpostPlacements.Add(new OutpostPlacementData(grid, resourceType, resourcePerTurn, initialState));
     }
 
     public void SetPartySpawn(Vector2Int grid, string partyId)
@@ -160,14 +162,14 @@ public class LevelData : ScriptableObject
         groundTilePlacements.RemoveAll(x => x.GridPosition == grid);
         obstacleCells.Remove(grid);
         itemPlacements.RemoveAll(x => x.GridPosition == grid);
-        minePlacements.RemoveAll(x => x.GridPosition == grid);
+        outpostPlacements.RemoveAll(x => x.GridPosition == grid);
         partySpawns.RemoveAll(x => x.GridPosition == grid);
     }
 
     private void RemoveNonObstaclePlacementsAt(Vector2Int grid)
     {
         itemPlacements.RemoveAll(x => x.GridPosition == grid);
-        minePlacements.RemoveAll(x => x.GridPosition == grid);
+        outpostPlacements.RemoveAll(x => x.GridPosition == grid);
         partySpawns.RemoveAll(x => x.GridPosition == grid);
     }
 
@@ -175,7 +177,7 @@ public class LevelData : ScriptableObject
     {
         obstacleCells.Remove(grid);
         itemPlacements.RemoveAll(x => x.GridPosition == grid);
-        minePlacements.RemoveAll(x => x.GridPosition == grid);
+        outpostPlacements.RemoveAll(x => x.GridPosition == grid);
         partySpawns.RemoveAll(x => x.GridPosition == grid);
     }
 
@@ -238,14 +240,14 @@ public struct ItemPlacementData
 }
 
 [Serializable]
-public struct MinePlacementData
+public struct OutpostPlacementData
 {
     [SerializeField] private Vector2Int gridPosition;
     [SerializeField] private ResourceType resourceType;
     [SerializeField] private int resourcePerTurn;
-    [SerializeField] private MineState initialState;
+    [SerializeField] private OutpostState initialState;
 
-    public MinePlacementData(Vector2Int gridPosition, ResourceType resourceType, int resourcePerTurn, MineState initialState)
+    public OutpostPlacementData(Vector2Int gridPosition, ResourceType resourceType, int resourcePerTurn, OutpostState initialState)
     {
         this.gridPosition = gridPosition;
         this.resourceType = resourceType;
@@ -256,7 +258,7 @@ public struct MinePlacementData
     public Vector2Int GridPosition => gridPosition;
     public ResourceType ResourceType => resourceType;
     public int ResourcePerTurn => resourcePerTurn;
-    public MineState InitialState => initialState;
+    public OutpostState InitialState => initialState;
 }
 
 [Serializable]

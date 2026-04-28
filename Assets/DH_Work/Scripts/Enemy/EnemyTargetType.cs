@@ -1,6 +1,6 @@
 public enum EnemyTargetType
 {
     None = 0,
-    Mine = 1,
+    Outpost = 1,
     Castle = 2
 }

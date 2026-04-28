@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -19,7 +20,8 @@ public class LevelLoader : MonoBehaviour
     [Header("Spawn Roots")]
     [SerializeField] private Transform obstacleRoot;
     [SerializeField] private Transform itemRoot;
-    [SerializeField] private Transform mineRoot;
+    [FormerlySerializedAs("mineRoot")]
+    [SerializeField] private Transform outpostRoot;
 
     [Header("Load Options")]
     [SerializeField] private bool loadOnStart;
@@ -67,7 +69,7 @@ public class LevelLoader : MonoBehaviour
         GenerateTilemaps();
         SpawnObstacles();
         SpawnItems();
-        SpawnMines();
+        SpawnOutposts();
         ApplyPartySpawns();
     }
 
@@ -142,28 +144,28 @@ public class LevelLoader : MonoBehaviour
         }
     }
 
-    private void SpawnMines()
+    private void SpawnOutposts()
     {
         if (prefabRegistry == null)
             return;
 
-        var minePlacements = levelData.MinePlacements;
-        for (int i = 0; i < minePlacements.Count; i++)
+        var outpostPlacements = levelData.OutpostPlacements;
+        for (int i = 0; i < outpostPlacements.Count; i++)
         {
-            MinePlacementData placement = minePlacements[i];
-            if (!prefabRegistry.TryGetMinePrefab(placement.ResourceType, out Mine minePrefab))
+            OutpostPlacementData placement = outpostPlacements[i];
+            if (!prefabRegistry.TryGetOutpostPrefab(placement.ResourceType, out Outpost outpostPrefab))
             {
                 Debug.LogWarning(
-                    $"LevelLoader could not find a mine prefab for resource type '{placement.ResourceType}'.",
+                    $"LevelLoader could not find an outpost prefab for resource type '{placement.ResourceType}'.",
                     this);
                 continue;
             }
 
-            Mine mine = SpawnComponent(minePrefab, placement.GridPosition, mineRoot);
-            if (mine == null)
+            Outpost outpost = SpawnComponent(outpostPrefab, placement.GridPosition, outpostRoot);
+            if (outpost == null)
                 continue;
 
-            mine.ApplyInitialData(
+            outpost.ApplyInitialData(
                 placement.ResourcePerTurn,
                 placement.InitialState);
         }
@@ -203,7 +205,7 @@ public class LevelLoader : MonoBehaviour
 
         ClearChildren(obstacleRoot);
         ClearChildren(itemRoot);
-        ClearChildren(mineRoot);
+        ClearChildren(outpostRoot);
     }
 
     private void GenerateTilemaps()

@@ -106,8 +106,8 @@ public class LevelEditorWindow : EditorWindow
         if (brushType == LevelEditorBrushType.Item)
             EditorGUILayout.PropertyField(serializedController.FindProperty("itemPreset"));
 
-        if (brushType == LevelEditorBrushType.Mine)
-            EditorGUILayout.PropertyField(serializedController.FindProperty("minePreset"));
+        if (brushType == LevelEditorBrushType.Outpost)
+            EditorGUILayout.PropertyField(serializedController.FindProperty("outpostPreset"));
 
         EditorGUILayout.PropertyField(serializedController.FindProperty("partyId"));
 
@@ -172,7 +172,7 @@ public class LevelEditorWindow : EditorWindow
         GridManager gridManager = GetObjectReference<GridManager>(serializedController, "gridManager");
         Camera inputCamera = GetObjectReference<Camera>(serializedController, "inputCamera");
         ItemPlacementPreset itemPreset = GetObjectReference<ItemPlacementPreset>(serializedController, "itemPreset");
-        MinePlacementPreset minePreset = GetObjectReference<MinePlacementPreset>(serializedController, "minePreset");
+        OutpostPlacementPreset outpostPreset = GetObjectReference<OutpostPlacementPreset>(serializedController, "outpostPreset");
         SerializedProperty brushTypeProperty = serializedController.FindProperty("brushType");
         LevelEditorBrushType brushType = (LevelEditorBrushType)brushTypeProperty.enumValueIndex;
 
@@ -191,8 +191,8 @@ public class LevelEditorWindow : EditorWindow
         if (brushType == LevelEditorBrushType.Item && itemPreset == null)
             EditorGUILayout.HelpBox("Item brush needs an ItemPlacementPreset.", MessageType.Warning);
 
-        if (brushType == LevelEditorBrushType.Mine && minePreset == null)
-            EditorGUILayout.HelpBox("Mine brush needs a MinePlacementPreset.", MessageType.Warning);
+        if (brushType == LevelEditorBrushType.Outpost && outpostPreset == null)
+            EditorGUILayout.HelpBox("Outpost brush needs an OutpostPlacementPreset.", MessageType.Warning);
 
         if (levelData != null)
         {
