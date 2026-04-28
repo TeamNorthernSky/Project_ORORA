@@ -1,10 +1,12 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class TitleMenuController : MonoBehaviour
 {
     public void OnNewGameClicked()
     {
-        Debug.Log("[TitleMenu] 새 게임 클릭 (Phase 3에서 LobbyScene 전환 연결 예정)");
+        Debug.Log("[TitleMenu] 새 게임 → LobbyScene");
+        SceneManager.LoadScene("LobbyScene");
     }
 
     public void OnLoadClicked()

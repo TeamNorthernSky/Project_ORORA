@@ -3,8 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.SceneManagement;
 
 [System.Serializable]
@@ -268,32 +266,16 @@ public class SceneLoader : MonoBehaviour
         isLoading = true;
         OnSceneLoadStarted?.Invoke(sceneName);
 
-        var handle = Addressables.LoadSceneAsync(sceneName);
-        while (!handle.IsDone)
-            yield return null;
-
-        isLoading = false;
-    }
-
-    private IEnumerator SpawnNavigationCanvas()
-    {
-        var handle = Addressables.LoadAssetAsync<GameObject>("SceneNavigationCanvas");
-        yield return handle;
-
-        if (handle.Status == AsyncOperationStatus.Succeeded)
+        var op = SceneManager.LoadSceneAsync(sceneName);
+        if (op != null)
         {
-            var canvas = Instantiate(handle.Result);
-            canvas.name = "SceneNavigationCanvas";
-
-            var controller = canvas.GetComponent<SceneNavigationController>();
-            if (controller == null)
-                controller = canvas.AddComponent<SceneNavigationController>();
-
-            controller.Setup(this);
+            while (!op.isDone) yield return null;
         }
         else
         {
-            Debug.LogError("[SceneLoader] SceneNavigationCanvas 프리팹 로드 실패");
+            Debug.LogError($"[SceneLoader] {sceneName} 로드 실패. Build Settings 등록 여부 확인");
         }
+
+        isLoading = false;
     }
 }
