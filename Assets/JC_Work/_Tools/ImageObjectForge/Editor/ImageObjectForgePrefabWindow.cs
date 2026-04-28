@@ -57,7 +57,10 @@ namespace Orora.ImageObjectForge
         bool _batchForceReapply = false;
 
         // Auto-Place
+        enum AutoPlaceMode { Canvas, RectTransform }
+        AutoPlaceMode _autoPlaceMode = AutoPlaceMode.Canvas;
         Canvas _autoPlaceCanvas;
+        RectTransform _autoPlaceRectTransform;
         DefaultAsset _autoPlaceFolder;
         List<GameObject> _autoPlaceSelected = new List<GameObject>();
 
@@ -210,7 +213,21 @@ namespace Orora.ImageObjectForge
             using (new EditorGUILayout.VerticalScope(GUI.skin.box))
             {
                 EditorGUILayout.LabelField("Auto-Place Prefabs (Sidecar 기반)", EditorStyles.boldLabel);
-                _autoPlaceCanvas = (Canvas)EditorGUILayout.ObjectField("Target Canvas", _autoPlaceCanvas, typeof(Canvas), true);
+
+                _autoPlaceMode = (AutoPlaceMode)GUILayout.Toolbar(
+                    (int)_autoPlaceMode, new[] { "Canvas", "RectTransform" });
+
+                if (_autoPlaceMode == AutoPlaceMode.Canvas)
+                {
+                    _autoPlaceCanvas = (Canvas)EditorGUILayout.ObjectField("Target Canvas", _autoPlaceCanvas, typeof(Canvas), true);
+                    EditorGUILayout.LabelField("  Canvas 자식으로 배치 (RefResolution 비교)", EditorStyles.miniLabel);
+                }
+                else
+                {
+                    _autoPlaceRectTransform = (RectTransform)EditorGUILayout.ObjectField("Target RectTransform", _autoPlaceRectTransform, typeof(RectTransform), true);
+                    EditorGUILayout.LabelField("  지정 RectTransform 자식으로 배치 (parent rect 비교, 비활성 조상 일시 활성화)", EditorStyles.miniLabel);
+                }
+
                 _autoPlaceFolder = (DefaultAsset)EditorGUILayout.ObjectField("Default Folder", _autoPlaceFolder, typeof(DefaultAsset), false);
                 if (_autoPlaceFolder == null)
                 {
@@ -244,12 +261,13 @@ namespace Orora.ImageObjectForge
 
                 EditorGUILayout.Space(4);
 
-                GUI.enabled = _autoPlaceCanvas != null && _autoPlaceSelected.Count > 0;
+                bool targetReady = HasAutoPlaceTarget();
+                GUI.enabled = targetReady && _autoPlaceSelected.Count > 0;
                 if (GUILayout.Button($"Auto-Place from Metadata ({_autoPlaceSelected.Count})", GUILayout.Height(26)))
                 {
                     EditorApplication.delayCall += DoAutoPlaceSelected;
                 }
-                GUI.enabled = _autoPlaceCanvas != null;
+                GUI.enabled = targetReady;
                 if (GUILayout.Button("Place All in Folder", GUILayout.Height(22)))
                 {
                     EditorApplication.delayCall += DoAutoPlaceFolder;
@@ -266,20 +284,31 @@ namespace Orora.ImageObjectForge
             EditorGUILayout.EndScrollView();
         }
 
+        bool HasAutoPlaceTarget()
+        {
+            return _autoPlaceMode == AutoPlaceMode.Canvas
+                ? _autoPlaceCanvas != null
+                : _autoPlaceRectTransform != null;
+        }
+
         void DoAutoPlaceSelected()
         {
-            if (_autoPlaceCanvas == null || _autoPlaceSelected.Count == 0) return;
-            var report = ForgeAutoPlace.RunForPrefabs(_autoPlaceCanvas, _autoPlaceSelected);
+            if (!HasAutoPlaceTarget() || _autoPlaceSelected.Count == 0) return;
+            ForgeAutoPlace.Report report = _autoPlaceMode == AutoPlaceMode.Canvas
+                ? ForgeAutoPlace.RunForPrefabs(_autoPlaceCanvas, _autoPlaceSelected)
+                : ForgeAutoPlace.RunForPrefabs(_autoPlaceRectTransform, _autoPlaceSelected);
             ShowAutoPlaceResult(report);
         }
 
         void DoAutoPlaceFolder()
         {
-            if (_autoPlaceCanvas == null) return;
+            if (!HasAutoPlaceTarget()) return;
             string folder = _autoPlaceFolder != null
                 ? AssetDatabase.GetAssetPath(_autoPlaceFolder)
                 : ForgePrefabFactory.PrefabsDir;
-            var report = ForgeAutoPlace.Run(_autoPlaceCanvas, folder);
+            ForgeAutoPlace.Report report = _autoPlaceMode == AutoPlaceMode.Canvas
+                ? ForgeAutoPlace.Run(_autoPlaceCanvas, folder)
+                : ForgeAutoPlace.Run(_autoPlaceRectTransform, folder);
             ShowAutoPlaceResult(report);
         }
 

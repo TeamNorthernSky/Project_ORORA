@@ -14,7 +14,7 @@ namespace Orora.ImageObjectForge
         public const string DefaultFontAssetPath = "Assets/JC_Work/Assets_jc/Maplestory Light SDF.asset";
         public const string BasePrefabPath = "Assets/JC_Work/__ProtoType/Prefabs/UI/UIButtonBase.prefab";
 
-        public enum PrefabKind { Button, Label, SpriteRenderer }
+        public enum PrefabKind { Button, Label, SpriteRenderer, Modal }
 
         public class Options
         {
@@ -79,6 +79,7 @@ namespace Orora.ImageObjectForge
                 case PrefabKind.Button:         root = BuildButton(opts); break;
                 case PrefabKind.Label:          root = BuildLabel(opts); break;
                 case PrefabKind.SpriteRenderer: root = BuildSpriteRenderer(opts); break;
+                case PrefabKind.Modal:          root = BuildModal(opts); break;
                 default:
                     errorMsg = "지원하지 않는 타입";
                     return null;
@@ -180,6 +181,64 @@ namespace Orora.ImageObjectForge
             img.raycastTarget = false;
 
             return go;
+        }
+
+        // -------- Modal (단일 sprite Panel + Backdrop + Modal 컴포넌트) --------
+        // 양식: Root(full stretch) → Modal(시작 비활성, Modal 컴포넌트) → Backdrop + Panel(=sprite, 중앙)
+        // Modal 컴포넌트는 reflection 부착 (Assembly-CSharp에 없으면 경고 후 그대로 진행)
+        static GameObject BuildModal(Options opts)
+        {
+            var size = ResolveSize(opts);
+
+            var root = new GameObject(opts.SourceSprite.texture.name, typeof(RectTransform));
+            FullStretch(root.GetComponent<RectTransform>());
+
+            var modal = new GameObject("Modal", typeof(RectTransform));
+            modal.transform.SetParent(root.transform, false);
+            FullStretch(modal.GetComponent<RectTransform>());
+
+            // Modal 컴포넌트 reflection 부착 (실패는 경고 후 진행)
+            var modalType = System.Type.GetType("Modal, Assembly-CSharp");
+            if (modalType != null)
+            {
+                modal.AddComponent(modalType);
+            }
+            else
+            {
+                Debug.LogWarning("[ImageObjectForge] Modal 컴포넌트 타입을 찾지 못함 (Assembly-CSharp). Modal 컴포넌트 없이 prefab 생성 — 필요 시 수동 부착하세요.");
+            }
+
+            var backdrop = new GameObject("Backdrop", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            backdrop.transform.SetParent(modal.transform, false);
+            FullStretch(backdrop.GetComponent<RectTransform>());
+            var backdropImg = backdrop.GetComponent<Image>();
+            backdropImg.color = new Color(0f, 0f, 0f, 0.5f);
+            backdropImg.raycastTarget = true;
+
+            var panel = new GameObject("Panel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            panel.transform.SetParent(modal.transform, false);
+            var panelRect = panel.GetComponent<RectTransform>();
+            panelRect.anchorMin        = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax        = new Vector2(0.5f, 0.5f);
+            panelRect.pivot            = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta        = size;
+            var panelImg = panel.GetComponent<Image>();
+            panelImg.sprite = opts.SourceSprite;
+            panelImg.color = Color.white;
+            panelImg.raycastTarget = true;
+
+            modal.SetActive(false);
+            return root;
+        }
+
+        static void FullStretch(RectTransform rt)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.pivot     = new Vector2(0.5f, 0.5f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
         }
 
         // -------- SpriteRenderer (월드) --------

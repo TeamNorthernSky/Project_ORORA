@@ -91,7 +91,7 @@ public class LobbyMenuController : MonoBehaviour
         var closes = modal.GetComponentsInChildren<Button>(true);
         for (int i = 0; i < closes.Length; i++)
         {
-            if (closes[i].gameObject.name == "CloseButton")
+            if (closes[i].gameObject.name.Contains("CloseButton"))
                 closes[i].onClick.AddListener(() => target.SetActive(false));
         }
     }
