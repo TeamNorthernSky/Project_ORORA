@@ -1,12 +1,23 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class LobbyMenuController : MonoBehaviour
 {
     private const string Prefix = "BTN_Lobby_";
+    private const string PlayScene = "TEST_PlayScene";
 
     [SerializeField] private GameObject _modalHQ;
+    [SerializeField] private GameObject _modalBroadcast;
+    [SerializeField] private GameObject _modalRecruitment;
+    [SerializeField] private GameObject _modalEnhancement;
+    [SerializeField] private GameObject _modalResearch;
+    [SerializeField] private GameObject _modalReplace;
+    [SerializeField] private GameObject _modalMember1;
+    [SerializeField] private GameObject _modalMember2;
+    [SerializeField] private GameObject _modalMember3;
+    [SerializeField] private GameObject _modalMember4;
 
     private void Awake()
     {
@@ -61,35 +72,60 @@ public class LobbyMenuController : MonoBehaviour
 
     private void BindModalCloseButtons()
     {
-        if (_modalHQ == null) return;
-        var closes = _modalHQ.GetComponentsInChildren<Button>(true);
+        BindCloseFor(_modalHQ);
+        BindCloseFor(_modalBroadcast);
+        BindCloseFor(_modalRecruitment);
+        BindCloseFor(_modalEnhancement);
+        BindCloseFor(_modalResearch);
+        BindCloseFor(_modalReplace);
+        BindCloseFor(_modalMember1);
+        BindCloseFor(_modalMember2);
+        BindCloseFor(_modalMember3);
+        BindCloseFor(_modalMember4);
+    }
+
+    private void BindCloseFor(GameObject modal)
+    {
+        if (modal == null) return;
+        var target = modal;
+        var closes = modal.GetComponentsInChildren<Button>(true);
         for (int i = 0; i < closes.Length; i++)
         {
             if (closes[i].gameObject.name == "CloseButton")
-                closes[i].onClick.AddListener(CloseModalHQ);
+                closes[i].onClick.AddListener(() => target.SetActive(false));
         }
     }
 
-    public void OnClickHQ()
+    private static void OpenModal(GameObject modal)
     {
-        Debug.Log("[Lobby] HQ");
-        if (_modalHQ != null) _modalHQ.SetActive(true);
+        if (modal != null) modal.SetActive(true);
     }
-    public void OnClickBroadcast()    { Debug.Log("[Lobby] Broadcast"); }
-    public void OnClickEnhancement()  { Debug.Log("[Lobby] Enhancement"); }
-    public void OnClickResearch()     { Debug.Log("[Lobby] Research"); }
-    public void OnClickRecruitment()  { Debug.Log("[Lobby] Recruitment"); }
-    public void OnClickGo()           { Debug.Log("[Lobby] Go"); }
-    public void OnClickExit()         { Debug.Log("[Lobby] Exit"); }
-    public void OnClickEndTurn()      { Debug.Log("[Lobby] EndTurn"); }
-    public void OnClickMember1()      { Debug.Log("[Lobby] Member1"); }
-    public void OnClickMember2()      { Debug.Log("[Lobby] Member2"); }
-    public void OnClickMember3()      { Debug.Log("[Lobby] Member3"); }
-    public void OnClickMember4()      { Debug.Log("[Lobby] Member4"); }
-    public void OnClickReplace()      { Debug.Log("[Lobby] Replace"); }
 
-    public void CloseModalHQ()
+    public void OnClickHQ()           { Debug.Log("[Lobby] HQ");          OpenModal(_modalHQ); }
+    public void OnClickBroadcast()    { Debug.Log("[Lobby] Broadcast");   OpenModal(_modalBroadcast); }
+    public void OnClickEnhancement()  { Debug.Log("[Lobby] Enhancement"); OpenModal(_modalEnhancement); }
+    public void OnClickResearch()     { Debug.Log("[Lobby] Research");    OpenModal(_modalResearch); }
+    public void OnClickRecruitment()  { Debug.Log("[Lobby] Recruitment"); OpenModal(_modalRecruitment); }
+    public void OnClickReplace()      { Debug.Log("[Lobby] Replace");     OpenModal(_modalReplace); }
+    public void OnClickMember1()      { Debug.Log("[Lobby] Member1");     OpenModal(_modalMember1); }
+    public void OnClickMember2()      { Debug.Log("[Lobby] Member2");     OpenModal(_modalMember2); }
+    public void OnClickMember3()      { Debug.Log("[Lobby] Member3");     OpenModal(_modalMember3); }
+    public void OnClickMember4()      { Debug.Log("[Lobby] Member4");     OpenModal(_modalMember4); }
+
+    public void OnClickGo()
     {
-        if (_modalHQ != null) _modalHQ.SetActive(false);
+        Debug.Log("[Lobby] Go (보류 — 기능 명시 대기)");
+    }
+
+    public void OnClickExit()
+    {
+        Debug.Log($"[Lobby] Exit → {PlayScene}");
+        SceneManager.LoadScene(PlayScene);
+    }
+
+    public void OnClickEndTurn()
+    {
+        Debug.Log($"[Lobby] EndTurn → {PlayScene}");
+        SceneManager.LoadScene(PlayScene);
     }
 }
