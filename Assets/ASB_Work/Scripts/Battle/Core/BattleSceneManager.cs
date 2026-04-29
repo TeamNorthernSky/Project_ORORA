@@ -64,7 +64,8 @@ public class BattleSceneManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 프로토타입 부트: 씬에 배치된 유닛에 대해 <see cref="BattleCharactor.Initialize"/> 호출 후,
+    /// 프로토타입 부트: 씬에 배치된 유닛에 대해 래퍼 Initialize(null) 우선 호출 후,
+    /// 래퍼가 없는 경우에만 <see cref="BattleCharactor.Initialize"/>를 호출합니다.
     /// 셀이 연결된 유닛만 플레이어/적 목록에 넣습니다.
     /// </summary>
     private void CollectParticipantsAfterInitialize(List<BattleCharactor> sceneUnits)
@@ -77,7 +78,22 @@ public class BattleSceneManager : MonoBehaviour
                 continue;
             }
 
+            // 코어(BattleCharactor)의 필수 상태 초기화(IsPlayer, IsDead 등)는 항상 먼저 수행합니다.
             battle.Initialize();
+
+            // 래퍼가 있으면 코어 기본 초기화 이후 인스펙터/튜닝 스탯을 덮어씁니다.
+            CharactorScript playerWrapper = battle.GetComponent<CharactorScript>();
+            EnemyScript enemyWrapper = battle.GetComponent<EnemyScript>();
+
+            if (playerWrapper != null)
+            {
+                playerWrapper.Initialize(null);
+            }
+            else if (enemyWrapper != null)
+            {
+                enemyWrapper.Initialize(null);
+            }
+
             if (battle.OccupiedCell == null)
             {
                 Debug.LogWarning($"[BattleSceneManager] 셀 미연결 유닛은 참가 제외: {battle.UnitName} ({battle.name})");

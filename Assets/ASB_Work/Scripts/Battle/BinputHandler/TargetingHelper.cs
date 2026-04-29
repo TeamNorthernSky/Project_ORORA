@@ -22,14 +22,14 @@ public static class TargetingHelper
 
             case PendingActionType.ClassSkill:
                 actor.ResolveSelectedSkill(false);
-                return GetValidTargetsForSkillData(actor, actor.SelectedSkillData);
+                return new HashSet<BattleCharactor>(GetValidTargetsForSkillData(actor, actor.SelectedSkillData));
 
             case PendingActionType.WeaponSkill:
                 if (actor.EquippedWeaponData == null)
                 {
                     return new HashSet<BattleCharactor>();
                 }
-                return GetValidTargetsForSkillData(actor, actor.EquippedWeaponData.ToSkillData());
+                return new HashSet<BattleCharactor>(GetValidTargetsForSkillData(actor, actor.EquippedWeaponData.ToSkillData()));
 
             default:
                 return new HashSet<BattleCharactor>();
@@ -80,9 +80,9 @@ public static class TargetingHelper
         return result;
     }
 
-    private static HashSet<BattleCharactor> GetValidTargetsForSkillData(BattleCharactor actor, SkillData skill)
+    public static List<BattleCharactor> GetValidTargetsForSkillData(BattleCharactor actor, SkillData skill)
     {
-        var result = new HashSet<BattleCharactor>();
+        var result = new List<BattleCharactor>();
         if (actor == null || actor.IsDead || skill == null)
         {
             return result;
@@ -162,7 +162,11 @@ public static class TargetingHelper
 
         for (int i = 0; i < finalTargets.Count; i++)
         {
-            result.Add(finalTargets[i]);
+            BattleCharactor target = finalTargets[i];
+            if (target != null && !result.Contains(target))
+            {
+                result.Add(target);
+            }
         }
 
         return result;

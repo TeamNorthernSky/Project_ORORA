@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 
 
@@ -17,6 +18,13 @@ public struct StatBlock
     public float CritMultiplier;
     public float CounterRate;
     public float AvoidRate;
+
+    [SerializeField] private float influence;
+    public float Influence
+    {
+        get => influence;
+        set => influence = Mathf.Clamp(value, 0f, 200f);
+    }
 
     // 전투 계산 코드에서 새 이름으로 접근할 수 있도록 호환 프로퍼티 제공
     public float CritRate
@@ -40,7 +48,8 @@ public struct StatBlock
         float criticalRate = 0.1f,
         float critMultiplier = 1.5f,
         float counterRate = 0.1f,
-        float avoidRate = 0.05f)
+        float avoidRate = 0.05f,
+        float influence = 0f)
     {
         HP = hp;
         Atk = atk;
@@ -51,6 +60,8 @@ public struct StatBlock
         CritMultiplier = critMultiplier;
         CounterRate = counterRate;
         AvoidRate = avoidRate;
+        this.influence = Mathf.Clamp(influence, 0f, 200f);
+
     }
 
     public static StatBlock operator +(StatBlock a, StatBlock b)
@@ -64,7 +75,8 @@ public struct StatBlock
             a.CriticalRate + b.CriticalRate,
             a.CritMultiplier + b.CritMultiplier,
             a.CounterRate + b.CounterRate,
-            a.AvoidRate + b.AvoidRate
+            a.AvoidRate + b.AvoidRate,
+            a.Influence + b.Influence
         );
     }
 
@@ -80,7 +92,8 @@ public struct StatBlock
             a.CriticalRate,
             a.CritMultiplier,
             a.CounterRate,
-            a.AvoidRate
+            a.AvoidRate,
+            a.Influence
         );
     }
 
@@ -95,7 +108,8 @@ public struct StatBlock
             a.CriticalRate,
             a.CritMultiplier,
             a.CounterRate,
-            a.AvoidRate
+            a.AvoidRate,
+            a.Influence
         );
     }
 
@@ -112,6 +126,7 @@ public struct StatBlock
         CritMultiplier = Math.Max(1f, CritMultiplier);
         CounterRate = Math.Max(0f, CounterRate);
         AvoidRate = Math.Max(0f, AvoidRate);
+        Influence = Mathf.Clamp(Influence, 0f, 200f);
 
         Speed = Math.Max(0f, Speed);
         Luck = Math.Max(0f, Luck);
@@ -149,7 +164,8 @@ public struct StatWeights
             a.CriticalRate,
             a.CritMultiplier,
             a.CounterRate,
-            a.AvoidRate
+            a.AvoidRate,
+            a.Influence
         );
     }
 
@@ -182,7 +198,8 @@ public struct StatWeights
             a.CriticalRate,
             a.CritMultiplier,
             a.CounterRate,
-            a.AvoidRate
+            a.AvoidRate,
+            a.Influence
         );
     }
 

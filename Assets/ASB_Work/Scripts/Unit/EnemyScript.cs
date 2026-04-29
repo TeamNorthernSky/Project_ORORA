@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using EnemyAI;
 
@@ -14,24 +15,9 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
     [Header("Debug")]
     [SerializeField] private bool enableAIDebugLog = true;
 
-    public StatBlock currentStats;
 
-    [Header("Stat Weights (CSV Initialize 시 BattleCharactor로 전달)")]
-    [SerializeField] private StatWeights unitWeight = new StatWeights(1f, 1f, 1f);
-
-    [SerializeField] private StatWeights levelWeight = new StatWeights(1f, 1f, 1f);
-
-    [SerializeField] private StatWeights classWeight = new StatWeights(1f, 1f, 1f);
-
-    [Range(1, 100)] public int level = 1;
-
-    [Range(1, 50)] public int unitCount = 1;
-
-    public StatWeights UnitWeight => unitWeight;
-
-    public StatWeights LevelWeight => levelWeight;
-
-    public StatWeights ClassWeight => classWeight;
+    [Header("Flat Stats (Inspector tuning)")]
+    [SerializeField] private StatBlock inspectorBaseStats;
 
     public UnitData Data
     {
@@ -52,31 +38,42 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
         }
     }
 
-    public void Initialize(UnitData data)
+    public void Initialize(UnitData data = null)
     {
         enemyData = data;
-        currentStats = data != null ? data.baseStats : default;
-
-        var battle = GetComponent<BattleCharactor>();
+        BattleCharactor battle = GetComponent<BattleCharactor>();
         if (battle == null)
         {
             return;
         }
 
+        StatBlock baseStats;
         if (data != null)
         {
-            battle.SetBaseStats(data.baseStats);
+            baseStats = data.baseStats;
             battle.SetUnitNameForSkillMatching(data.Name);
         }
         else
         {
-            // 프로토타입 직접 입력 모드: 유닛 데이터 에셋이 없으면 인스펙터 base 값을 원본으로 사용
-            battle.BuildBaseStatsFromInspector();
+            baseStats = inspectorBaseStats;
             battle.SetUnitNameForSkillMatching(battle.UnitName);
         }
 
-        battle.ApplyCombatTuning(level, unitCount, unitWeight, levelWeight, classWeight);
+        battle.SetBaseStats(baseStats);
+        battle.SetLevelScaling(false);
         battle.RecalculateStats();
+
+        // 적 스킬 인덱스 규칙: enemyIndex * 10 + slot(1/2).
+        // 기본 슬롯은 첫 번째(1)로 저장하고, ResolveSelectedSkill에서 classSkillIndex 우선 매칭합니다.
+        if (data != null
+            && !string.IsNullOrWhiteSpace(data.Index)
+            && int.TryParse(data.Index.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int enemyIndexNum))
+        {
+            int defaultSkillSlot = 1;
+            int combinedSkillIndex = (enemyIndexNum * 10) + defaultSkillSlot;
+            battle.SetClassSkillIndex(combinedSkillIndex);
+        }
+
         battle.ResolveSelectedSkill();
         battle.InitializeCurrentHpToMax();
         battle.MarkInitializedFromDataPipeline();
@@ -108,13 +105,24 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
             ? flowManager.GetAlivePlayerUnits()
             : new List<BattleCharactor>();
 
-        if (enableAIDebugLog)
-        {
-            Debug.Log(
-                $"[EnemyAI/Debug] RunAITurn start: self={self.UnitName}, aiNull={currentAI == null}, targets={targets.Count} [{FormatTargets(targets)}]");
-        }
+        //if (enableAIDebugLog)
+        //{
+        //    Debug.Log(
+        //        $"[EnemyAI/Debug] RunAITurn start: self={self.UnitName}, aiNull={currentAI == null}, targets={targets.Count} [{FormatTargets(targets)}]");
+        //}
 
         EnemyActionDecision decision = currentAI != null ? currentAI.DecideAction(self, targets) : null;
+        if (decision != null && decision.Skip)
+        {
+            if (enableAIDebugLog)
+            {
+                Debug.Log($"[EnemyAI/Debug] SkipTurn: self={self.UnitName}");
+            }
+
+            yield return new WaitForSeconds(0.5f);
+            yield break;
+        }
+
         BattleCharactor target = decision != null ? decision.Target : null;
 
         if (enableAIDebugLog)
@@ -235,6 +243,7 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
         return string.Join(", ", labels);
     }
 
+#if UNITY_EDITOR
     private void OnValidate()
     {
         if (Application.isPlaying)
@@ -242,21 +251,23 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
             return;
         }
 
-        level = Mathf.Clamp(level, 1, 100);
-        unitCount = Mathf.Clamp(unitCount, 1, 50);
-
         var battle = GetComponent<BattleCharactor>();
         if (battle == null)
         {
             return;
         }
 
-        if (enemyData == null || string.IsNullOrWhiteSpace(enemyData.Name))
+        if (enemyData != null && !string.IsNullOrWhiteSpace(enemyData.Name))
         {
-            return;
+            battle.SetUnitNameForSkillMatching(enemyData.Name);
         }
 
-        battle.SetUnitNameForSkillMatching(enemyData.Name);
+        StatBlock baseStats = inspectorBaseStats;
+
+        battle.SetBaseStats(baseStats);
+        battle.SetLevelScaling(false);
+        battle.RecalculateStats(false);
         battle.ResolveSelectedSkill(false);
     }
+#endif
 }

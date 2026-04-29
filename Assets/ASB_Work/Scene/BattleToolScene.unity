@@ -132,16 +132,6 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 395448204223772339, guid: 68ab9538664a58744a4818fbb7109931,
         type: 3}
-      propertyPath: m_LocalScale.x
-      value: 3.0303032
-      objectReference: {fileID: 0}
-    - target: {fileID: 395448204223772339, guid: 68ab9538664a58744a4818fbb7109931,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 3.030303
-      objectReference: {fileID: 0}
-    - target: {fileID: 395448204223772339, guid: 68ab9538664a58744a4818fbb7109931,
-        type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -195,27 +185,15 @@ PrefabInstance:
       propertyPath: m_Name
       value: Unit_LowerMonster
       objectReference: {fileID: 0}
-    - target: {fileID: 3556432788587944534, guid: 68ab9538664a58744a4818fbb7109931,
+    - target: {fileID: 7942295052033001349, guid: 68ab9538664a58744a4818fbb7109931,
         type: 3}
-      propertyPath: m_Layer
-      value: 9
-      objectReference: {fileID: 0}
+      propertyPath: skillDataLoader
+      value: 
+      objectReference: {fileID: 320332756}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3556432788587944534, guid: 68ab9538664a58744a4818fbb7109931,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 102285278}
-    - targetCorrespondingSourceObject: {fileID: 3556432788587944534, guid: 68ab9538664a58744a4818fbb7109931,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 102285277}
-    - targetCorrespondingSourceObject: {fileID: 3556432788587944534, guid: 68ab9538664a58744a4818fbb7109931,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 102285281}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 68ab9538664a58744a4818fbb7109931, type: 3}
 --- !u!1 &51024760
 GameObject:
@@ -446,96 +424,12 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &102285273 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3556432788587944534, guid: 68ab9538664a58744a4818fbb7109931,
-    type: 3}
-  m_PrefabInstance: {fileID: 36673882}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &102285274 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 395448204223772339, guid: 68ab9538664a58744a4818fbb7109931,
     type: 3}
   m_PrefabInstance: {fileID: 36673882}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &102285277
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102285273}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fc997578c8c2b340aa8764d3f3d361e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &102285278
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102285273}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &102285281
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102285273}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  unitName: AdvancedMonster
-  teamType: 1
-  maxHp: 100
-  attack: 10
-  defense: 0
-  speed: 1
-  level: 1
-  unitCount: 1
-  unitWeight:
-    HP: 1.5
-    Atk: 1
-    DEF: 1
-  levelWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  classWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  finalStats:
-    HP: 152
-    Atk: 12
-    DEF: 2
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  currentHp: 0
-  activeStatusEffects: []
-  activeSkill:
-    skillId: 
-    skillPercent: 100
-    skillBoundary: []
-  skillDataLoader: {fileID: 320332756}
-  equippedWeaponIndex: 0
-  availableWeapons: []
-  classSkillIndex: 1010
-  selectedSkillIndex: 0
-  availableSkills: []
 --- !u!1 &173309999
 GameObject:
   m_ObjectHideFlags: 0
@@ -581,85 +475,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55641ff6ea58232498da66741bfe785b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &175597874 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 453319653275471567, guid: 0794eea0d06dda54f921e3c87af19cd5,
-    type: 3}
-  m_PrefabInstance: {fileID: 870918798}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &175597875 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6551610242319550290, guid: 0794eea0d06dda54f921e3c87af19cd5,
     type: 3}
   m_PrefabInstance: {fileID: 870918798}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &175597878
+--- !u!114 &175597882 stripped
 MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 1337145186152817137, guid: 0794eea0d06dda54f921e3c87af19cd5,
+    type: 3}
+  m_PrefabInstance: {fileID: 870918798}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 175597874}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f889442cb5b56049bbbaaf81b4c28ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerData: {fileID: 0}
---- !u!114 &175597882
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 175597874}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitName: "\uC544\uCC98"
-  teamType: 0
-  maxHp: 1
-  attack: 10
-  defense: 0
-  speed: 1
-  level: 1
-  unitCount: 1
-  unitWeight:
-    HP: 4.22
-    Atk: 4.84
-    DEF: 7.09
-  levelWeight:
-    HP: 1.32
-    Atk: 3.3
-    DEF: 3.01
-  classWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  finalStats:
-    HP: 6.54
-    Atk: 52.7
-    DEF: 4.01
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  currentHp: 0
-  activeStatusEffects: []
-  activeSkill:
-    skillId: 
-    skillPercent: 100
-    skillBoundary: []
-  skillDataLoader: {fileID: 320332756}
-  equippedWeaponIndex: 0
-  availableWeapons: []
-  classSkillIndex: 1010
-  selectedSkillIndex: 0
-  availableSkills: []
 --- !u!1 &320332751
 GameObject:
   m_ObjectHideFlags: 0
@@ -776,34 +609,9 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5572662073814544764, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
         type: 3}
-      propertyPath: teamType
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5572662073814544764, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
-        type: 3}
-      propertyPath: unitName
-      value: LowerMonster
-      objectReference: {fileID: 0}
-    - target: {fileID: 6728097637861157263, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
-        type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6728097637861157263, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
-        type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: skillDataLoader
       value: 
-      objectReference: {fileID: 2100000, guid: e5828c997272f934184edd74c883fcaa, type: 2}
-    - target: {fileID: 6743325076284844202, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
-        type: 3}
-      propertyPath: m_LocalScale.x
-      value: 3.0303032
-      objectReference: {fileID: 0}
-    - target: {fileID: 6743325076284844202, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 3.030303
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 320332756}
     - target: {fileID: 6743325076284844202, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -859,82 +667,29 @@ PrefabInstance:
       propertyPath: m_Name
       value: Unit_AdvancedMonster
       objectReference: {fileID: 0}
-    - target: {fileID: 7563937201503599213, guid: 7753f0ea7bf83d64ba8d577883cd7d60,
-        type: 3}
-      propertyPath: m_Layer
-      value: 9
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7753f0ea7bf83d64ba8d577883cd7d60, type: 3}
---- !u!1 &493354917 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1210115611748303271, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca,
-    type: 3}
-  m_PrefabInstance: {fileID: 1077882356}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &493354918 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1934206247234255701, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca,
     type: 3}
   m_PrefabInstance: {fileID: 1077882356}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &493354922
+--- !u!114 &493354922 stripped
 MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 2337814053015336450, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca,
+    type: 3}
+  m_PrefabInstance: {fileID: 1077882356}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 493354917}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitName: "\uBA54\uC774\uC9C0"
-  teamType: 0
-  maxHp: 1
-  attack: 10
-  defense: 0
-  speed: 1
-  level: 1
-  unitCount: 1
-  unitWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  levelWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  classWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  finalStats:
-    HP: 3
-    Atk: 12
-    DEF: 2
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  currentHp: 0
-  activeStatusEffects: []
-  activeSkill:
-    skillId: 
-    skillPercent: 100
-    skillBoundary: []
-  skillDataLoader: {fileID: 320332756}
-  equippedWeaponIndex: 0
-  availableWeapons: []
-  classSkillIndex: 1010
-  selectedSkillIndex: 0
-  availableSkills: []
 --- !u!1 &503365170
 GameObject:
   m_ObjectHideFlags: 0
@@ -1110,25 +865,15 @@ PrefabInstance:
       propertyPath: m_Name
       value: Unit_Warrior
       objectReference: {fileID: 0}
-    - target: {fileID: 1742596684811356356, guid: 8e839b26f24666340915ba452e52ad0e,
+    - target: {fileID: 3270023864934076665, guid: 8e839b26f24666340915ba452e52ad0e,
         type: 3}
-      propertyPath: m_Layer
-      value: 8
-      objectReference: {fileID: 0}
+      propertyPath: skillDataLoader
+      value: 
+      objectReference: {fileID: 320332756}
     - target: {fileID: 3822256990648516214, guid: 8e839b26f24666340915ba452e52ad0e,
         type: 3}
-      propertyPath: unitWeight.HP
-      value: 1.92
-      objectReference: {fileID: 0}
-    - target: {fileID: 4383120895684230713, guid: 8e839b26f24666340915ba452e52ad0e,
-        type: 3}
-      propertyPath: m_LocalScale.x
-      value: 3.030303
-      objectReference: {fileID: 0}
-    - target: {fileID: 4383120895684230713, guid: 8e839b26f24666340915ba452e52ad0e,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 3.030303
+      propertyPath: inspectorBaseStats.HP
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 4383120895684230713, guid: 8e839b26f24666340915ba452e52ad0e,
         type: 3}
@@ -1183,19 +928,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 1742596684811356356, guid: 8e839b26f24666340915ba452e52ad0e,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 929773951}
-    - targetCorrespondingSourceObject: {fileID: 1742596684811356356, guid: 8e839b26f24666340915ba452e52ad0e,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 929773950}
-    - targetCorrespondingSourceObject: {fileID: 1742596684811356356, guid: 8e839b26f24666340915ba452e52ad0e,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 929773954}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8e839b26f24666340915ba452e52ad0e, type: 3}
 --- !u!1 &621159265
 GameObject:
@@ -1428,25 +1161,35 @@ PrefabInstance:
       propertyPath: m_Name
       value: Unit_Archer
       objectReference: {fileID: 0}
-    - target: {fileID: 453319653275471567, guid: 0794eea0d06dda54f921e3c87af19cd5,
+    - target: {fileID: 1337145186152817137, guid: 0794eea0d06dda54f921e3c87af19cd5,
         type: 3}
-      propertyPath: m_Layer
+      propertyPath: currentHp
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1337145186152817137, guid: 0794eea0d06dda54f921e3c87af19cd5,
+        type: 3}
+      propertyPath: finalStats.HP
       value: 8
       objectReference: {fileID: 0}
-    - target: {fileID: 5822711424090221044, guid: 0794eea0d06dda54f921e3c87af19cd5,
+    - target: {fileID: 1337145186152817137, guid: 0794eea0d06dda54f921e3c87af19cd5,
         type: 3}
-      propertyPath: unitDataAsset
+      propertyPath: finalStats.Atk
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 1337145186152817137, guid: 0794eea0d06dda54f921e3c87af19cd5,
+        type: 3}
+      propertyPath: finalStats.DEF
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1337145186152817137, guid: 0794eea0d06dda54f921e3c87af19cd5,
+        type: 3}
+      propertyPath: skillDataLoader
       value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 6551610242319550290, guid: 0794eea0d06dda54f921e3c87af19cd5,
+      objectReference: {fileID: 320332756}
+    - target: {fileID: 1337145186152817137, guid: 0794eea0d06dda54f921e3c87af19cd5,
         type: 3}
-      propertyPath: m_LocalScale.x
-      value: 3.030303
-      objectReference: {fileID: 0}
-    - target: {fileID: 6551610242319550290, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 3.030303
+      propertyPath: finalStats.CritMultiplier
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6551610242319550290, guid: 0794eea0d06dda54f921e3c87af19cd5,
         type: 3}
@@ -1500,107 +1243,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
         type: 3}
-      propertyPath: currentStats.HP
-      value: 5
+      propertyPath: level
+      value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: currentStats.Atk
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: currentStats.DEF
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: currentStats.Luck
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: currentStats.Speed
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: charactorData.Index
-      value: 1001
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: charactorData.UnitType
-      value: Archer
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: currentStats.AvoidRate
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: currentStats.CounterRate
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: currentStats.CriticalRate
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: charactorData.baseStats.HP
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: charactorData.baseStats.Atk
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: charactorData.baseStats.DEF
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: charactorData.baseStats.Luck
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: charactorData.baseStats.Speed
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: charactorData.baseStats.AvoidRate
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: charactorData.baseStats.CounterRate
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7116486323575450234, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      propertyPath: charactorData.baseStats.CriticalRate
-      value: 5
-      objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 5822711424090221044, guid: 0794eea0d06dda54f921e3c87af19cd5, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 453319653275471567, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 175597878}
-    - targetCorrespondingSourceObject: {fileID: 453319653275471567, guid: 0794eea0d06dda54f921e3c87af19cd5,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 175597882}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0794eea0d06dda54f921e3c87af19cd5, type: 3}
 --- !u!1 &912453329
 GameObject:
@@ -1655,97 +1304,12 @@ MonoBehaviour:
     gridNumber: 1
   - unitId: 20003
     gridNumber: 100
---- !u!1 &929773946 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1742596684811356356, guid: 8e839b26f24666340915ba452e52ad0e,
-    type: 3}
-  m_PrefabInstance: {fileID: 584170578}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &929773947 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4383120895684230713, guid: 8e839b26f24666340915ba452e52ad0e,
     type: 3}
   m_PrefabInstance: {fileID: 584170578}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &929773950
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 929773946}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f889442cb5b56049bbbaaf81b4c28ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerData: {fileID: 0}
---- !u!114 &929773951
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 929773946}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &929773954
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 929773946}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  unitName: "\uC6CC\uB9AC\uC5B4"
-  teamType: 0
-  maxHp: 1
-  attack: 10
-  defense: 0
-  speed: 2
-  level: 25
-  unitCount: 1
-  unitWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  levelWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  classWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  finalStats:
-    HP: 51
-    Atk: 60
-    DEF: 50
-    Luck: 0
-    Speed: 2
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  currentHp: 0
-  activeStatusEffects: []
-  activeSkill:
-    skillId: 
-    skillPercent: 100
-    skillBoundary: []
-  skillDataLoader: {fileID: 320332756}
-  equippedWeaponIndex: 0
-  availableWeapons: []
-  classSkillIndex: 1010
-  selectedSkillIndex: 0
-  availableSkills: []
 --- !u!1 &997278432
 GameObject:
   m_ObjectHideFlags: 0
@@ -1942,21 +1506,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Unit_Wizard
       objectReference: {fileID: 0}
-    - target: {fileID: 1210115611748303271, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca,
-        type: 3}
-      propertyPath: m_Layer
-      value: 8
-      objectReference: {fileID: 0}
-    - target: {fileID: 1934206247234255701, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca,
-        type: 3}
-      propertyPath: m_LocalScale.x
-      value: 3.030303
-      objectReference: {fileID: 0}
-    - target: {fileID: 1934206247234255701, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 3.030303
-      objectReference: {fileID: 0}
     - target: {fileID: 1934206247234255701, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -2007,19 +1556,15 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5274485026923046935, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca,
+    - target: {fileID: 2337814053015336450, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca,
         type: 3}
-      propertyPath: unitCount
-      value: 1
-      objectReference: {fileID: 0}
+      propertyPath: skillDataLoader
+      value: 
+      objectReference: {fileID: 320332756}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 1210115611748303271, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 493354922}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: dc4a5e6c8a95e4b4aac8a40d823c76ca, type: 3}
 --- !u!1 &1185982871
 GameObject:
@@ -2385,7 +1930,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   coords: {x: 1, y: 1}
-  occupyingUnit: {fileID: 929773951}
+  occupyingUnit: {fileID: 0}
   cellRenderer: {fileID: 1387779107}
   transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
@@ -2528,101 +2073,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   coords: {x: 0, y: 2}
-  occupyingUnit: {fileID: 1483893783}
+  occupyingUnit: {fileID: 0}
   cellRenderer: {fileID: 1414445552}
   transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}
---- !u!1 &1483893778 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6290960558266015020, guid: e540557cd11514240aafdf2c329798cb,
-    type: 3}
-  m_PrefabInstance: {fileID: 1556745176}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1483893779 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2900768675364931409, guid: e540557cd11514240aafdf2c329798cb,
     type: 3}
   m_PrefabInstance: {fileID: 1556745176}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1483893782
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1483893778}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f889442cb5b56049bbbaaf81b4c28ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerData: {fileID: 0}
---- !u!114 &1483893783
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1483893778}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46b543b3b49ca424a8dbf661bdeead24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1483893787
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1483893778}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  unitName: "\uD074\uB808\uB9AD"
-  teamType: 0
-  maxHp: 100
-  attack: 10
-  defense: 0
-  speed: 1
-  level: 1
-  unitCount: 1
-  unitWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  levelWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  classWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  finalStats:
-    HP: 102
-    Atk: 12
-    DEF: 2
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  currentHp: 0
-  activeStatusEffects: []
-  activeSkill:
-    skillId: 
-    skillPercent: 100
-    skillBoundary: []
-  skillDataLoader: {fileID: 320332756}
-  equippedWeaponIndex: 0
-  availableWeapons: []
-  classSkillIndex: 1010
-  selectedSkillIndex: 0
-  availableSkills: []
 --- !u!1 &1511189582
 GameObject:
   m_ObjectHideFlags: 0
@@ -2808,16 +2268,6 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2900768675364931409, guid: e540557cd11514240aafdf2c329798cb,
         type: 3}
-      propertyPath: m_LocalScale.x
-      value: 3.030303
-      objectReference: {fileID: 0}
-    - target: {fileID: 2900768675364931409, guid: e540557cd11514240aafdf2c329798cb,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 3.030303
-      objectReference: {fileID: 0}
-    - target: {fileID: 2900768675364931409, guid: e540557cd11514240aafdf2c329798cb,
-        type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -2866,33 +2316,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4119781378837919811, guid: e540557cd11514240aafdf2c329798cb,
+        type: 3}
+      propertyPath: skillDataLoader
+      value: 
+      objectReference: {fileID: 320332756}
     - target: {fileID: 6290960558266015020, guid: e540557cd11514240aafdf2c329798cb,
         type: 3}
       propertyPath: m_Name
       value: Unit_Cleric
       objectReference: {fileID: 0}
-    - target: {fileID: 6290960558266015020, guid: e540557cd11514240aafdf2c329798cb,
+    - target: {fileID: 9086622956196106429, guid: e540557cd11514240aafdf2c329798cb,
         type: 3}
-      propertyPath: m_Layer
-      value: 8
+      propertyPath: inspectorBaseStats.Speed
+      value: 2
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: -881707880648396494, guid: e540557cd11514240aafdf2c329798cb, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 6290960558266015020, guid: e540557cd11514240aafdf2c329798cb,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1483893787}
-    - targetCorrespondingSourceObject: {fileID: 6290960558266015020, guid: e540557cd11514240aafdf2c329798cb,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1483893783}
-    - targetCorrespondingSourceObject: {fileID: 6290960558266015020, guid: e540557cd11514240aafdf2c329798cb,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1483893782}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e540557cd11514240aafdf2c329798cb, type: 3}
 --- !u!1 &1596053935
 GameObject:
@@ -3075,21 +2517,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Unit_MiddleMonster
       objectReference: {fileID: 0}
-    - target: {fileID: 3486639906996805074, guid: e4942fe50bbc7b946ac3cc9d7be21706,
-        type: 3}
-      propertyPath: m_Layer
-      value: 9
-      objectReference: {fileID: 0}
-    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
-        type: 3}
-      propertyPath: m_LocalScale.x
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 3
-      objectReference: {fileID: 0}
     - target: {fileID: 6767848405440797548, guid: e4942fe50bbc7b946ac3cc9d7be21706,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -3140,14 +2567,15 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8508084709625341957, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+        type: 3}
+      propertyPath: skillDataLoader
+      value: 
+      objectReference: {fileID: 320332756}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3486639906996805074, guid: e4942fe50bbc7b946ac3cc9d7be21706,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1794758369}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e4942fe50bbc7b946ac3cc9d7be21706, type: 3}
 --- !u!4 &1794758367 stripped
 Transform:
@@ -3155,66 +2583,18 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1794758366}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1794758368 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3486639906996805074, guid: e4942fe50bbc7b946ac3cc9d7be21706,
+--- !u!114 &1794758369 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8508084709625341957, guid: e4942fe50bbc7b946ac3cc9d7be21706,
     type: 3}
   m_PrefabInstance: {fileID: 1794758366}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1794758369
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1794758368}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitName: MiddleMonster
-  teamType: 1
-  maxHp: 100
-  attack: 10
-  defense: 0
-  speed: 1
-  level: 1
-  unitCount: 1
-  unitWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  levelWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  classWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
-  finalStats:
-    HP: 102
-    Atk: 12
-    DEF: 2
-    Luck: 0
-    Speed: 1
-    CriticalRate: 0
-    CritMultiplier: 1.5
-    CounterRate: 0
-    AvoidRate: 0
-  currentHp: 0
-  activeStatusEffects: []
-  activeSkill:
-    skillId: 
-    skillPercent: 100
-    skillBoundary: []
-  skillDataLoader: {fileID: 320332756}
-  equippedWeaponIndex: 0
-  availableWeapons: []
-  classSkillIndex: 1010
-  selectedSkillIndex: 0
-  availableSkills: []
 --- !u!1 &1832740940
 GameObject:
   m_ObjectHideFlags: 0
@@ -3667,7 +3047,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   coords: {x: 3, y: 2}
-  occupyingUnit: {fileID: 102285278}
+  occupyingUnit: {fileID: 0}
   cellRenderer: {fileID: 1933058777}
   transparentMat: {fileID: 2100000, guid: 866f43f59f0db524cac9bf4e80bcc29e, type: 2}
   redHighlightMat: {fileID: 2100000, guid: b5139a5571ce2bd469500b8581c5d0cc, type: 2}

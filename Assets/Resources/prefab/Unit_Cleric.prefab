@@ -100,6 +100,7 @@ MonoBehaviour:
   outlineMode: 2
   outlineColor: {r: 1, g: 0, b: 0.770381, a: 1}
   outlineWidth: 4
+  includeChildren: 1
   precomputeOutline: 0
   bakeKeys: []
   bakeValues: []
@@ -136,8 +137,9 @@ GameObject:
   m_Component:
   - component: {fileID: 2900768675364931409}
   - component: {fileID: 9086622956196106429}
-  - component: {fileID: -881707880648396494}
-  m_Layer: 0
+  - component: {fileID: 4119781378837919811}
+  - component: {fileID: 7584180312978425053}
+  m_Layer: 8
   m_Name: Unit_Cleric
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -152,9 +154,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6290960558266015020}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 3.030303, y: 1, z: 3.030303}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7087929897434310974}
@@ -183,33 +185,32 @@ MonoBehaviour:
       Luck: 0
       Speed: 0
       CriticalRate: 0
+      CritMultiplier: 0
       CounterRate: 0
       AvoidRate: 0
+      influence: 0
     IsEnemyRow: 0
-  currentStats:
-    HP: 0
-    Atk: 0
-    DEF: 0
-    Luck: 0
-    Speed: 0
-    CriticalRate: 0
-    CounterRate: 0
-    AvoidRate: 0
-  unitWeight:
-    HP: 1
-    Atk: 1
-    DEF: 1
+  level: 1
   levelWeight:
     HP: 1
     Atk: 1
     DEF: 1
   classWeight:
     HP: 1
-    Atk: 1
+    Atk: 0
     DEF: 1
-  level: 1
-  unitCount: 1
---- !u!114 &-881707880648396494
+  inspectorBaseStats:
+    HP: 6
+    Atk: 8
+    DEF: 6
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0.1
+    CritMultiplier: 0
+    CounterRate: 0.15
+    AvoidRate: 0.15
+    influence: 100
+--- !u!114 &4119781378837919811
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -218,9 +219,44 @@ MonoBehaviour:
   m_GameObject: {fileID: 6290960558266015020}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f58462792aaac5488cd265933320c4f, type: 3}
+  m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitDataAsset: {fileID: 0}
+  unitName: "\uD074\uB808\uB9AD"
   teamType: 0
-  gridNumber: 1
+  finalStats:
+    HP: 8
+    Atk: 9
+    DEF: 8
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0.1
+    CritMultiplier: 0
+    CounterRate: 0.15
+    AvoidRate: 0.15
+    influence: 100
+  currentHp: 0
+  activeStatusEffects: []
+  activeSkill:
+    skillId: 
+    skillPercent: 100
+    skillBoundary: []
+  skillDataLoader: {fileID: 0}
+  equippedWeaponIndex: 0
+  availableWeapons: []
+  classSkillIndex: 1010
+  selectedSkillIndex: 0
+  availableSkills: []
+--- !u!114 &7584180312978425053
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6290960558266015020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f889442cb5b56049bbbaaf81b4c28ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerData: {fileID: 0}
