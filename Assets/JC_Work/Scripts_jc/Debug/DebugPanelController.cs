@@ -44,7 +44,7 @@ public class DebugPanelController : MonoBehaviour
         var panelRect = GetComponent<RectTransform>();
         initialSize = panelRect.sizeDelta;
         initialPosition = panelRect.anchoredPosition;
-        debugCanvasObj = GetComponentInParent<Canvas>().gameObject;
+        debugCanvasObj = GetComponentInParent<Canvas>(true).gameObject;
 
         SetupDragAndResize(panelRect);
 
