@@ -8,11 +8,11 @@ public class EnemyFogVisibilitySystem : MonoBehaviour
     [SerializeField] private bool hideChildCanvases = true;
     [SerializeField] private bool hideColliders = false;
 
-    private readonly Dictionary<EnemyUnit, EnemyVisibilityBinding> bindings = new Dictionary<EnemyUnit, EnemyVisibilityBinding>();
+    private readonly Dictionary<EnemyGridMover, EnemyVisibilityBinding> bindings = new Dictionary<EnemyGridMover, EnemyVisibilityBinding>();
 
     private sealed class EnemyVisibilityBinding
     {
-        public EnemyUnit Enemy;
+        public EnemyGridMover Enemy;
         public Renderer[] Renderers;
         public Canvas[] Canvases;
         public Collider[] Colliders;
@@ -44,7 +44,7 @@ public class EnemyFogVisibilitySystem : MonoBehaviour
         if (fogGridManager != null)
             fogGridManager.FogChanged -= HandleFogChanged;
 
-        foreach (KeyValuePair<EnemyUnit, EnemyVisibilityBinding> pair in bindings)
+        foreach (KeyValuePair<EnemyGridMover, EnemyVisibilityBinding> pair in bindings)
         {
             if (pair.Key == null)
                 continue;
@@ -62,9 +62,9 @@ public class EnemyFogVisibilitySystem : MonoBehaviour
         if (fogGridManager == null)
             return;
 
-        foreach (KeyValuePair<EnemyUnit, EnemyVisibilityBinding> pair in bindings)
+        foreach (KeyValuePair<EnemyGridMover, EnemyVisibilityBinding> pair in bindings)
         {
-            EnemyUnit enemy = pair.Key;
+            EnemyGridMover enemy = pair.Key;
             if (enemy == null)
                 continue;
 
@@ -77,18 +77,18 @@ public class EnemyFogVisibilitySystem : MonoBehaviour
         if (enemyRegistry == null)
             return;
 
-        IReadOnlyList<EnemyUnit> enemies = enemyRegistry.Enemies;
+        IReadOnlyList<EnemyGridMover> enemies = enemyRegistry.Enemies;
         for (int i = 0; i < enemies.Count; i++)
             RegisterEnemy(enemies[i]);
     }
 
-    private void HandleEnemyRegistered(EnemyUnit enemy)
+    private void HandleEnemyRegistered(EnemyGridMover enemy)
     {
         RegisterEnemy(enemy);
         RefreshEnemy(enemy);
     }
 
-    private void HandleEnemyUnregistered(EnemyUnit enemy)
+    private void HandleEnemyUnregistered(EnemyGridMover enemy)
     {
         if (enemy == null)
             return;
@@ -102,12 +102,12 @@ public class EnemyFogVisibilitySystem : MonoBehaviour
         RefreshAll();
     }
 
-    private void HandleEnemyGridChanged(EnemyUnit enemy, Vector2Int _)
+    private void HandleEnemyGridChanged(EnemyGridMover enemy, Vector2Int _)
     {
         RefreshEnemy(enemy);
     }
 
-    private void HandleEnemyMoveStepStarted(EnemyUnit enemy, Vector2Int nextGrid)
+    private void HandleEnemyMoveStepStarted(EnemyGridMover enemy, Vector2Int nextGrid)
     {
         if (enemy == null || fogGridManager == null)
             return;
@@ -119,7 +119,7 @@ public class EnemyFogVisibilitySystem : MonoBehaviour
             ApplyVisibility(binding, true);
     }
 
-    private void RefreshEnemy(EnemyUnit enemy)
+    private void RefreshEnemy(EnemyGridMover enemy)
     {
         if (enemy == null || fogGridManager == null)
             return;
@@ -130,7 +130,7 @@ public class EnemyFogVisibilitySystem : MonoBehaviour
         ApplyVisibility(binding, fogGridManager.IsVisible(enemy.GetCurrentGrid()));
     }
 
-    private void RegisterEnemy(EnemyUnit enemy)
+    private void RegisterEnemy(EnemyGridMover enemy)
     {
         if (enemy == null || bindings.ContainsKey(enemy))
             return;

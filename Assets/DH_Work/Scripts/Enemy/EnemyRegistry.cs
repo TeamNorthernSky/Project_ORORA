@@ -4,18 +4,18 @@ using UnityEngine;
 
 public class EnemyRegistry : MonoBehaviour
 {
-    private readonly List<EnemyUnit> enemies = new List<EnemyUnit>();
+    private readonly List<EnemyGridMover> enemies = new List<EnemyGridMover>();
 
-    public IReadOnlyList<EnemyUnit> Enemies => enemies;
-    public event Action<EnemyUnit> EnemyRegistered;
-    public event Action<EnemyUnit> EnemyUnregistered;
+    public IReadOnlyList<EnemyGridMover> Enemies => enemies;
+    public event Action<EnemyGridMover> EnemyRegistered;
+    public event Action<EnemyGridMover> EnemyUnregistered;
 
     private void Awake()
     {
         RefreshSceneEnemies();
     }
 
-    public void Register(EnemyUnit enemy)
+    public void Register(EnemyGridMover enemy)
     {
         if (enemy == null || enemies.Contains(enemy))
             return;
@@ -24,7 +24,7 @@ public class EnemyRegistry : MonoBehaviour
         EnemyRegistered?.Invoke(enemy);
     }
 
-    public void Unregister(EnemyUnit enemy)
+    public void Unregister(EnemyGridMover enemy)
     {
         if (enemy == null)
             return;
@@ -40,10 +40,10 @@ public class EnemyRegistry : MonoBehaviour
     {
         enemies.Clear();
 
-        EnemyUnit[] sceneEnemies = FindObjectsByType<EnemyUnit>(FindObjectsSortMode.None);
+        EnemyGridMover[] sceneEnemies = FindObjectsByType<EnemyGridMover>(FindObjectsSortMode.None);
         for (int i = 0; i < sceneEnemies.Length; i++)
         {
-            EnemyUnit enemy = sceneEnemies[i];
+            EnemyGridMover enemy = sceneEnemies[i];
             if (enemy == null)
                 continue;
 
@@ -51,14 +51,14 @@ public class EnemyRegistry : MonoBehaviour
         }
     }
 
-    public EnemyUnit GetClosestEnemy(Vector2Int grid)
+    public EnemyGridMover GetClosestEnemy(Vector2Int grid)
     {
-        EnemyUnit closest = null;
+        EnemyGridMover closest = null;
         int closestDistance = int.MaxValue;
 
         for (int i = 0; i < enemies.Count; i++)
         {
-            EnemyUnit enemy = enemies[i];
+            EnemyGridMover enemy = enemies[i];
             if (enemy == null)
                 continue;
 

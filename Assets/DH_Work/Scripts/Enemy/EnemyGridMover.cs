@@ -2,18 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyUnit : MonoBehaviour
+[RequireComponent(typeof(EnemyIdentity))]
+[RequireComponent(typeof(EnemyComposition))]
+public class EnemyGridMover : MonoBehaviour
 {
-    public event System.Action<EnemyUnit, Vector2Int> GridChanged;
-    public event System.Action<EnemyUnit, Vector2Int> MoveStepStarted;
-
-    [Header("Identity")]
-    [SerializeField] private string enemyId = "enemy_001";
-    [SerializeField] private List<int> combatUnitIndices = new List<int>();
+    public event System.Action<EnemyGridMover, Vector2Int> GridChanged;
+    public event System.Action<EnemyGridMover, Vector2Int> MoveStepStarted;
 
     [Header("References")]
     [SerializeField] private GridManager gridManager;
-    [SerializeField] private PersistentEnemyRepository persistentEnemyRepository;
 
     [Header("Move Settings")]
     [SerializeField] private float moveSpeed = 4f;
@@ -25,20 +22,19 @@ public class EnemyUnit : MonoBehaviour
     private EnemyTargetType currentTargetType;
     private Component currentTarget;
     private EnemyRegistry enemyRegistry;
+    private EnemyIdentity enemyIdentity;
+    private EnemyComposition enemyComposition;
 
-    public string EnemyId => enemyId;
-    public IReadOnlyList<int> CombatUnitIndices => combatUnitIndices;
+    public int EnemyId => enemyIdentity != null ? enemyIdentity.EnemyId : 0;
     public int MovePointsPerTurn => Mathf.Max(0, movePointsPerTurn);
     public EnemyTargetType CurrentTargetType => currentTargetType;
     public Component CurrentTarget => currentTarget;
 
-    public bool HasCombatUnitIndices()
-    {
-        return combatUnitIndices != null && combatUnitIndices.Count > 0;
-    }
-
     private void Awake()
     {
+        enemyIdentity = GetComponent<EnemyIdentity>();
+        enemyComposition = GetComponent<EnemyComposition>();
+
         if (gridManager == null)
             gridManager = FindFirstObjectByType<GridManager>();
 
@@ -50,7 +46,6 @@ public class EnemyUnit : MonoBehaviour
     {
         ResolveRegistry();
         enemyRegistry?.Register(this);
-        RegisterPersistentData();
     }
 
     private void OnDisable()
@@ -66,6 +61,12 @@ public class EnemyUnit : MonoBehaviour
     public bool HasTarget()
     {
         return currentTarget != null && currentTargetType != EnemyTargetType.None;
+    }
+
+    public void InitializePersistentIdentity(int nextEnemyId)
+    {
+        enemyIdentity ??= GetComponent<EnemyIdentity>();
+        enemyIdentity?.SetEnemyId(nextEnemyId);
     }
 
     public void SetTarget(EnemyTargetType targetType, Component target)
@@ -130,19 +131,10 @@ public class EnemyUnit : MonoBehaviour
         if (enemyRegistry == null)
             enemyRegistry = FindFirstObjectByType<EnemyRegistry>();
 
-        if (persistentEnemyRepository == null)
-            persistentEnemyRepository = PersistentEnemyRepository.Instance;
-    }
+        if (enemyIdentity == null)
+            enemyIdentity = GetComponent<EnemyIdentity>();
 
-    private void RegisterPersistentData()
-    {
-        if (string.IsNullOrWhiteSpace(enemyId))
-        {
-            Debug.LogWarning("EnemyUnit has no enemyId. Persistent enemy data registration was skipped.", this);
-            return;
-        }
-
-        persistentEnemyRepository ??= PersistentEnemyRepository.Instance;
-        persistentEnemyRepository?.RegisterOrUpdateEnemy(enemyId, combatUnitIndices);
+        if (enemyComposition == null)
+            enemyComposition = GetComponent<EnemyComposition>();
     }
 }

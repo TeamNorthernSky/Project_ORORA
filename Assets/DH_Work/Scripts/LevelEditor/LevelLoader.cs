@@ -31,9 +31,9 @@ public class LevelLoader : MonoBehaviour
 
     public LevelData LevelData => levelData;
 
-#if UNITY_EDITOR
+
     private bool queuedEditorReload;
-#endif
+
 
     private void Start()
     {
@@ -46,7 +46,9 @@ public class LevelLoader : MonoBehaviour
         if (!autoReloadOnValidate || Application.isPlaying)
             return;
 
+#if UNITY_EDITOR
         QueueEditorReload();
+#endif
     }
 
     private void OnEnable()
@@ -54,7 +56,9 @@ public class LevelLoader : MonoBehaviour
         if (Application.isPlaying)
             return;
 
+#if UNITY_EDITOR
         QueueEditorReload();
+#endif
     }
 
     [ContextMenu("Load Level")]
@@ -84,6 +88,7 @@ public class LevelLoader : MonoBehaviour
         LoadLevel();
     }
 
+
 #if UNITY_EDITOR
     private void QueueEditorReload()
     {
@@ -105,6 +110,7 @@ public class LevelLoader : MonoBehaviour
         TryLoadInEditMode();
     }
 #endif
+
 
     private void SpawnObstacles()
     {

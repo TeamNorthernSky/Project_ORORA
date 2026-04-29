@@ -38,10 +38,10 @@ public class EnemyTurnController : MonoBehaviour
         if (enemyRegistry == null || partyRegistry == null || pathfinder == null)
             yield break;
 
-        IReadOnlyList<EnemyUnit> enemies = enemyRegistry.Enemies;
+        IReadOnlyList<EnemyGridMover> enemies = enemyRegistry.Enemies;
         for (int i = 0; i < enemies.Count; i++)
         {
-            EnemyUnit enemy = enemies[i];
+            EnemyGridMover enemy = enemies[i];
             if (enemy == null)
                 continue;
 
@@ -80,7 +80,7 @@ public class EnemyTurnController : MonoBehaviour
         }
     }
 
-    private void ValidateCurrentTarget(EnemyUnit enemy)
+    private void ValidateCurrentTarget(EnemyGridMover enemy)
     {
         if (enemy == null || !enemy.HasTarget())
             return;
@@ -98,7 +98,7 @@ public class EnemyTurnController : MonoBehaviour
             enemy.ClearTarget();
     }
 
-    private void AcquireTarget(EnemyUnit enemy)
+    private void AcquireTarget(EnemyGridMover enemy)
     {
         targetCandidates.Clear();
 
@@ -189,7 +189,7 @@ public class EnemyTurnController : MonoBehaviour
         return null;
     }
 
-    private bool TryBeginCombat(PartyGridMover party, EnemyUnit enemy)
+    private bool TryBeginCombat(PartyGridMover party, EnemyGridMover enemy)
     {
         if (combatEncounterManager == null)
             return false;
@@ -201,7 +201,7 @@ public class EnemyTurnController : MonoBehaviour
     }
 
     private List<Vector2Int> FindApproachPath(
-        EnemyUnit enemy,
+        EnemyGridMover enemy,
         EnemyTargetType targetType,
         Component target,
         Vector2Int targetGrid)
@@ -324,7 +324,7 @@ public class EnemyTurnController : MonoBehaviour
         return path.GetRange(0, allowedNodeCount);
     }
 
-    private bool HandleAdjacentOutpostInteraction(EnemyUnit enemy)
+    private bool HandleAdjacentOutpostInteraction(EnemyGridMover enemy)
     {
         if (enemy == null || gridManager == null)
             return false;

@@ -13,7 +13,7 @@ public class EnemySpawnController : MonoBehaviour
     [SerializeField] private Transform enemyRoot;
 
     [Header("Spawn Rules")]
-    [SerializeField] private EnemyUnit enemyPrefab;
+    [SerializeField] private EnemyGridMover enemyPrefab;
     [SerializeField, Min(1)] private int spawnInterval = 3;
     [SerializeField, Min(1)] private int maxActiveEnemies = 3;
     [SerializeField] private bool spawnOneEnemyOnStart = true;
@@ -158,7 +158,9 @@ public class EnemySpawnController : MonoBehaviour
         if (!gridManager.CanOccupyCell(spawnGrid, null, true))
             return false;
 
-        EnemyUnit spawnedEnemy = Instantiate(enemyPrefab, Vector3.zero, Quaternion.identity, enemyRoot);
+        EnemyGridMover spawnedEnemy = Instantiate(enemyPrefab, Vector3.zero, Quaternion.identity, enemyRoot);
+        EnemyUnitBootstrap enemyBootstrap = spawnedEnemy.GetComponent<EnemyUnitBootstrap>();
+        enemyBootstrap?.InitializeEnemyUnits();
         spawnedEnemy.SnapToGridPosition(spawnGrid);
         return true;
     }
@@ -190,7 +192,7 @@ public class EnemySpawnController : MonoBehaviour
             return 0;
 
         int activeEnemyCount = 0;
-        IReadOnlyList<EnemyUnit> enemies = enemyRegistry.Enemies;
+        IReadOnlyList<EnemyGridMover> enemies = enemyRegistry.Enemies;
         for (int i = 0; i < enemies.Count; i++)
         {
             if (enemies[i] != null)
