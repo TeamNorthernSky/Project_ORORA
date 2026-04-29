@@ -6,7 +6,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 
 public static class AutoBootstrap
 {
-    private const string PrefabPath = "Assets/JC_Work/Prefab_jc/[GameManager].prefab";
+    private const string PrefabPath = "Assets/JC_Work/Prefab_jc/GameManager.prefab";
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Execute()
@@ -17,7 +17,7 @@ public static class AutoBootstrap
         if (prefab != null)
         {
             var go = Object.Instantiate(prefab);
-            go.name = "[GameManager]";
+            go.name = "GameManager";
             Object.DontDestroyOnLoad(go);
         }
         else

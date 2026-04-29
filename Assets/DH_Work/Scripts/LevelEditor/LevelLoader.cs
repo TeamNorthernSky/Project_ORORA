@@ -84,16 +84,18 @@ public class LevelLoader : MonoBehaviour
         LoadLevel();
     }
 
-#if UNITY_EDITOR
     private void QueueEditorReload()
     {
+#if UNITY_EDITOR
         if (queuedEditorReload)
             return;
 
         queuedEditorReload = true;
         EditorApplication.delayCall += HandleEditorReload;
+#endif
     }
 
+#if UNITY_EDITOR
     private void HandleEditorReload()
     {
         EditorApplication.delayCall -= HandleEditorReload;
