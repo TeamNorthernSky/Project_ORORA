@@ -22,9 +22,6 @@ namespace ASB.Work.Battle.SkillExecution
             {
                 selectedCell = gm.FindCellByUnit(target);
             }
-            // #region agent log
-            System.IO.File.AppendAllText("debug-5b259c.log", $"{{\"sessionId\":\"5b259c\",\"runId\":\"pre-fix\",\"hypothesisId\":\"H1\",\"location\":\"BaseSkillHandler.Execute\",\"message\":\"selected-cell-resolve\",\"data\":{{\"hasTarget\":{(target != null).ToString().ToLowerInvariant()},\"hasSelectedCell\":{(selectedCell != null).ToString().ToLowerInvariant()}}},\"timestamp\":{System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}\n");
-            // #endregion
 
             var context = new SkillExecutionContext
             {
@@ -62,9 +59,6 @@ namespace ASB.Work.Battle.SkillExecution
             context.PrimaryCell = context.PrimaryTarget != null
                 ? context.PrimaryTarget.OccupiedCell ?? (gm != null ? gm.FindCellByUnit(context.PrimaryTarget) : null)
                 : null;
-            // #region agent log
-            System.IO.File.AppendAllText("debug-5b259c.log", $"{{\"sessionId\":\"5b259c\",\"runId\":\"pre-fix\",\"hypothesisId\":\"H2\",\"location\":\"BaseSkillHandler.ResolvePrimaryTarget\",\"message\":\"primary-target-resolved\",\"data\":{{\"hasPrimaryTarget\":{(context.PrimaryTarget != null).ToString().ToLowerInvariant()},\"hasPrimaryCell\":{(context.PrimaryCell != null).ToString().ToLowerInvariant()}}},\"timestamp\":{System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}\n");
-            // #endregion
         }
 
         // [2] AoE 확장 (단일 기본 구현)
@@ -222,9 +216,6 @@ namespace ASB.Work.Battle.SkillExecution
                     context.ResolvedCells.Add(cell);
                 }
             }
-            // #region agent log
-            System.IO.File.AppendAllText("debug-5b259c.log", $"{{\"sessionId\":\"5b259c\",\"runId\":\"pre-fix\",\"hypothesisId\":\"H3\",\"location\":\"BaseAoESkillHandler.ResolveAffectedArea\",\"message\":\"aoe-cells-resolved\",\"data\":{{\"resolvedCellsCount\":{context.ResolvedCells.Count}}},\"timestamp\":{System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}}}\n");
-            // #endregion
         }
 
         protected override void ApplySkill(SkillExecutionContext context)

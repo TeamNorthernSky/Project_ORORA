@@ -79,14 +79,14 @@ namespace ASB.Work.Battle.SkillExecution
 
 
             //------------------적
-            Register(250011, new DamageSkillHandler());    //단일 공격
-            Register(250012, new AoEDamageSkillHandler()); //열 공격
+            Register(200011, new DamageSkillHandler());    //단일 공격
+            Register(200012, new AoEDamageSkillHandler()); //열 공격
 
-            Register(250021, new DamageSkillHandler());    // 단일 공격
-            Register(250022, new HealSkillHandler());      //단일 힐
+            Register(200021, new DamageSkillHandler());    // 단일 공격
+            Register(200022, new HealSkillHandler());      //단일 힐
 
-            Register(250031, new DamageSkillHandler());    // 단일공격
-            Register(250032, new AoEDamageSkillHandler());   // 전체공격
+            Register(200031, new DamageSkillHandler());    // 단일공격
+            Register(200032, new AoEDamageSkillHandler());   // 전체공격
 
 
 

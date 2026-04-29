@@ -567,7 +567,8 @@ public static class CSVLoader
 
         var sd = new SkillData
         {
-            skillIndex = 50000 + (enemyIndexNum * 10) + slot,
+            // 적 고유 인덱스 + 슬롯(1/2) 조합 규칙: 20001 + 1 => 200011
+            skillIndex = (enemyIndexNum * 10) + slot,
             skillClass = enemyName,
             acquireLevel = 1,
             skillName = skillName,

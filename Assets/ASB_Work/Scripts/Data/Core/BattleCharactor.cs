@@ -6,9 +6,8 @@ using GridCellRef = ASB.Work.BattleGrid.GridCell;
 
 /// <summary>
 /// 전투 유닛: 원본(base) 스탯 → StatCalculator → 최종(final) 스탯 → 런타임 HP.
-/// - 프로토타입: 인스펙터 maxHp/attack/defense/speed로 내부 base 구성(BuildBaseStatsFromInspector).
-/// - CSV: SetBaseStats(UnitData.baseStats) 후 RecalculateStats.
-/// Combat tuning(level, unitCount, 가중치)의 최종 소유는 이 컴포넌트만 담당합니다.
+/// - base 원본은 래퍼(CharactorScript/EnemyScript)에서 조립해 SetBaseStats로 주입합니다.
+/// Combat tuning(level, 가중치)의 최종 소유는 이 컴포넌트만 담당합니다.
 /// </summary>
 public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 {
@@ -18,19 +17,11 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     [SerializeField] private string unitName = "Unit";
     [SerializeField] private TeamType teamType = TeamType.Player;
 
-    [Header("Prototype inspector source (CSV 미주입 시 baseStats 원본)")]
-    [SerializeField] private float maxHp = 100f;
-    [SerializeField] private float attack = 10f;
-    [SerializeField] private float defense = 0f;
-    [SerializeField] private float speed = 1f;
-
     [Header("Combat tuning (StatCalculator 가중치 · 최종 소유)")]
-    [SerializeField] private int level = 1;
-    [SerializeField] private int unitCount = 1;
-    [SerializeField] private StatWeights unitWeight = new StatWeights(1f, 1f, 1f);
-    [SerializeField] private StatWeights levelWeight = new StatWeights(1f, 1f, 1f);
-    [Tooltip("인스펙터 튜닝값. 추후 클래스 데이터 시스템과 연결 시 교체 예정.")]
-    [SerializeField] private StatWeights classWeight = new StatWeights(1f, 1f, 1f);
+    private int level = 1;
+    private StatWeights levelWeight = new StatWeights(1f, 1f, 1f);
+    private StatWeights classWeight = new StatWeights(1f, 1f, 1f);
+    private bool useLevelScaling = true;
 
     [Header("Computed / runtime (에디터 미리보기 = finalStats)")]
     [Tooltip("StatCalculator 결과. 인스펙터에서 결과 확인용.")]
@@ -57,14 +48,8 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     [HideInInspector] public List<SkillData> availableSkills = new List<SkillData>();
     public SkillData SelectedSkillData { get; private set; }
 
-    /// <summary>계산 원본. SetBaseStats 또는 BuildBaseStatsFromInspector로만 갱신.</summary>
+    /// <summary>계산 원본. 래퍼에서 SetBaseStats로 주입합니다.</summary>
     private StatBlock runtimeBaseStats;
-
-    /// <summary>
-    /// 런타임 전용(직렬화 안 함). SetBaseStats로 CSV base가 주입되면 true.
-    /// 에디터 재로드 시 false로 돌아가므로 OnValidate는 인스펙터 기준 미리보기에 사용합니다.
-    /// </summary>
-    private bool hasExternalBaseStats;
 
     private GridCellRef occupiedCell;
     private bool isInitialized;
@@ -234,6 +219,12 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
             return;
         }
 
+        // Wrapper(플레이어/적)가 소유권을 가지는 경우, 코어의 자동 미리보기 갱신은 충돌을 유발할 수 있어 스킵합니다.
+        if (GetComponent<CharactorScript>() != null || GetComponent<EnemyScript>() != null)
+        {
+            return;
+        }
+
         PrototypeEditorValidateOrRefresh(forceSkillWeaponRefresh: false);
     }
 
@@ -246,14 +237,7 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     /// <summary>에디터 OnValidate / Force Refresh 공통: 값 클램프 → base → 스킬/무기 → RecalculateStats(false).</summary>
     private void PrototypeEditorValidateOrRefresh(bool forceSkillWeaponRefresh)
     {
-        ClampPrototypeScalars();
         level = Mathf.Max(1, level);
-        unitCount = Mathf.Max(1, unitCount);
-
-        if (!hasExternalBaseStats)
-        {
-            BuildBaseStatsFromInspector();
-        }
 
         RefreshAvailableSkillsForInspector(forceSkillWeaponRefresh);
         ResolveSelectedSkill(false);
@@ -271,57 +255,44 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     public void SetBaseStats(StatBlock stats)
     {
         runtimeBaseStats = stats;
-        hasExternalBaseStats = true;
-    }
-
-    /// <summary>SetBaseStats가 한 번도 호출되지 않았을 때만, 인스펙터 스칼라로 runtime base를 구성합니다.</summary>
-    public void BuildBaseStatsFromInspector()
-    {
-        if (hasExternalBaseStats)
-        {
-            return;
-        }
-
-        ClampPrototypeScalars();
-        runtimeBaseStats = new StatBlock(
-            hp: maxHp,
-            atk: attack,
-            def: defense,
-            luck: 0f,
-            speed: speed,
-            criticalRate: 0f,
-            counterRate: 0f,
-            avoidRate: 0f);
     }
 
     /// <summary>CSV 초기화 시에만 외부에서 호출. 인스펙터 tuning의 최종 값으로 반영합니다.</summary>
-    public void ApplyCombatTuning(int lv, int count, StatWeights uw, StatWeights lw, StatWeights cw)
+    public void ApplyCombatTuning(int lv, StatWeights lw, StatWeights cw)
     {
         level = Mathf.Max(1, lv);
-        unitCount = Mathf.Max(1, count);
-        unitWeight = uw;
         levelWeight = lw;
         classWeight = cw;
+    }
+
+    public void SetLevelScaling(bool useScaling)
+    {
+        useLevelScaling = useScaling;
     }
 
     /// <summary>StatCalculator로 finalStats 갱신. applyCurrentHpClamp가 true일 때만 currentHp 상한을 맞춥니다.</summary>
     public void RecalculateStats(bool applyCurrentHpClamp = true)
     {
-        if (!hasExternalBaseStats)
+        if (useLevelScaling)
         {
-            BuildBaseStatsFromInspector();
+            finalStats = StatCalculator.CalculateFinalStats(
+                runtimeBaseStats,
+                level,
+                levelWeight,
+                classWeight,
+                EquippedEquipments,
+                EquippedWeaponData != null ? EquippedWeaponData.GetBonusStatBlock() : default);
+        }
+        else
+        {
+            finalStats = runtimeBaseStats;
+            finalStats.HP = Mathf.Max(1f, finalStats.HP);
+            finalStats.Atk = Mathf.Max(0f, finalStats.Atk);
+            finalStats.DEF = Mathf.Max(0f, finalStats.DEF);
         }
 
-        finalStats = StatCalculator.CalculateFinalStats(
-            runtimeBaseStats,
-            level,
-            unitCount,
-            unitWeight,
-            levelWeight,
-            classWeight,
-            EquippedEquipments,
-            EquippedWeaponData != null ? EquippedWeaponData.GetBonusStatBlock() : default);
-
+        // CSV 미연동 신규 스탯 안전장치
+        finalStats.Influence = Mathf.Clamp(finalStats.Influence, 0f, 200f);
         ApplyStatusEffectStatModifiers();
 
         if (applyCurrentHpClamp)
@@ -748,13 +719,8 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
             return;
         }
 
-        ClampPrototypeScalars();
         IsPlayer = teamType == TeamType.Player;
         IsDead = false;
-        if (!hasExternalBaseStats)
-        {
-            BuildBaseStatsFromInspector();
-        }
 
         RefreshAvailableSkillsForInspector(forceRefresh: true);
         ResolveSelectedSkill(true);
@@ -837,17 +803,18 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
         Initialize();
     }
 
-    private void ClampPrototypeScalars()
-    {
-        maxHp = Mathf.Max(1f, maxHp);
-        attack = Mathf.Max(1f, attack);
-        defense = Mathf.Max(0f, defense);
-        speed = Mathf.Max(0f, speed);
-    }
-
     public void SetSelectedSkillIndex(int localIndex)
     {
         selectedSkillIndex = Mathf.Max(0, localIndex);
+    }
+
+    /// <summary>
+    /// 전역 스킬 인덱스를 직접 지정합니다.
+    /// 예: 적 인덱스 20001 + 슬롯1 => classSkillIndex=200011.
+    /// </summary>
+    public void SetClassSkillIndex(int globalSkillIndex)
+    {
+        classSkillIndex = Mathf.Max(0, globalSkillIndex);
     }
 
     public void SetUnitNameForSkillMatching(string name)
@@ -1023,7 +990,28 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     {
         if (availableSkills != null && availableSkills.Count > 0)
         {
-            int localIndex = selectedSkillIndex;
+            int localIndex = -1;
+
+            // classSkillIndex(전역) 지정이 있으면 먼저 해당 skillIndex를 찾습니다.
+            if (classSkillIndex > 0)
+            {
+                for (int i = 0; i < availableSkills.Count; i++)
+                {
+                    SkillData candidate = availableSkills[i];
+                    if (candidate != null && candidate.skillIndex == classSkillIndex)
+                    {
+                        localIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            // 전역 인덱스가 없거나 매칭 실패 시 기존 로컬 인덱스로 폴백합니다.
+            if (localIndex < 0)
+            {
+                localIndex = selectedSkillIndex;
+            }
+
             if (localIndex < 0 || localIndex >= availableSkills.Count)
             {
                 localIndex = 0;

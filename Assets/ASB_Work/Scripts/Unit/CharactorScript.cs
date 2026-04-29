@@ -8,20 +8,12 @@ public class CharactorScript : MonoBehaviour, IUnitIdentifier
 {
     public UnitData charactorData;
 
-    public StatBlock currentStats;
 
     [Header("Stat Weights (CSV Initialize 시 BattleCharactor로 전달)")]
-    [SerializeField] private StatWeights unitWeight = new StatWeights(1f, 1f, 1f);
-
-    [SerializeField] private StatWeights levelWeight = new StatWeights(1f, 1f, 1f);
-
-    [SerializeField] private StatWeights classWeight = new StatWeights(1f, 1f, 1f);
-
-    [Range(1, 15)] public int level = 1;
-
-    [Range(1, 100)] public int unitCount = 1;
-
-    public StatWeights UnitWeight => unitWeight;
+    [SerializeField] private int level = 1;
+    [SerializeField] private StatWeights levelWeight;
+    [SerializeField] private StatWeights classWeight;
+    [SerializeField] private StatBlock inspectorBaseStats;
 
     public StatWeights LevelWeight => levelWeight;
 
@@ -46,39 +38,58 @@ public class CharactorScript : MonoBehaviour, IUnitIdentifier
         }
     }
 
-    public void Initialize(UnitData data)
+    public void Initialize(UnitData data = null)
     {
         charactorData = data;
-        currentStats = data != null ? data.baseStats : default;
-
-        var battle = GetComponent<BattleCharactor>();
+        BattleCharactor battle = GetComponent<BattleCharactor>();
         if (battle == null)
         {
             return;
         }
 
+        StatBlock baseStats;
         if (data != null)
         {
-            battle.SetBaseStats(data.baseStats);
+            baseStats = data.baseStats;
             battle.SetUnitNameForSkillMatching(data.Name);
         }
         else
         {
-            // 프로토타입 직접 입력 모드: 유닛 데이터 에셋이 없으면 인스펙터 base 값을 원본으로 사용
-            battle.BuildBaseStatsFromInspector();
+            baseStats = inspectorBaseStats;
             battle.SetUnitNameForSkillMatching(battle.UnitName);
         }
 
-        battle.ApplyCombatTuning(level, unitCount, unitWeight, levelWeight, classWeight);
+        battle.SetBaseStats(baseStats);
+        battle.SetLevelScaling(true);
+        battle.ApplyCombatTuning(level, levelWeight, classWeight);
         battle.RecalculateStats();
         battle.ResolveSelectedSkill();
         battle.InitializeCurrentHpToMax();
         battle.MarkInitializedFromDataPipeline();
     }
 
+#if UNITY_EDITOR
     private void OnValidate()
     {
+        if (Application.isPlaying)
+        {
+            return;
+        }
+
         level = Mathf.Clamp(level, 1, 15);
-        unitCount = Mathf.Clamp(unitCount, 1, 100);
+
+        BattleCharactor battle = GetComponent<BattleCharactor>();
+        if (battle == null)
+        {
+            return;
+        }
+
+        StatBlock baseStats = inspectorBaseStats;
+
+        battle.SetBaseStats(baseStats);
+        battle.SetLevelScaling(true);
+        battle.ApplyCombatTuning(level, levelWeight, classWeight);
+        battle.RecalculateStats(false);
     }
+#endif
 }
