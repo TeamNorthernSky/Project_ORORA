@@ -1,7 +1,14 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+
+public enum BattleResult
+{
+    Victory,
+    Defeat
+}
 
 /// <summary>
 /// 전투 전체 흐름 제어기.
@@ -37,8 +44,20 @@ public class BattleFlowManager : MonoBehaviour
     private int roundIndex = 0;
 
     private bool playerActionResolved;
+    private bool IsBattleOver
+    {
+        get
+        {
+            List<BattleCharactor> aliveUnits = participants.Where(u => u != null && !u.IsDead).ToList();
+            bool anyPlayerAlive = aliveUnits.Exists(u => u.IsPlayer);
+            bool anyEnemyAlive = aliveUnits.Exists(u => !u.IsPlayer);
+            return !anyEnemyAlive || !anyPlayerAlive;
+        }
+    }
 
     public BattleCharactor CurrentUnit { get; private set; }
+    public event Action<int, BattleCharactor> OnTurnStarted;
+    public event Action<BattleResult> OnBattleEnded;
 
     private void OnEnable()
     {
@@ -184,12 +203,17 @@ public class BattleFlowManager : MonoBehaviour
             BattleCharactor unit = GetNextUnit();
             if (unit == null)
             {
+                if (TryEvaluateBattleResult(out BattleResult result))
+                {
+                    OnBattleEnded?.Invoke(result);
+                }
                 Log("[BattleFlow] 전투 종료(생존 진영 없음 또는 참가자 전멸). BattleLoop 종료.");
                 battleLoopRoutine = null;
                 yield break;
             }
 
             CurrentUnit = unit;
+            OnTurnStarted?.Invoke(roundIndex, CurrentUnit);
 
             // 턴 전환 시 입력 상태(타겟팅/아웃라인)가 남지 않도록 항상 정리
             inputHandler?.ClearSelectionState();
@@ -225,11 +249,21 @@ public class BattleFlowManager : MonoBehaviour
                 yield return new WaitUntil(() =>
                     playerActionResolved
                     || CurrentUnit == null
-                    || CurrentUnit.IsDead);
+                    || CurrentUnit.IsDead
+                    || IsBattleOver);
+
+                if (TryEndBattleImmediately())
+                {
+                    yield break;
+                }
             }
             else
             {
                 yield return RunEnemyTurn(CurrentUnit);
+                if (TryEndBattleImmediately())
+                {
+                    yield break;
+                }
             }
 
             SetOutline(unit, false);
@@ -242,6 +276,45 @@ public class BattleFlowManager : MonoBehaviour
             EndTurnSelectionCleanup();
             yield return null;
         }
+    }
+
+    private bool TryEvaluateBattleResult(out BattleResult result)
+    {
+        result = BattleResult.Defeat;
+        List<BattleCharactor> aliveUnits = participants.Where(u => u != null && !u.IsDead).ToList();
+        bool anyPlayerAlive = aliveUnits.Exists(u => u.IsPlayer);
+        bool anyEnemyAlive = aliveUnits.Exists(u => !u.IsPlayer);
+
+        if (!anyEnemyAlive)
+        {
+            result = BattleResult.Victory;
+            return true;
+        }
+
+        if (!anyPlayerAlive)
+        {
+            result = BattleResult.Defeat;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryEndBattleImmediately()
+    {
+        if (!IsBattleOver)
+        {
+            return false;
+        }
+
+        if (TryEvaluateBattleResult(out BattleResult result))
+        {
+            OnBattleEnded?.Invoke(result);
+        }
+
+        Log("[BattleFlow] 전투 즉시 종료(IsBattleOver 감지). BattleLoop 종료.");
+        battleLoopRoutine = null;
+        return true;
     }
 
     private IEnumerator RunEnemyTurn(BattleCharactor enemyUnit)

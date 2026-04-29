@@ -12,22 +12,25 @@ namespace ASB.Work.Battle.SkillExecution
     {
         private const float BleedChance = 0.35f;
 
-        protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData)
+        protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result)
         {
-            float dmg = SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue);
-            Debug.Log($"[Skill/BleedStrike] {caster.UnitName} -> {target.UnitName} dmg={dmg:F1}");
+            result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue));
+            Debug.Log($"[Skill/BleedStrike] {caster.UnitName} -> {target.UnitName} (skillValue={skillData.skillValue:F2})");
 
-            if (target.IsDead)
+            // 데미지 적용 이후(사망 여부 포함)에 출혈을 부여합니다.
+            result.OnPostExecution += (totalDamage) =>
             {
-                return;
-            }
+                if (target == null || target.IsDead)
+                {
+                    return;
+                }
 
-            bool bleedApplied = SkillEffectHelper.TryApplyStatusEffect(target, "Bleed", BleedChance);
-            if (bleedApplied)
-            {
-                // TODO: 상태이상 시스템 연동 — 예: target.ApplyBleed(stacks: 1, duration: 3f);
-                Debug.Log($"[Skill/BleedStrike] 출혈 부여 시도 (성공, 대상={target.UnitName})");
-            }
+                bool bleedApplied = SkillEffectHelper.TryApplyStatusEffect(target, "Bleed", BleedChance);
+                if (bleedApplied)
+                {
+                    Debug.Log($"[Skill/BleedStrike] 출혈 부여 시도 (성공, 대상={target.UnitName})");
+                }
+            };
         }
     }
 
@@ -37,20 +40,22 @@ namespace ASB.Work.Battle.SkillExecution
         private const int TauntDurationTurns = 1;
 
 
-        protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData)
+        protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result)
         {
+            result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue));
+            Debug.Log($"[Skill/TauntStrike] {caster.UnitName} -> {target.UnitName} (skillValue={skillData.skillValue:F2})");
 
-            float damage = SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue);
-            Debug.Log($"[Skill/TauntStrike] {caster.UnitName} -> {target.UnitName} dmg={damage:F1}");
-
-            if (target.IsDead)
+            // 도발 부여는 데미지 적용 이후(사망 여부 포함)에 결정합니다.
+            result.OnPostExecution += (totalDamage) =>
             {
-                return;
-            }
+                if (target == null || target.IsDead)
+                {
+                    return;
+                }
 
-            SkillEffectHelper.SetTaunt(caster, target, TauntDurationTurns);
-
-            Debug.Log($"[Skill/TauntStrike] Taunt applied: target={target.UnitName}, source={caster.UnitName}, turns={TauntDurationTurns}");
+                SkillEffectHelper.SetTaunt(caster, target, TauntDurationTurns);
+                Debug.Log($"[Skill/TauntStrike] Taunt applied: target={target.UnitName}, source={caster.UnitName}, turns={TauntDurationTurns}");
+            };
         }
 
     }
@@ -60,10 +65,10 @@ namespace ASB.Work.Battle.SkillExecution
     // 일렬배기_1020
     public sealed class ColumnsStrikeSkillHandler : BaseSingleSkillHandler
     {
-        protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData)
+        protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result)
         {
-            float damage = SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue);
-            Debug.Log($"[Skill/TauntStrike] {caster.UnitName} -> {target.UnitName} dmg={damage:F1}");
+            result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue));
+            Debug.Log($"[Skill/ColumnsStrike] {caster.UnitName} -> {target.UnitName} (skillValue={skillData.skillValue:F2})");
         }
     }
 
@@ -72,10 +77,10 @@ namespace ASB.Work.Battle.SkillExecution
     // 강한 공격 이후 1턴 쉼
     public sealed class AtkAfterRest : BaseSingleSkillHandler
     {
-        protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData)
+        protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result)
         {
-            float damage = SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue);
-            Debug.Log($"[Skill/TauntStrike] {caster.UnitName} -> {target.UnitName} dmg={damage:F1}");
+            result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue));
+            Debug.Log($"[Skill/AtkAfterRest] {caster.UnitName} -> {target.UnitName} (skillValue={skillData.skillValue:F2})");
         }
 
 
@@ -91,10 +96,10 @@ namespace ASB.Work.Battle.SkillExecution
     // 단일 공격 후 힐 밴
     public sealed class TargetHealBanSkill : BaseSingleSkillHandler
     {
-        protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData)
+        protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result)
         {
-            float damage = SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue);
-            Debug.Log($"[Skill/TauntStrike] {caster.UnitName} -> {target.UnitName} dmg={damage:F1}");
+            result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue));
+            Debug.Log($"[Skill/TargetHealBanSkill] {caster.UnitName} -> {target.UnitName} (skillValue={skillData.skillValue:F2})");
         }
 
 

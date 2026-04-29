@@ -130,8 +130,8 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
             string actionTypeLabel = decision != null ? decision.ActionType.ToString() : "DecisionNull";
             string targetLabel = target != null ? target.UnitName : "null";
             string skillLabel = decision != null && decision.SelectedSkill != null ? decision.SelectedSkill.skillName : "null";
-            Debug.Log(
-                $"[EnemyAI/Debug] DecideAction result: self={self.UnitName}, action={actionTypeLabel}, target={targetLabel}, selectedSkill={skillLabel}");
+            //Debug.Log(
+            //    $"[EnemyAI/Debug] DecideAction result: self={self.UnitName}, action={actionTypeLabel}, target={targetLabel}, selectedSkill={skillLabel}");
         }
 
         if (target == null)

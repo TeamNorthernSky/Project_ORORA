@@ -8,18 +8,13 @@ namespace ASB.Work.Battle.SkillExecution
     /// </summary>
     public static class SkillEffectHelper
     {
-        public static float ApplyStandardDamage(BattleCharactor caster, BattleCharactor target, float skillValue)
+        // 데미지 적용/계산은 BattleManager에서만 수행합니다.
+        // 이 메서드는 DamageContext(명세서)만 생성해 반환합니다.
+        public static DamageContext ApplyStandardDamage(BattleCharactor caster, BattleCharactor target, float skillValue)
         {
             if (caster == null || target == null)
             {
-                return 0f;
-            }
-
-            BattleManager battleManager = UnityEngine.Object.FindObjectOfType<BattleManager>();
-            if (battleManager == null)
-            {
-                Debug.LogWarning("[SkillEffect] BattleManager를 찾지 못해 데미지 적용을 건너뜁니다.");
-                return 0f;
+                return default;
             }
 
             var context = new DamageContext
@@ -31,22 +26,14 @@ namespace ASB.Work.Battle.SkillExecution
                 SkillIndex = 0,
                 IsCritical = false
             };
-
-            return battleManager.ApplyDamage(context);
+            return context;
         }
 
-        public static float ApplySkillDamage(BattleCharactor caster, BattleCharactor target, float skillValue)
+        public static DamageContext ApplySkillDamage(BattleCharactor caster, BattleCharactor target, float skillValue)
         {
             if (caster == null || target == null)
             {
-                return 0f;
-            }
-
-            BattleManager battleManager = UnityEngine.Object.FindObjectOfType<BattleManager>();
-            if (battleManager == null)
-            {
-                Debug.LogWarning("[SkillEffect] BattleManager를 찾지 못해 데미지 적용을 건너뜁니다.");
-                return 0f;
+                return default;
             }
 
             var context = new DamageContext
@@ -58,8 +45,7 @@ namespace ASB.Work.Battle.SkillExecution
                 SkillIndex = 0,
                 IsCritical = false
             };
-
-            return battleManager.ApplyDamage(context);
+            return context;
         }
 
 

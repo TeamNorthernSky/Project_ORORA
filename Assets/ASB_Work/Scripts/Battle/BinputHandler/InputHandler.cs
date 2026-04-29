@@ -27,6 +27,7 @@ public enum PendingActionType
 public class InputHandler : MonoBehaviour
 {
     public static event Action<BattleCharactor, BattleCharactor> PlayerSkillActionResolved;
+    public event Action<string> OnActionSelected;
 
     [Header("Raycast")]
     [SerializeField] private Camera raycastCamera;
@@ -220,6 +221,49 @@ public class InputHandler : MonoBehaviour
         validTargets = targets;
         currentState = PlayerActionState.WaitingForTarget;
         SetHoverTarget(null);
+        OnActionSelected?.Invoke(BuildSelectedActionLabel(actor, actionType));
+    }
+
+    private string BuildSelectedActionLabel(BattleCharactor actor, PendingActionType actionType)
+    {
+        switch (actionType)
+        {
+            case PendingActionType.BasicAttack:
+                return "준비 중: 기본 공격";
+
+            case PendingActionType.ClassSkill:
+                if (TryGetSelectedSkill(actor, out SkillData classSkill) && classSkill != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(classSkill.skillName))
+                    {
+                        return $"준비 중: {classSkill.skillName}";
+                    }
+
+                    return $"준비 중: 스킬 ID {classSkill.skillIndex}";
+                }
+
+                return "준비 중: 클래스 스킬";
+
+            case PendingActionType.WeaponSkill:
+                if (actor != null && actor.EquippedWeaponData != null)
+                {
+                    SkillData converted = actor.EquippedWeaponData.ToSkillData();
+                    if (converted != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(converted.skillName))
+                        {
+                            return $"준비 중: {converted.skillName}";
+                        }
+
+                        return $"준비 중: 스킬 ID {converted.skillIndex}";
+                    }
+                }
+
+                return "준비 중: 무기 스킬";
+
+            default:
+                return "준비 중...";
+        }
     }
 
     private void UpdateHoverTarget(BattleCharactor actor)
@@ -299,6 +343,11 @@ public class InputHandler : MonoBehaviour
         if (executed)
         {
             PlayerSkillActionResolved?.Invoke(actor, target);
+            ResetTargetingState();
+        }
+        else
+        {
+            Debug.LogWarning("[InputHandler] 행동 실행 실패(false 반환). 턴 대기를 유지하고 입력 상태를 초기화합니다.");
             ResetTargetingState();
         }
     }

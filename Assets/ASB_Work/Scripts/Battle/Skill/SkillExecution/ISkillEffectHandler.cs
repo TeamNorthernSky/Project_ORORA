@@ -6,6 +6,6 @@ namespace ASB.Work.Battle.SkillExecution
     /// </summary>
     public interface ISkillEffectHandler
     {
-        bool Execute(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillData additionalSkillData);
+        SkillExecutionResult Execute(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillData additionalSkillData);
     }
 }

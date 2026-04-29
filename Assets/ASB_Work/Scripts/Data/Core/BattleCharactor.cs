@@ -12,6 +12,7 @@ using GridCellRef = ASB.Work.BattleGrid.GridCell;
 public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 {
     public event Action<BattleCharactor> OnDied;
+    public event Action<float, float> OnHpChanged;
 
     [Header("Identity")]
     [SerializeField] private string unitName = "Unit";
@@ -70,7 +71,7 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
     public bool IsPlayer { get; set; }
 
-    public bool IsDead { get; private set; }
+    [SerializeField]  public bool IsDead { get; private set; }
     public bool IsStunned
     {
         get
@@ -305,6 +306,7 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     public void InitializeCurrentHpToMax()
     {
         currentHp = finalStats.HP;
+        OnHpChanged?.Invoke(CurrentHp, MaxHp);
     }
 
     public void LevelUp(int amount = 1)
@@ -322,6 +324,12 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
         float damage = Mathf.Max(0f, amount);
         currentHp = Mathf.Max(0f, currentHp - damage);
+        
+        // UI 갱신 이벤트를 "죽기(DisableVisuals)" 이전에 먼저 호출합니다.
+        // (Die()에서 Canvas.enabled=false 처리로 인해 마지막 HP 표시가 누락되는 문제 방지)
+        Debug.Log($"[HP] {UnitName} HP changed: {CurrentHp}/{MaxHp}");
+        OnHpChanged?.Invoke(CurrentHp, MaxHp);
+
         if (currentHp <= 0f)
         {
             Die();
@@ -348,12 +356,15 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
         }
 
         float before = currentHp;
-        currentHp = Mathf.Clamp(currentHp + heal, 0f, finalStats.HP);
+        currentHp = Mathf.Min(MaxHp, currentHp + heal);
         float delta = currentHp - before;
         if (delta > 0f)
         {
             Debug.Log($"[Battle] Heal: {UnitName} +{delta:F1} (HP {before:F1}->{currentHp:F1}/{finalStats.HP:F1})");
         }
+
+        // 힐도 동일하게 HP 값 갱신 직후 이벤트를 호출합니다.
+        OnHpChanged?.Invoke(CurrentHp, MaxHp);
     }
 
     public void ApplyStatusEffect(StatusEffectInstance effect)
@@ -969,10 +980,10 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
         equippedWeaponIndex = 0;
         EquippedWeaponData = null;
-        if (emitWarning)
-        {
-            Debug.LogWarning($"[BattleCharactor] 장착 가능한 무기를 찾지 못했습니다: unit={name}, unitName={unitName}");
-        }
+        //if (emitWarning)
+        //{
+        //    Debug.LogWarning($"[BattleCharactor] 장착 가능한 무기를 찾지 못했습니다: unit={name}, unitName={unitName}");
+        //}
     }
 
     /// <summary>

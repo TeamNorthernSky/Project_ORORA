@@ -9,11 +9,11 @@ namespace ASB.Work.Battle.SkillExecution
 {
     public abstract class BaseSkillHandler : ISkillEffectHandler
     {
-        public virtual bool Execute(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillData additionalSkillData)
+        public virtual SkillExecutionResult Execute(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillData additionalSkillData)
         {
             if (caster == null || target == null || skillData == null || caster.IsDead)
             {
-                return false;
+                return SkillExecutionResult.Failed();
             }
 
             ASBGridManager gm = ASBGridManager.Instance;
@@ -37,11 +37,12 @@ namespace ASB.Work.Battle.SkillExecution
 
             if (context.ResolvedTargets == null || context.ResolvedTargets.Count == 0)
             {
-                return false;
+                return SkillExecutionResult.Failed();
             }
 
-            ApplySkill(context);
-            return true;
+            var result = SkillExecutionResult.SuccessResult();
+            ApplySkill(context, result);
+            return result;
         }
 
         // [1] 중심 타겟 해석
@@ -125,14 +126,14 @@ namespace ASB.Work.Battle.SkillExecution
             }
         }
 
-        protected abstract void ApplySkill(SkillExecutionContext context);
+        protected abstract void ApplySkill(SkillExecutionContext context, SkillExecutionResult result);
     }
 
 
     // 단일 대상 공격은 이걸 사용함!!
     public abstract class BaseSingleSkillHandler : BaseSkillHandler
     {
-        protected override void ApplySkill(SkillExecutionContext context)
+        protected override void ApplySkill(SkillExecutionContext context, SkillExecutionResult result)
         {
             if (context == null || context.Caster == null || context.Skill == null || context.ResolvedTargets == null)
             {
@@ -149,11 +150,11 @@ namespace ASB.Work.Battle.SkillExecution
 
                 if (context.Skill.classSkillEffect == 0)
                 {
-                    ApplyAdditionaDamage(context.Caster, target, context.Skill);
+                    ApplyAdditionaDamage(context.Caster, target, context.Skill, result);
                 }
                 else if (context.Skill.classSkillEffect == 1 || context.Skill.classSkillEffect == 2)
                 {
-                    ApplyHeal(context.Caster, target, context.Skill);
+                    ApplyHeal(context.Caster, target, context.Skill, result);
                 }
 
                 ApplyAdditionalEffect(context.Caster, target, context.Skill);
@@ -163,9 +164,9 @@ namespace ASB.Work.Battle.SkillExecution
         // 추가 효과 구현
         protected virtual void ApplyAdditionalEffect(BattleCharactor caster, BattleCharactor target, SkillData skillData) { }
         // 추가 데미지 구현
-        protected virtual void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData) { }
+        protected virtual void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result) { }
         // 힐 구현
-        protected virtual void ApplyHeal(BattleCharactor caster, BattleCharactor target, SkillData skillData) { }
+        protected virtual void ApplyHeal(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result) { }
     }
 
     // 2개 이상의 광역 공격은 이걸 사용함!!
@@ -218,7 +219,7 @@ namespace ASB.Work.Battle.SkillExecution
             }
         }
 
-        protected override void ApplySkill(SkillExecutionContext context)
+        protected override void ApplySkill(SkillExecutionContext context, SkillExecutionResult result)
         {
             if (context == null || context.Caster == null || context.Skill == null || context.ResolvedTargets == null)
             {
@@ -236,11 +237,11 @@ namespace ASB.Work.Battle.SkillExecution
 
                 if (context.Skill.classSkillEffect == 0)
                 {
-                    ApplyAdditionaDamage(context.Caster, target, context.Skill, count);
+                    ApplyAdditionaDamage(context.Caster, target, context.Skill, count, result);
                 }
                 else if (context.Skill.classSkillEffect == 1 || context.Skill.classSkillEffect == 2)
                 {
-                    ApplyHeal(context.Caster, target, context.Skill, count);
+                    ApplyHeal(context.Caster, target, context.Skill, count, result);
                 }
 
                 ApplyAdditionalEffect(context.Caster, target, context.Skill, count);
@@ -248,8 +249,8 @@ namespace ASB.Work.Battle.SkillExecution
         }
 
         protected virtual void ApplyAdditionalEffect(BattleCharactor caster, BattleCharactor target, SkillData skillData, int Count) { }
-        protected virtual void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, int Count) { }
-        protected virtual void ApplyHeal(BattleCharactor caster, BattleCharactor target, SkillData skillData, int Count) { }
+        protected virtual void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, int Count, SkillExecutionResult result) { }
+        protected virtual void ApplyHeal(BattleCharactor caster, BattleCharactor target, SkillData skillData, int Count, SkillExecutionResult result) { }
 
         private static List<int> BuildPatternIncludingCenter(List<int> sourcePattern)
         {
@@ -267,31 +268,27 @@ namespace ASB.Work.Battle.SkillExecution
     // 메인 타겟 타격 후 주변 1칸 랜덤 1명 타깃
     public abstract class TargetAroundRandom : ISkillEffectHandler
     {
-        public bool Execute(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillData additionalSkillData)
+        public SkillExecutionResult Execute(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillData additionalSkillData)
         {
-            // 메인 타격
-            float mainDamage = SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue);
-            if (mainDamage <= 0f)
+            if (caster == null || target == null || skillData == null || caster.IsDead)
             {
-                return false;
+                return SkillExecutionResult.Failed();
             }
+
+            var result = SkillExecutionResult.SuccessResult();
+            // 메인 타격 데미지는 항상 result에 추가합니다.
+            result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue));
 
             ASB.Work.BattleGrid.GridManager gridManager = ASB.Work.BattleGrid.GridManager.Instance;
             if (gridManager == null)
             {
-                return false;
+                return SkillExecutionResult.Failed();
             }
 
             ASB.Work.BattleGrid.GridCell centerCell = target.OccupiedCell ?? gridManager.FindCellByUnit(target);
             if (centerCell == null)
             {
-                return false;
-            }
-
-            BattleManager battleManager = BattleManager.Instance;
-            if (battleManager == null)
-            {
-                return false;
+                return SkillExecutionResult.Failed();
             }
 
             List<BattleCharactor> validTargets = new List<BattleCharactor>();
@@ -317,51 +314,28 @@ namespace ASB.Work.Battle.SkillExecution
                         continue;
                     }
 
-                    float splashDamage = skillData.skillValue * 0.5f;
-
                     // 리스트에 담기
                     validTargets.Add(aroundUnit);
                 }
             }
-
-
-
-
             if (validTargets.Count > 0)
             {
                 int randomIndex = UnityEngine.Random.Range(0, validTargets.Count);
                 BattleCharactor luckyTarget = validTargets[randomIndex];
 
-                float splashDamage = skillData.skillValue * 0.5f;
-                var context = new DamageContext
-                {
-                    Caster = caster,
-                    Target = luckyTarget, // 뽑힌 1명만 타겟으로 지정
-                    SkillMultiplier = 0f,
-                    SkillValue = splashDamage,
-                    SkillIndex = skillData.skillIndex,
-                    IsCritical = false
-                };
-
-                // 힐 데미지 적용
-                // 추후에 전투매니저와 연결
-
                 if (skillData.classSkillEffect == 0)
                 {
-                    ApplyAdditionaDamage(caster, luckyTarget, skillData);
+                    ApplyAdditionaDamage(caster, luckyTarget, skillData, result);
                 }
                 if (skillData.classSkillEffect == 1)
                 {
-                    ApplyHeal(caster, luckyTarget, skillData);
+                    ApplyHeal(caster, luckyTarget, skillData, result);
                 }
 
                 ApplyAdditionalEffect(caster, luckyTarget, skillData);
-
-
-                return true;
             }
 
-            return false;
+            return result;
         }
 
 
@@ -371,12 +345,12 @@ namespace ASB.Work.Battle.SkillExecution
         }
 
         // 추가 데미지 구현
-        protected virtual void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData)
+        protected virtual void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result)
         {
         }
 
         // 힐 구현
-        protected virtual void ApplyHeal(BattleCharactor caster, BattleCharactor target, SkillData skillData)
+        protected virtual void ApplyHeal(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result)
         {
         }
     }
