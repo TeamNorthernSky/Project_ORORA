@@ -3,13 +3,13 @@ using UnityEngine;
 
 public class CombatEncounterManager : MonoBehaviour
 {
-    public event Action<PartyGridMover, EnemyUnit> CombatStarted;
+    public event Action<PartyGridMover, EnemyGridMover> CombatStarted;
 
     public bool IsCombatActive { get; private set; }
     public PartyGridMover ActiveParty { get; private set; }
-    public EnemyUnit ActiveEnemy { get; private set; }
+    public EnemyGridMover ActiveEnemy { get; private set; }
 
-    public bool BeginCombat(PartyGridMover party, EnemyUnit enemy)
+    public bool BeginCombat(PartyGridMover party, EnemyGridMover enemy)
     {
         if (party == null || enemy == null)
             return false;

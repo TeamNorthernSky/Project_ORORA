@@ -246,7 +246,7 @@ public class GridManager : MonoBehaviour
         return false;
     }
 
-    public bool TryGetEnemyObjectAtGrid(Vector2Int grid, out EnemyUnit enemy)
+    public bool TryGetEnemyObjectAtGrid(Vector2Int grid, out EnemyGridMover enemy)
     {
         enemy = null;
 
@@ -262,7 +262,7 @@ public class GridManager : MonoBehaviour
             if (col == null)
                 continue;
 
-            enemy = col.GetComponentInParent<EnemyUnit>();
+            enemy = col.GetComponentInParent<EnemyGridMover>();
             if (enemy != null)
                 return true;
         }

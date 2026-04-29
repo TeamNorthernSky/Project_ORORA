@@ -86,7 +86,7 @@ public class PartyInteractionController
         if (!gridManager.TryGetAdjacentEnemyGrid(enteredGrid, out Vector2Int enemyGrid))
             return false;
 
-        if (!gridManager.TryGetEnemyObjectAtGrid(enemyGrid, out EnemyUnit enemy))
+        if (!gridManager.TryGetEnemyObjectAtGrid(enemyGrid, out EnemyGridMover enemy))
             return false;
 
         CancelPendingInteraction();
