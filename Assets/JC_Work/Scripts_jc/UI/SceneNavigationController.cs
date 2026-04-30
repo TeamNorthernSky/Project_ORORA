@@ -1,7 +1,4 @@
-using System.Collections;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.UI;
 using TMPro;
 
@@ -20,7 +17,7 @@ public class SceneNavigationController : MonoBehaviour
         CreateSceneLabel();
         CreateDirectJumpButtons();
         CreateNavigationBar();
-        StartCoroutine(LoadHistoryPanel());
+        LoadHistoryPanel();
     }
 
     private void LoadFont()
@@ -149,29 +146,28 @@ public class SceneNavigationController : MonoBehaviour
 
     // --- 씬 이력 패널 (프리팹 로드) ---
 
-    private IEnumerator LoadHistoryPanel()
+    private void LoadHistoryPanel()
     {
-        var handle = Addressables.LoadAssetAsync<GameObject>("SceneHistoryPanel");
-        yield return handle;
-
-        if (handle.Status == AsyncOperationStatus.Succeeded)
+        var prefab = GameManager.Instance != null && GameManager.Instance.UIPrefabRegistry != null
+            ? GameManager.Instance.UIPrefabRegistry.SceneHistoryPanel
+            : null;
+        if (prefab == null)
         {
-            var panel = Instantiate(handle.Result, transform);
-            panel.name = "SceneHistoryPanel";
+            Debug.LogError("[SceneNavigationController] SceneHistoryPanel prefab이 UIPrefabRegistry에 등록되지 않았습니다");
+            return;
+        }
 
-            var controller = panel.GetComponent<SceneHistoryPanelController>();
-            if (controller != null)
-            {
-                controller.Setup(sceneLoader);
-            }
-            else
-            {
-                Debug.LogError("[SceneNavigationController] SceneHistoryPanelController가 프리팹에 없습니다");
-            }
+        var panel = Instantiate(prefab, transform);
+        panel.name = "SceneHistoryPanel";
+
+        var controller = panel.GetComponent<SceneHistoryPanelController>();
+        if (controller != null)
+        {
+            controller.Setup(sceneLoader);
         }
         else
         {
-            Debug.LogError("[SceneNavigationController] SceneHistoryPanel 프리팹 로드 실패");
+            Debug.LogError("[SceneNavigationController] SceneHistoryPanelController가 프리팹에 없습니다");
         }
     }
 

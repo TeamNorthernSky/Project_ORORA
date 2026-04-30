@@ -6,6 +6,7 @@ public class GameManager : MonoBehaviour
 
     public CurrencyManager Currency { get; private set; }
     public SceneLoader SceneLoader { get; private set; }
+    public UIPrefabRegistry UIPrefabRegistry { get; private set; }
 
     #if UNITY_EDITOR || DEVELOPMENT_BUILD
     public DebugManager Debug { get; private set; }
@@ -42,6 +43,8 @@ public class GameManager : MonoBehaviour
 
         SceneLoader = GetComponentInChildren<SceneLoader>();
         if (SceneLoader != null) SceneLoader.Initialize();
+
+        UIPrefabRegistry = GetComponentInChildren<UIPrefabRegistry>(true);
 
         #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug = GetComponentInChildren<DebugManager>(true);

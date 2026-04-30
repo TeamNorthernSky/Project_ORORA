@@ -1,19 +1,15 @@
 using UnityEngine;
-#if !UNITY_EDITOR
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
-#endif
 
 public static class AutoBootstrap
 {
-    private const string PrefabPath = "Assets/JC_Work/Prefab_jc/GameManager.prefab";
+    private const string PrefabResourceKey = "GameManager";
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Execute()
     {
         if (GameManager.Instance != null) return;
 
-        GameObject prefab = LoadPrefab();
+        var prefab = Resources.Load<GameObject>(PrefabResourceKey);
         if (prefab != null)
         {
             var go = Object.Instantiate(prefab);
@@ -22,19 +18,7 @@ public static class AutoBootstrap
         }
         else
         {
-            Debug.LogError("[AutoBootstrap] GameManager 프리팹 로드 실패");
+            Debug.LogError("[AutoBootstrap] GameManager 프리팹 로드 실패 (Resources/GameManager 누락)");
         }
-    }
-
-    private static GameObject LoadPrefab()
-    {
-#if UNITY_EDITOR
-        return UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-#else
-        Addressables.InitializeAsync().WaitForCompletion();
-        var handle = Addressables.LoadAssetAsync<GameObject>("GameManager");
-        handle.WaitForCompletion();
-        return handle.Status == AsyncOperationStatus.Succeeded ? handle.Result : null;
-#endif
     }
 }
