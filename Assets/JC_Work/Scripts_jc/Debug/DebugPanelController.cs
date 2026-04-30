@@ -6,8 +6,6 @@ using TMPro;
 
 public class DebugPanelController : MonoBehaviour
 {
-    #if UNITY_EDITOR || DEVELOPMENT_BUILD
-
     [Header("탭 버튼")]
     [SerializeField] private Button logTabButton;
 
@@ -230,6 +228,4 @@ public class DebugPanelController : MonoBehaviour
         Canvas.ForceUpdateCanvases();
         logScrollRect.verticalNormalizedPosition = 0f;
     }
-
-    #endif
 }

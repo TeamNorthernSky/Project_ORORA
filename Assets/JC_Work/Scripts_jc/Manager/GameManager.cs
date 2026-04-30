@@ -7,10 +7,7 @@ public class GameManager : MonoBehaviour
     public CurrencyManager Currency { get; private set; }
     public SceneLoader SceneLoader { get; private set; }
     public UIPrefabRegistry UIPrefabRegistry { get; private set; }
-
-    #if UNITY_EDITOR || DEVELOPMENT_BUILD
     public DebugManager Debug { get; private set; }
-    #endif
 
     private void Awake()
     {
@@ -26,7 +23,6 @@ public class GameManager : MonoBehaviour
         InitializeManagers();
     }
 
-    #if UNITY_EDITOR || DEVELOPMENT_BUILD
     private void Update()
     {
         if (Debug != null && Input.GetKeyDown(Debug.ToggleKey))
@@ -34,7 +30,6 @@ public class GameManager : MonoBehaviour
             Debug.TogglePanel();
         }
     }
-    #endif
 
     private void InitializeManagers()
     {
@@ -46,9 +41,7 @@ public class GameManager : MonoBehaviour
 
         UIPrefabRegistry = GetComponentInChildren<UIPrefabRegistry>(true);
 
-        #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug = GetComponentInChildren<DebugManager>(true);
         if (Debug != null) Debug.Initialize();
-        #endif
     }
 }

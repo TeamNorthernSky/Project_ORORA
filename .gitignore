@@ -39,6 +39,9 @@ crashlytics-build.properties
 /[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+# Addressables 자동 생성 IL2CPP link 파일 (팀원/빌드마다 갱신되어 노이즈 발생)
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/link.xml
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/link.xml.meta
 # TextMeshPro (자동 생성)
 /[Aa]ssets/TextMesh Pro/
 # Plastic SCM

@@ -2,8 +2,6 @@ using UnityEngine;
 
 public class DebugManager : MonoBehaviour
 {
-    #if UNITY_EDITOR || DEVELOPMENT_BUILD
-
     public static DebugManager Instance { get; private set; }
 
     [SerializeField] private KeyCode toggleKey = KeyCode.BackQuote;
@@ -29,6 +27,4 @@ public class DebugManager : MonoBehaviour
             panelController.Toggle();
         }
     }
-
-    #endif
 }
