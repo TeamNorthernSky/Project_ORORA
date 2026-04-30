@@ -5,10 +5,10 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/DH_Work/Scenes/DHScene.unity
     guid: 489a3296119f6164e91b2d3553e06b76
-  - enabled: 0
+  - enabled: 1
     path: Assets/ASB_Work/Scene/BattleToolScene.unity
     guid: 3c8a429a1d0dae741bc18128bfba34c3
   m_configObjects:

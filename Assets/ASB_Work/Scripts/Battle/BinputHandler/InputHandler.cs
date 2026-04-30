@@ -47,6 +47,7 @@ public class InputHandler : MonoBehaviour
     private Outline hoverTargetOutline;
     private readonly HashSet<BattleCharactor> deathSubscribedUnits = new HashSet<BattleCharactor>();
     private readonly List<ASBGridCell> highlightedCells = new List<ASBGridCell>();
+    private bool isProcessingAction;
 
     private void Awake()
     {
@@ -293,7 +294,7 @@ public class InputHandler : MonoBehaviour
 
     private void TryExecutePendingAction(BattleCharactor actor)
     {
-        if (hoverTarget == null || battleManager == null)
+        if (isProcessingAction || hoverTarget == null || battleManager == null)
         {
             return;
         }
@@ -306,12 +307,18 @@ public class InputHandler : MonoBehaviour
         }
 
         BattleCharactor target = hoverTarget;
+        StartCoroutine(ProcessActionRoutine(actor, target, pendingAction));
+    }
+
+    private System.Collections.IEnumerator ProcessActionRoutine(BattleCharactor actor, BattleCharactor target, PendingActionType actionType)
+    {
+        isProcessingAction = true;
         bool executed = false;
 
-        switch (pendingAction)
+        switch (actionType)
         {
             case PendingActionType.BasicAttack:
-                executed = battleManager.ExecuteBasicAttack(actor, target);
+                yield return StartCoroutine(battleManager.ExecuteBasicAttack(actor, target, success => executed = success));
                 break;
 
             case PendingActionType.ClassSkill:
@@ -320,7 +327,7 @@ public class InputHandler : MonoBehaviour
                     Debug.LogWarning($"[InputHandler] 선택된 CSV 스킬이 없습니다: actor={actor.UnitName}");
                     break;
                 }
-                executed = battleManager.ExecuteGridSkill(actor, target, classSkill);
+                yield return StartCoroutine(battleManager.ExecuteGridSkill(actor, target, classSkill, success => executed = success));
                 break;
 
             case PendingActionType.WeaponSkill:
@@ -336,20 +343,21 @@ public class InputHandler : MonoBehaviour
                     Debug.LogWarning($"[InputHandler] 무기 스킬 변환 실패: weapon={weapon.WeaponName}");
                     break;
                 }
-                executed = battleManager.ExecuteGridSkill(actor, target, convertedSkill);
+                yield return StartCoroutine(battleManager.ExecuteGridSkill(actor, target, convertedSkill, success => executed = success));
                 break;
         }
 
         if (executed)
         {
             PlayerSkillActionResolved?.Invoke(actor, target);
-            ResetTargetingState();
         }
         else
         {
             Debug.LogWarning("[InputHandler] 행동 실행 실패(false 반환). 턴 대기를 유지하고 입력 상태를 초기화합니다.");
-            ResetTargetingState();
         }
+
+        ResetTargetingState();
+        isProcessingAction = false;
     }
 
     private void UpdateAoEPreview(BattleCharactor hoverUnit, SkillData currentSelectedSkill)

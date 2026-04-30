@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using ASB.Work.Battle.SkillExecution;
 using ASB.Work.Battle.Core;
@@ -40,17 +41,24 @@ public class BattleManager : MonoBehaviour
             return 0f;
         }
 
+        // 다단 히트 진행 중 사망 타겟에 대한 후속 타격은 무시합니다.
+        if (context.Target.IsDead)
+        {
+            return 0f;
+        }
+
         float finalDamage = CombatCalculator.CalculateDamage(context);
         context.Target.TakeDamage(finalDamage);
         Debug.Log($"[Combat] {context.Caster.UnitName} -> {context.Target.UnitName} dmg={finalDamage:F1}");
         return finalDamage;
     }
 
-    private bool ApplySkillExecutionResult(SkillExecutionResult result)
+    public IEnumerator ApplySkillExecutionResultRoutine(SkillExecutionResult result, Action<bool> onCompleted = null)
     {
         if (result == null || !result.Success)
         {
-            return false;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         float totalDamageDealt = 0f;
@@ -60,11 +68,17 @@ public class BattleManager : MonoBehaviour
             {
                 DamageContext damageContext = result.DamageContexts[i];
                 totalDamageDealt += ApplyDamage(damageContext);
+
+                float delay = damageContext != null ? Mathf.Max(0f, damageContext.DelayAfter) : 0f;
+                if (delay > 0f)
+                {
+                    yield return new WaitForSeconds(delay);
+                }
             }
         }
 
         result.OnPostExecution?.Invoke(totalDamageDealt);
-        return true;
+        onCompleted?.Invoke(true);
     }
 
     public void ApplyStatusEffect(StatusEffectContext context)
@@ -89,64 +103,74 @@ public class BattleManager : MonoBehaviour
     }
 
     /// <summary>ClassSkillSheet 행의 skillValue(예: 1.2 = 120%)로 그리드 스킬 피해를 계산합니다.</summary>
-    public bool ExecuteGridSkill(BattleCharactor actor, BattleCharactor target, SkillData classSkillRow)
+    public IEnumerator ExecuteGridSkill(BattleCharactor actor, BattleCharactor target, SkillData classSkillRow, Action<bool> onCompleted = null)
     {
         if (classSkillRow == null || actor == null || target == null)
         {
-            return false;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         if (actor.IsDead)
         {
-            return false;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         bool reviveSkill = classSkillRow.classSkillEffect == ClassSkillEffect_Revive;
         if (target.IsDead && !reviveSkill)
         {
-            return false;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         if (!target.IsDead && reviveSkill)
         {
-            return false;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         if (SkillExecutionRegistry.TryGetHandler(classSkillRow.skillIndex, out ISkillEffectHandler custom))
         {
             SkillExecutionResult result = custom.Execute(actor, target, classSkillRow, null);
-            bool executedByCustom = ApplySkillExecutionResult(result);
+            bool executedByCustom = false;
+            yield return StartCoroutine(ApplySkillExecutionResultRoutine(result, success => executedByCustom = success));
             if (executedByCustom)
             {
                 OnActionExecuted?.Invoke(GetSkillDisplayName(classSkillRow));
             }
-            return executedByCustom;
+            onCompleted?.Invoke(executedByCustom);
+            yield break;
         }
 
-        bool executedByDefault = ExecuteDefaultSkill(actor, target, classSkillRow);
+        bool executedByDefault = false;
+        yield return StartCoroutine(ExecuteDefaultSkill(actor, target, classSkillRow, success => executedByDefault = success));
         if (executedByDefault)
         {
             OnActionExecuted?.Invoke(GetSkillDisplayName(classSkillRow));
         }
-        return executedByDefault;
+        onCompleted?.Invoke(executedByDefault);
     }
 
     /// <summary>레지스트리에 없는 일반 스킬: 데이터만으로 힐/딜 처리.</summary>
-    private bool ExecuteDefaultSkill(BattleCharactor actor, BattleCharactor target, SkillData skillData)
+    private IEnumerator ExecuteDefaultSkill(BattleCharactor actor, BattleCharactor target, SkillData skillData, Action<bool> onCompleted = null)
     {
         if (skillData == null || actor == null || target == null)
         {
-            return false;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         if (actor.IsDead)
         {
-            return false;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         if (target.IsDead && skillData.classSkillEffect != ClassSkillEffect_Revive)
         {
-            return false;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         float multiplier = Mathf.Max(0.01f, skillData.skillValue);
@@ -156,7 +180,8 @@ public class BattleManager : MonoBehaviour
             float heal = Mathf.Max(0f, actor.FinalStats.Atk * multiplier);
             target.ApplyHeal(heal);
             Debug.Log($"[Battle] GridHeal: {GetLabel(actor)} -> {GetLabel(target)} heal={heal:F1} (×{multiplier:0.##})");
-            return true;
+            onCompleted?.Invoke(true);
+            yield break;
         }
 
         var context = new DamageContext
@@ -168,25 +193,31 @@ public class BattleManager : MonoBehaviour
             IsCritical = false
         };
         float dealt = ApplyDamage(context);
+        if (context.DelayAfter > 0f)
+        {
+            yield return new WaitForSeconds(context.DelayAfter);
+        }
         Debug.Log($"[Battle] GridSkill: {GetLabel(actor)} -> {GetLabel(target)} dmg={dealt:F1} (×{multiplier:0.##})");
-        return true;
+        onCompleted?.Invoke(true);
     }
 
-    public void ExecuteGridSkill(BattleCharactor actor, BattleCharactor target, float skillPercent)
+    public IEnumerator ExecuteGridSkill(BattleCharactor actor, BattleCharactor target, float skillPercent, Action<bool> onCompleted = null)
     {
-        ExecuteGridSkill(actor, target, skillPercent, isHeal: false);
+        yield return StartCoroutine(ExecuteGridSkill(actor, target, skillPercent, isHeal: false, onCompleted));
     }
 
-    private void ExecuteGridSkill(BattleCharactor actor, BattleCharactor target, float skillPercent, bool isHeal)
+    private IEnumerator ExecuteGridSkill(BattleCharactor actor, BattleCharactor target, float skillPercent, bool isHeal, Action<bool> onCompleted = null)
     {
         if (actor == null || target == null)
         {
-            return;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         if (actor.IsDead || target.IsDead)
         {
-            return;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         float multiplier = Mathf.Max(0.01f, skillPercent / 100f);
@@ -195,7 +226,8 @@ public class BattleManager : MonoBehaviour
             float heal = Mathf.Max(0f, actor.FinalStats.Atk * multiplier);
             target.ApplyHeal(heal);
             Debug.Log($"[Battle] GridHeal: {GetLabel(actor)} -> {GetLabel(target)} heal={heal:F1} ({skillPercent:0.##}%)");
-            return;
+            onCompleted?.Invoke(true);
+            yield break;
         }
 
         var context = new DamageContext
@@ -207,20 +239,27 @@ public class BattleManager : MonoBehaviour
             IsCritical = false
         };
         float dealt = ApplyDamage(context);
+        if (context.DelayAfter > 0f)
+        {
+            yield return new WaitForSeconds(context.DelayAfter);
+        }
         Debug.Log($"[Battle] GridSkill: {GetLabel(actor)} -> {GetLabel(target)} dmg={dealt:F1} ({skillPercent:0.##}%)");
+        onCompleted?.Invoke(true);
     }
 
     /// <summary>일반 공격: 피해 = max(1, 공격력×배율 - 방어력) 후 HP 감소.</summary>
-    public bool ExecuteBasicAttack(BattleCharactor actor, BattleCharactor target)
+    public IEnumerator ExecuteBasicAttack(BattleCharactor actor, BattleCharactor target, Action<bool> onCompleted = null)
     {
         if (actor == null || target == null)
         {
-            return false;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         if (actor.IsDead || target.IsDead)
         {
-            return false;
+            onCompleted?.Invoke(false);
+            yield break;
         }
 
         var context = new DamageContext
@@ -232,6 +271,10 @@ public class BattleManager : MonoBehaviour
             IsCritical = false
         };
         float dmg = ApplyDamage(context);
+        if (context.DelayAfter > 0f)
+        {
+            yield return new WaitForSeconds(context.DelayAfter);
+        }
         string actorName = actor.UnitName;
         string targetName = target.UnitName;
 
@@ -243,7 +286,7 @@ public class BattleManager : MonoBehaviour
         }
 
         OnActionExecuted?.Invoke("기본 공격");
-        return true;
+        onCompleted?.Invoke(true);
     }
 
     private static string GetSkillDisplayName(SkillData skillData)
@@ -284,11 +327,11 @@ public class BattleManager : MonoBehaviour
         switch (action.ActionType)
         {
             case BattleActionType.BasicAttack:
-                ExecuteBasicAttack(action.Actor, action.Target);
+                StartCoroutine(ExecuteBasicAttack(action.Actor, action.Target));
                 break;
 
             case BattleActionType.Skill:
-                ExecuteSkill(action.Actor, action.Target, action.SkillData);
+                StartCoroutine(ExecuteSkill(action.Actor, action.Target, action.SkillData));
                 break;
 
             default:
@@ -297,12 +340,12 @@ public class BattleManager : MonoBehaviour
         }
     }
 
-    private void ExecuteSkill(BattleCharactor actor, BattleCharactor target, SkillDataAsset skillData)
+    private IEnumerator ExecuteSkill(BattleCharactor actor, BattleCharactor target, SkillDataAsset skillData)
     {
         if (skillData == null)
         {
             Debug.LogWarning($"[Battle] 스킬 사용 실패: SkillDataAsset이 null입니다. actor={GetLabel(actor)}");
-            return;
+            yield break;
         }
 
         float multiplier = Mathf.Max(0.01f, skillData.Power / 100f);
@@ -315,6 +358,10 @@ public class BattleManager : MonoBehaviour
             IsCritical = false
         };
         float dealt = ApplyDamage(context);
+        if (context.DelayAfter > 0f)
+        {
+            yield return new WaitForSeconds(context.DelayAfter);
+        }
 
         Debug.Log($"[Battle] 스킬({skillData.DisplayName}): {GetLabel(actor)} -> {GetLabel(target)} dmg={dealt:F1}");
 

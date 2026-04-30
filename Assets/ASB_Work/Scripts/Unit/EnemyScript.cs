@@ -145,8 +145,7 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
 
             Debug.LogWarning(
                 $"[EnemyScript] AI 결정 실패. 기본 공격으로 대체합니다: unit={self.UnitName}, aiNull={currentAI == null}, aliveTargets={targets.Count}, targetList=[{FormatTargets(targets)}]");
-            battleManager.ExecuteBasicAttack(self, target);
-            yield return new WaitForSeconds(1.5f);
+            yield return StartCoroutine(battleManager.ExecuteBasicAttack(self, target));
             yield break;
         }
 
@@ -157,12 +156,12 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
                 SkillData classSkill = decision != null ? decision.SelectedSkill : self.SelectedSkillData;
                 if (classSkill != null)
                 {
-                    battleManager.ExecuteGridSkill(self, target, classSkill);
+                    yield return StartCoroutine(battleManager.ExecuteGridSkill(self, target, classSkill));
                 }
                 else
                 {
                     Debug.LogWarning($"[EnemyScript] ClassSkill 선택이지만 스킬이 없어 기본 공격으로 대체: unit={self.UnitName}");
-                    battleManager.ExecuteBasicAttack(self, target);
+                    yield return StartCoroutine(battleManager.ExecuteBasicAttack(self, target));
                 }
                 break;
 
@@ -170,22 +169,20 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
                 if (self.EquippedWeaponData != null)
                 {
                     SkillData converted = self.EquippedWeaponData.ToSkillData();
-                    battleManager.ExecuteGridSkill(self, target, converted);
+                    yield return StartCoroutine(battleManager.ExecuteGridSkill(self, target, converted));
                 }
                 else
                 {
                     Debug.LogWarning($"[EnemyScript] WeaponSkill 선택이지만 무기가 없어 기본 공격으로 대체: unit={self.UnitName}");
-                    battleManager.ExecuteBasicAttack(self, target);
+                    yield return StartCoroutine(battleManager.ExecuteBasicAttack(self, target));
                 }
                 break;
 
             case EnemyActionType.BasicAttack:
             default:
-                battleManager.ExecuteBasicAttack(self, target);
+                yield return StartCoroutine(battleManager.ExecuteBasicAttack(self, target));
                 break;
         }
-
-        yield return new WaitForSeconds(1.5f);
     }
 
     public bool EnsureAIReady()

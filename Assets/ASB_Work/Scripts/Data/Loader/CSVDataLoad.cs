@@ -213,9 +213,9 @@ public static class CSVLoader
             return headerIndex.TryGetValue(headerName, out var col) ? col : -1;
         }
 
-        int hpCol = TryGetCol("HP");
-        int atkCol = TryGetCol("Atk");
-        int defCol = TryGetCol("DEF");
+        int hpCol = TryGetCol("UnitMaxHP");
+        int atkCol = TryGetCol("UnitATK");
+        int defCol = TryGetCol("UnitDEF");
         if (defCol < 0) defCol = TryGetCol("Def");
 
         int luckCol = TryGetCol("Luck");
@@ -248,7 +248,7 @@ public static class CSVLoader
             }
 
             string index = GetField(fields, indexCol >= 0 ? indexCol : 0);
-            if (string.IsNullOrWhiteSpace(index))
+             if (string.IsNullOrWhiteSpace(index))
             {
                 continue;
             }
@@ -364,9 +364,9 @@ public static class CSVLoader
             return headerIndex.TryGetValue(headerName, out var col) ? col : -1;
         }
 
-        int hpCol = TryGetCol("HP");
-        int atkCol = TryGetCol("Atk");
-        int defCol = TryGetCol("DEF");
+        int hpCol = TryGetCol("UnitMaxHP");
+        int atkCol = TryGetCol("UnitATK");
+        int defCol = TryGetCol("UnitDEF");
         if (defCol < 0)
         {
             defCol = TryGetCol("Def");
@@ -377,7 +377,7 @@ public static class CSVLoader
         int speedCol = TryGetCol("Speed");
         int criticalRateCol = TryGetCol("CriticalRate");
         int counterRateCol = TryGetCol("CounterRate");
-        int avoidRateCol = TryGetCol("AvoidRate");
+        int avoidRateCol = TryGetCol("ReduceRate");
 
         int indexCol = TryGetCol("Index");
         int unitTypeCol = TryGetCol("UnitType");

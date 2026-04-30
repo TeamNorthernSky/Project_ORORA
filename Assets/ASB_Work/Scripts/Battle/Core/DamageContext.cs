@@ -1,6 +1,6 @@
 namespace ASB.Work.Battle.Core
 {
-    public struct DamageContext
+    public class DamageContext
     {
         public BattleCharactor Caster;
         public BattleCharactor Target;
@@ -10,5 +10,6 @@ namespace ASB.Work.Battle.Core
         public float SkillValue;
         public int SkillIndex;
         public bool IsCritical;
+        public float DelayAfter = 0.2f;
     }
 }
