@@ -136,6 +136,7 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
     public int SelectedSkillIndex => selectedSkillIndex;
     public int EquippedWeaponIndex => equippedWeaponIndex;
 
+
     public GridCellRef OccupiedCell => occupiedCell;
     public bool IsInitialized => isInitialized;
     /// <summary>

@@ -335,8 +335,7 @@ public class BattleFlowManager : MonoBehaviour
             BattleCharactor fallbackTarget = participants.FirstOrDefault(p => p != null && p.IsPlayer && !p.IsDead);
             if (fallbackTarget != null && battleManager != null)
             {
-                battleManager.ExecuteBasicAttack(enemyUnit, fallbackTarget);
-                yield return new WaitForSeconds(1.5f);
+                yield return StartCoroutine(battleManager.ExecuteBasicAttack(enemyUnit, fallbackTarget));
             }
             else
             {

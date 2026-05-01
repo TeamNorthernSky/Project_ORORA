@@ -766,8 +766,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   unitCsv: {fileID: 0}
-  playerUnitCsv: {fileID: 4900000, guid: 32fabe508b336cc4990e4bc88f1d78ee, type: 3}
-  enemyUnitCsv: {fileID: 4900000, guid: 75b7d0f12ff4976478d649b8bd8b2e44, type: 3}
+  playerUnitCsv: {fileID: 4900000, guid: 835e74d03f65bfe438d441c81a678e63, type: 3}
+  enemyUnitCsv: {fileID: 4900000, guid: 8221eccf2ff42694ea06270ffa4aaa3b, type: 3}
   classSkillSheetCsv: {fileID: 4900000, guid: 0646140d7017c1447b2b35626d885ab8, type: 3}
   weaponSheetCsv: {fileID: 4900000, guid: ea26b099547e06747b5254a226486eb9, type: 3}
 --- !u!114 &320332756
@@ -1163,6 +1163,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Unit_Warrior
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270023864934076665, guid: 8e839b26f24666340915ba452e52ad0e,
+        type: 3}
+      propertyPath: finalStats.HP
+      value: 37
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270023864934076665, guid: 8e839b26f24666340915ba452e52ad0e,
+        type: 3}
+      propertyPath: finalStats.Atk
+      value: 27
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270023864934076665, guid: 8e839b26f24666340915ba452e52ad0e,
+        type: 3}
+      propertyPath: finalStats.DEF
+      value: 16
       objectReference: {fileID: 0}
     - target: {fileID: 3270023864934076665, guid: 8e839b26f24666340915ba452e52ad0e,
         type: 3}
@@ -1937,17 +1952,17 @@ PrefabInstance:
     - target: {fileID: 1337145186152817137, guid: 0794eea0d06dda54f921e3c87af19cd5,
         type: 3}
       propertyPath: finalStats.HP
-      value: 8
+      value: 26
       objectReference: {fileID: 0}
     - target: {fileID: 1337145186152817137, guid: 0794eea0d06dda54f921e3c87af19cd5,
         type: 3}
       propertyPath: finalStats.Atk
-      value: 14
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 1337145186152817137, guid: 0794eea0d06dda54f921e3c87af19cd5,
         type: 3}
       propertyPath: finalStats.DEF
-      value: 3
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 1337145186152817137, guid: 0794eea0d06dda54f921e3c87af19cd5,
         type: 3}
