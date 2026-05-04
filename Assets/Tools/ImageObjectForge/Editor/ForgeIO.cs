@@ -6,7 +6,7 @@ namespace Orora.ImageObjectForge
 {
     internal static class ForgeIO
     {
-        public const string ToolRoot = "Assets/JC_Work/_Tools/ImageObjectForge";
+        public const string ToolRoot = "Assets/Tools/ImageObjectForge";
         public const string SourcesDir = ToolRoot + "/Sources";
         public const string OutputDir = ToolRoot + "/Output";
 

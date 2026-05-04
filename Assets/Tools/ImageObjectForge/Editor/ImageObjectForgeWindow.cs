@@ -20,7 +20,7 @@ namespace Orora.ImageObjectForge
         const float ToolbarHeight = 28f;
         const float StatusHeight = 22f;
 
-        [MenuItem("Tools/JC/Image Object Forge/Open Editor", priority = 0)]
+        [MenuItem("Tools/Image Object Forge/Open Editor", priority = 0)]
         public static void Open()
         {
             var w = GetWindow<ImageObjectForgeWindow>("Image Object Forge");

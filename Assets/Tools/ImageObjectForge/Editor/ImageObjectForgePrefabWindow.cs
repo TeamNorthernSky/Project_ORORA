@@ -7,14 +7,14 @@ namespace Orora.ImageObjectForge
 {
     public class ImageObjectForgePrefabWindow : EditorWindow
     {
-        [MenuItem("Tools/JC/Image Object Forge/Create Prefab…", priority = 20)]
+        [MenuItem("Tools/Image Object Forge/Create Prefab…", priority = 20)]
         public static void Open()
         {
             var w = GetWindow<ImageObjectForgePrefabWindow>("Prefab Factory");
             w.minSize = new Vector2(420, 540);
         }
 
-        [MenuItem("Tools/JC/Image Object Forge/Batch Convert Output PNGs to Sprite", priority = 21)]
+        [MenuItem("Tools/Image Object Forge/Batch Convert Output PNGs to Sprite", priority = 21)]
         public static void BatchConvertMenu()
         {
             int mode = EditorUtility.DisplayDialogComplex(
