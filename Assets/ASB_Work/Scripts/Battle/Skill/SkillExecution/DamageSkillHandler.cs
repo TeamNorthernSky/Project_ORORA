@@ -23,8 +23,6 @@ namespace ASB.Work.Battle.SkillExecution
     }
 
 
-
-
     // 단일 공격
     public sealed class DamageSkillHandler : BaseSingleSkillHandler
     {
@@ -35,7 +33,7 @@ namespace ASB.Work.Battle.SkillExecution
             Debug.Log($"[Skill/Damage] {caster.UnitName} -> {target.UnitName} (skillValue={skillData.skillValue:F2})");
         }
     }
-
+    
 
     // 대상이 높은 체력일수록 데미지 증가
     public sealed class TargetMoreHPMoreDmg : BaseSingleSkillHandler
@@ -44,7 +42,7 @@ namespace ASB.Work.Battle.SkillExecution
         {
             // HP 비율을 20% 단위로 끊어서 스킬값에 더함
             float hpRatio = (target.CurrentHp / (float)target.MaxHp);
-            float snapped = Mathf.Round(hpRatio / 0.2f) * 0.2f;
+            float snapped = Mathf.Floor(hpRatio / 0.2f) * 0.2f;
             float totalSkillValue = snapped + skillData.skillValue;
 
             result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, totalSkillValue));
@@ -52,6 +50,21 @@ namespace ASB.Work.Battle.SkillExecution
         }
     }
 
+
+    // 대상이 낮은 체력일수록 데미지 증가
+    public sealed class TargetLowerHPMoreDmg : BaseSingleSkillHandler
+    {
+        protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result)
+        {
+            // HP 비율을 20% 단위로 끊어서 스킬값에 더함
+            float hpRatio = 1.0f - (target.CurrentHp / (float)target.MaxHp);
+            float snapped = Mathf.Floor(hpRatio / 0.1f) * 0.1f;
+            float totalSkillValue = snapped + skillData.skillValue;
+
+            result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, totalSkillValue));
+            Debug.Log($"[Skill/DefaultDamage] {caster.UnitName} -> {target.UnitName} (skillValue={totalSkillValue:F2})");
+        }
+    }
 
 
     // HP가 낮을수록 데미지가 증가하는 스킬 핸들러
@@ -61,7 +74,7 @@ namespace ASB.Work.Battle.SkillExecution
         {
             // HP 비율을 20% 단위로 끊어서 스킬값에 더함
             float hpRatio = (1.0f - caster.CurrentHp / (float)caster.MaxHp);
-            float snapped = Mathf.Round(hpRatio / 0.2f) * 0.2f;
+            float snapped = Mathf.Floor(hpRatio / 0.2f) * 0.2f;
             float totalSkillValue = snapped + skillData.skillValue;
 
             result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, totalSkillValue));
@@ -100,6 +113,116 @@ namespace ASB.Work.Battle.SkillExecution
         }
     }
 
+
+
+    /// 생존 아군 1명 + 생존 적군 1명(1v1)일 때, 이번에 추가된 단일 <see cref="DamageContext"/>의 배율만 1.5배 보정합니다.
+    public sealed class DuelistSkillHandler : BaseSingleSkillHandler
+    {
+        private const float DuelDamageMultiplier = 0.8f;
+
+        protected override void ApplyAdditionaDamage(
+            BattleCharactor caster,
+            BattleCharactor target,
+            SkillData skillData,
+            SkillExecutionResult result)
+        {
+            if (result == null)
+            {
+                return;
+            }
+
+            int countBefore = result.DamageContexts != null ? result.DamageContexts.Count : 0;
+            result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue));
+
+            BattleFlowManager flowManager = UnityEngine.Object.FindFirstObjectByType<BattleFlowManager>();
+            if (flowManager == null)
+            {
+                return;
+            }
+
+            bool isDuel = flowManager.GetAlivePlayerCount() == 1 && flowManager.GetAliveEnemyCount() == 1;
+            if (!isDuel)
+            {
+                return;
+            }
+
+            List<DamageContext> contexts = result.DamageContexts;
+            if (contexts == null)
+            {
+                return;
+            }
+
+            for (int i = countBefore; i < contexts.Count; i++)
+            {
+                DamageContext ctx = contexts[i];
+                if (ctx == null)
+                {
+                    continue;
+                }
+
+                if (ctx.SkillValue > 0f)
+                {
+                    ctx.SkillValue *= DuelDamageMultiplier;
+                }
+                else
+                {
+                    ctx.SkillMultiplier *= DuelDamageMultiplier;
+                }
+            }
+        }
+    }
+
+
+
+
+    // 두 번 공격하는 스킬 핸들러
+    public sealed class DoubleAttackSkillHandler : ISkillEffectHandler
+    {
+        private const float FirstHitDelaySeconds = 0.5f;
+
+        public SkillExecutionResult Execute(
+            BattleCharactor caster,
+            BattleCharactor target,
+            SkillData skillData,
+            SkillData additionalSkillData)
+        {
+            if (caster == null || target == null || skillData == null)
+            {
+                return SkillExecutionResult.Failed();
+            }
+
+            if (target.IsDead || target.CurrentHp <= 0f)
+            {
+                return SkillExecutionResult.Failed();
+            }
+
+            float hitMultiplier = Mathf.Max(0.01f, skillData.skillValue * 0.5f);
+
+            var hit1 = new DamageContext
+            {
+                Caster = caster,
+                Target = target,
+                SkillMultiplier = hitMultiplier,
+                SkillIndex = skillData.skillIndex,
+                IsCritical = false,
+                DelayAfter = FirstHitDelaySeconds
+            };
+
+            var hit2 = new DamageContext
+            {
+                Caster = caster,
+                Target = target,
+                SkillMultiplier = hitMultiplier,
+                SkillIndex = skillData.skillIndex,
+                IsCritical = false,
+                DelayAfter = 0f
+            };
+
+            return SkillExecutionResult.SuccessResult()
+                .AddDamage(hit1)
+                .AddDamage(hit2);
+        }
+    }
 
 
 

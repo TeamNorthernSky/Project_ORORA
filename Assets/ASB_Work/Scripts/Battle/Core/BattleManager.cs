@@ -67,9 +67,19 @@ public class BattleManager : MonoBehaviour
             for (int i = 0; i < result.DamageContexts.Count; i++)
             {
                 DamageContext damageContext = result.DamageContexts[i];
+                if (damageContext == null)
+                {
+                    continue;
+                }
+
+                if (damageContext.Target == null || damageContext.Target.IsDead || damageContext.Target.CurrentHp <= 0f)
+                {
+                    continue;
+                }
+
                 totalDamageDealt += ApplyDamage(damageContext);
 
-                float delay = damageContext != null ? Mathf.Max(0f, damageContext.DelayAfter) : 0f;
+                float delay = Mathf.Max(0f, damageContext.DelayAfter);
                 if (delay > 0f)
                 {
                     yield return new WaitForSeconds(delay);

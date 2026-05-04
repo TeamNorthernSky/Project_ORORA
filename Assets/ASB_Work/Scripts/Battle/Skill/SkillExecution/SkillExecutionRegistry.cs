@@ -8,6 +8,8 @@ namespace ASB.Work.Battle.SkillExecution
     /// </summary>
     public static class SkillExecutionRegistry
     {
+        public const int DoubleAttackSkillIndex = 5040;
+        public const int DuelistSkillIndex = 201;
         private static readonly Dictionary<int, ISkillEffectHandler> Handlers = new Dictionary<int, ISkillEffectHandler>();
         private static bool s_initialized;
 
@@ -37,9 +39,10 @@ namespace ASB.Work.Battle.SkillExecution
             Register(1040, new TauntStrikeSkillHandler()); // 일단 전체 도발만!!
             Register(1050, new DamageSkillHandler());      // 단일(전체타겟)공격
             Register(1060, new AoEDamageSkillHandler());   // 전체공격
-            Register(1070, new CasterLowHPMoreDmg());      // 
+            Register(1070, new CasterLowHPMoreDmg());      // 시전자 체력 낮을수록 데미지 증가
 
             // 아처
+            Register(DuelistSkillIndex, new DuelistSkillHandler()); // 일기토(1v1 시 데미지 증폭)
             Register(2010, new DamageSkillHandler());    // 단일 공격
             Register(2020, new TargetFrontPosMoreDmg()); // 단일 공격 + 전열 추가 피해
             Register(2030, new DamageSkillHandler());    // 단일공격 + 후열 공격시 일시적으로 회피율 -20%
@@ -66,16 +69,15 @@ namespace ASB.Work.Battle.SkillExecution
             Register(4060, new AoEDamageSkillHandler()); //전체 공격
             Register(4070, new RebirthSkillHandler());
 
+
             // 나이트 
             Register(5010, new TargetFrontPosMoreDmg()); // 단일 공격 + 전열 시 추가피해
             Register(5020, new DamageSkillHandler());    // 단일 공격
             Register(5030, new TargetBackPosMoreDmg());  // 단일 공격 + 후열 추가 피해
-            Register(5040, new DamageSkillHandler());    // 더블어택 
+            Register(5040, new DoubleAttackSkillHandler()); // 더블어택
             Register(5050, new DamageSkillHandler());    // 일시적 치명타 20% 확률업 + 전열우선
-            Register(5060, new AoEDamageSkillHandler()); //전체 공격
-            //Register(5070, new RebirthSkillHandler());
-
-
+            Register(5060, new TargetLowerHPMoreDmg());  // 단일 공격 + 대상 체력 낮을수록 데미지 증가
+            Register(5060, new DuelistSkillHandler());   // 일기토(1v1 시 데미지 증폭)
 
 
             //------------------적
@@ -105,7 +107,7 @@ namespace ASB.Work.Battle.SkillExecution
 
             Register(314010, new DamageSkillHandler());    // 단일공격
             Register(314020, new DamageSkillHandler());    // 단일공격
-            Register(314030, new AoEDamageSkillHandler()); // 전체 + 흡혈  -> 구현 필요함므루웅
+            Register(314030, new AoEVampiricSkillHandler()); // 전체 + 흡혈  -> 구현 필요함
 
             Register(315010, new DamageSkillHandler());    // 단일공격 
             Register(315020, new DamageSkillHandler());    // 자신의 위치 후열 -> 후열 공격,  자신의 위치 전열 -> 전열 공격 

@@ -169,6 +169,8 @@ namespace ASB.Work.Battle.SkillExecution
         protected virtual void ApplyHeal(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result) { }
     }
 
+
+
     // 2개 이상의 광역 공격은 이걸 사용함!!
     public abstract class BaseAoESkillHandler : BaseSkillHandler
     {

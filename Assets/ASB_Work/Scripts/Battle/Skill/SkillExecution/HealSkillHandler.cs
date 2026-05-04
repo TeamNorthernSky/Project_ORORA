@@ -59,7 +59,7 @@ namespace ASB.Work.Battle.SkillExecution
     /// - 범위 내 각 대상에게 데미지를 주고
     /// - 이번 스킬로 가한 총 데미지 합만큼 시전자를 회복합니다.
     /// </summary>
-    public sealed class AoEVampiricDamageSkillHandler : BaseAoESkillHandler
+    public sealed class AoEVampiricSkillHandler : BaseAoESkillHandler
     {
         protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, int Count, SkillExecutionResult result)
         {
