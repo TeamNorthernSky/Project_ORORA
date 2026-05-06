@@ -33,7 +33,7 @@ namespace ASB.Work.Battle.SkillExecution
             Debug.Log($"[Skill/Damage] {caster.UnitName} -> {target.UnitName} (skillValue={skillData.skillValue:F2})");
         }
     }
-    
+
 
     // 대상이 높은 체력일수록 데미지 증가
     public sealed class TargetMoreHPMoreDmg : BaseSingleSkillHandler
@@ -67,7 +67,7 @@ namespace ASB.Work.Battle.SkillExecution
     }
 
 
-    // HP가 낮을수록 데미지가 증가하는 스킬 핸들러
+    // 시전자의HP가 낮을수록 데미지가 증가하는 스킬 핸들러
     public sealed class CasterLowHPMoreDmg : BaseSingleSkillHandler
     {
         protected override void ApplyAdditionaDamage(BattleCharactor caster, BattleCharactor target, SkillData skillData, SkillExecutionResult result)
@@ -106,7 +106,7 @@ namespace ASB.Work.Battle.SkillExecution
             float totalSkillValue = skillData.skillValue;
 
             if (!target.IsInFrontRow)
-                totalSkillValue  = skillData.skillSubValue; // 예: 전방 위치에 있을 경우 50% 추가 데미지
+                totalSkillValue = skillData.skillSubValue; // 예: 전방 위치에 있을 경우 50% 추가 데미지
 
             result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, totalSkillValue));
             Debug.Log($"[Skill/DefaultDamage] {caster.UnitName} -> {target.UnitName} (skillValue={totalSkillValue:F2})");
@@ -115,10 +115,10 @@ namespace ASB.Work.Battle.SkillExecution
 
 
 
-    /// 생존 아군 1명 + 생존 적군 1명(1v1)일 때, 이번에 추가된 단일 <see cref="DamageContext"/>의 배율만 1.5배 보정합니다.
+    /// 생존 아군 1명 + 생존 적군 1명(1v1)일 때, 이번에 추가된 단일 스킬의 배율만 2.0배 보정합니다.
     public sealed class DuelistSkillHandler : BaseSingleSkillHandler
     {
-        private const float DuelDamageMultiplier = 0.8f;
+        private const float DuelDamageMultiplier = 2.0f;
 
         protected override void ApplyAdditionaDamage(
             BattleCharactor caster,
@@ -126,49 +126,28 @@ namespace ASB.Work.Battle.SkillExecution
             SkillData skillData,
             SkillExecutionResult result)
         {
-            if (result == null)
-            {
-                return;
-            }
+            if (result == null) return;
 
-            int countBefore = result.DamageContexts != null ? result.DamageContexts.Count : 0;
-            result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue));
+            // 1. 배율 결정 (기본은 1.0f)
+            float finalMultiplier = 1.0f;
 
             BattleFlowManager flowManager = UnityEngine.Object.FindFirstObjectByType<BattleFlowManager>();
-            if (flowManager == null)
+            if (flowManager != null)
             {
-                return;
-            }
-
-            bool isDuel = flowManager.GetAlivePlayerCount() == 1 && flowManager.GetAliveEnemyCount() == 1;
-            if (!isDuel)
-            {
-                return;
-            }
-
-            List<DamageContext> contexts = result.DamageContexts;
-            if (contexts == null)
-            {
-                return;
-            }
-
-            for (int i = countBefore; i < contexts.Count; i++)
-            {
-                DamageContext ctx = contexts[i];
-                if (ctx == null)
+                // 2. 적과 아군이 각각 1명씩만 남았는지 체크
+                bool isDuel = flowManager.GetAlivePlayerCount() == 1 && flowManager.GetAliveEnemyCount() == 1;
+                if (isDuel)
                 {
-                    continue;
-                }
-
-                if (ctx.SkillValue > 0f)
-                {
-                    ctx.SkillValue *= DuelDamageMultiplier;
-                }
-                else
-                {
-                    ctx.SkillMultiplier *= DuelDamageMultiplier;
+                    finalMultiplier = 2.0f; // 조건 만족 시 2배로 변경
                 }
             }
+
+            // 3. 데미지 추가 (평소에는 skillData.skillValue * 1.0이 들어감)
+            int countBefore = result.DamageContexts != null ? result.DamageContexts.Count : 0;
+
+            // 기본 수치에 결정된 배율을 곱해서 적용
+            result.AddDamage(SkillEffectHelper.ApplyStandardDamage(caster, target, skillData.skillValue * finalMultiplier));
+
         }
     }
 
