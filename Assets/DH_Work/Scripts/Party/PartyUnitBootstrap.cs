@@ -67,6 +67,13 @@ public class PartyUnitBootstrap : MonoBehaviour
 
     private void InitializeFromHeroSeeds(PersistentUnitRepository repository)
     {
+        DHCsvTemplateCatalog templateCatalog = DHCsvTemplateCatalog.Instance;
+        if (templateCatalog == null)
+        {
+            Debug.LogWarning("PartyUnitBootstrap could not find a DHCsvTemplateCatalog in the scene.", this);
+            return;
+        }
+
         int slotCount = heroUnitSeeds.Count;
         partyComposition.EnsureSlotCount(slotCount);
 
@@ -89,16 +96,30 @@ public class PartyUnitBootstrap : MonoBehaviour
                 continue;
             }
 
+            if (!templateCatalog.TryGetPlayerTemplate(seed.UnitTemplateKey, out UnitData template))
+            {
+                Debug.LogWarning($"Party hero seed on '{seed.name}' could not resolve CSV template '{seed.UnitTemplateKey}'.", seed);
+                continue;
+            }
+
+            EquipmentStatBlock currentWeaponStats = default;
+            if (seed.InitialWeaponIndex > 0)
+                templateCatalog.TryGetWeaponStats(seed.InitialWeaponIndex, out currentWeaponStats);
+
             int unitIndex = repository.CreateUnit(
                 seed.UnitTemplateKey,
                 seed.Level,
                 seed.Favorability,
-                seed.BaseStats);
+                template.baseStats,
+                seed.InitialSkillIndex,
+                seed.InitialWeaponIndex,
+                currentWeaponStats);
             partyComposition.SetUnitIndexAt(i, unitIndex);
             registeredCount++;
         }
 
         string partyLabel = partyIdentity != null ? partyIdentity.PartyId : gameObject.name;
+        repository.RegisterOrUpdateParty(partyLabel, partyComposition.UnitIndices);
         Debug.Log($"Party '{partyLabel}' initialized from {registeredCount} hero unit seed(s).", this);
     }
 

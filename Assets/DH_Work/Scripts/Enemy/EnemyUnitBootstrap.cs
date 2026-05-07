@@ -51,6 +51,13 @@ public class EnemyUnitBootstrap : MonoBehaviour
         if (onlyWhenUninitialized && enemyIdentity.EnemyId > 0 && !AreAllSlotsEmpty())
             return;
 
+        DHCsvTemplateCatalog templateCatalog = DHCsvTemplateCatalog.Instance;
+        if (templateCatalog == null)
+        {
+            Debug.LogWarning("EnemyUnitBootstrap could not find a DHCsvTemplateCatalog in the scene.", this);
+            return;
+        }
+
         List<int> unitIndices = new List<int>(unitSeeds.Count);
         enemyComposition.EnsureSlotCount(unitSeeds.Count);
         for (int i = 0; i < unitSeeds.Count; i++)
@@ -65,10 +72,16 @@ public class EnemyUnitBootstrap : MonoBehaviour
                 continue;
             }
 
+            if (!templateCatalog.TryGetEnemyTemplate(seed.UnitTemplateKey, out EnemyData template))
+            {
+                Debug.LogWarning($"Enemy unit seed on '{seed.name}' could not resolve CSV template '{seed.UnitTemplateKey}'.", seed);
+                continue;
+            }
+
             int unitIndex = enemyRepository.CreateUnit(
                 seed.UnitTemplateKey,
                 seed.Level,
-                seed.BaseStats);
+                template.baseStats);
             unitIndices.Add(unitIndex);
             enemyComposition.SetUnitIndexAt(i, unitIndex);
         }
