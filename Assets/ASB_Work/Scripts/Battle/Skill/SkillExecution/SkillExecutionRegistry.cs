@@ -44,9 +44,9 @@ namespace ASB.Work.Battle.SkillExecution
             // 아처
             Register(2010, new DamageSkillHandler());    // 단일 공격
             Register(2020, new TargetFrontPosMoreDmg()); // 단일 공격 + 전열 추가 피해
-            Register(2030, new DamageSkillHandler());    // 단일공격 + 후열 공격시 일시적으로 회피율 -20% ----- 회피율 20 적용 안됨
+            Register(2030, new TargetBackPosMoreCriticDmg()); // 단일공격 + 후열 공격시 일시적으로 회피율 -20% 
             Register(2040, new DoubleAttackSkillHandler()); // 더블 어택
-            Register(2050, new DamageSkillHandler());    // 단일 공격 + 체력 70%이하 일시적으로 치명타 20% 확률업 ------ 치명타 20% 적용 안됨
+            Register(2050, new TargetLowerHPMoreCriticDmg()); // 단일 공격 + 체력 70%이하 일시적으로 치명타 20% 확률업
             Register(2060, new AoEDamageSkillHandler()); //전체 공격
             Register(2070, new DamageSkillHandler());    // 단일, 전체 체력이 낮을 경우 큰 데미지
 
@@ -74,7 +74,7 @@ namespace ASB.Work.Battle.SkillExecution
             Register(5020, new DamageSkillHandler());    // 단일 공격 ----- 
             Register(5030, new TargetBackPosMoreDmg());  // 단일 공격 + 후열 추가 피해
             Register(5040, new DoubleAttackSkillHandler()); // 더블어택
-            Register(5050, new DamageSkillHandler());    // 일시적 치명타 20% 확률업 + 전열우선 ----- 치명타 20% 적용 안됨
+            Register(5050, new MoreCriticDmg());         // 일시적 치명타 20% 확률업 + 전열우선 ----- 치명타 20% 적용 안됨
             Register(5060, new TargetLowerHPMoreDmg());  // 단일 공격 + 대상 체력 낮을수록 데미지 증가
             Register(5070, new DuelistSkillHandler());   // (1v1 시 데미지 증폭)
 

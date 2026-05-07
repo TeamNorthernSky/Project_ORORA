@@ -579,6 +579,8 @@ public static class CSVLoader
             ipCost = 0,
             classSkillEffect = effect,
             classSkillRange = range,
+            EnemySkill1Range = slot == 1 ? range : -1,
+            EnemySkill2Range = slot == 2 ? range : -1,
             // EnemyDataSheet에는 별도 우선순위 컬럼이 없으므로 기본값(Any=1)을 사용합니다.
             classSkillRangeLine = 1,
             classSkillTarget = target,

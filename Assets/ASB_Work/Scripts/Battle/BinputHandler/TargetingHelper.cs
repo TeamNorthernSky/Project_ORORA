@@ -211,7 +211,7 @@ public static class TargetingHelper
 
                 // 시전자가 전열이면 전열 대상만 허용(없으면 fallback 전체).
                 // 시전자가 후열이면 전열/후열 구분 없이 전체 허용.
-                bool isCasterFront = actor.IsFrontRow();
+                bool isCasterFront = actor.IsInFrontRow;
                 if (!isCasterFront)
                 {
                     return baseTargets;
@@ -226,7 +226,7 @@ public static class TargetingHelper
                         continue;
                     }
 
-                    if (target.IsFrontRow())
+                    if (target.IsInFrontRow)
                     {
                         frontOnly.Add(target);
                     }
