@@ -4,21 +4,21 @@ using System.Collections.Generic;
 [Serializable]
 public class CombatEnemyPersistentData
 {
-    public int EnemyId => enemyId;
+    public string EnemyId => enemyId;
     public IReadOnlyList<int> UnitIndices => unitIndices;
 
-    [UnityEngine.SerializeField] private int enemyId;
+    [UnityEngine.SerializeField] private string enemyId;
     [UnityEngine.SerializeField] private List<int> unitIndices = new List<int>();
 
-    public CombatEnemyPersistentData(int enemyId, IReadOnlyList<int> unitIndices)
+    public CombatEnemyPersistentData(string enemyId, IReadOnlyList<int> unitIndices)
     {
-        this.enemyId = Math.Max(1, enemyId);
+        this.enemyId = string.IsNullOrWhiteSpace(enemyId) ? string.Empty : enemyId;
         SetUnitIndices(unitIndices);
     }
 
-    public void SetEnemyId(int nextEnemyId)
+    public void SetEnemyId(string nextEnemyId)
     {
-        enemyId = Math.Max(1, nextEnemyId);
+        enemyId = string.IsNullOrWhiteSpace(nextEnemyId) ? string.Empty : nextEnemyId;
     }
 
     public void SetUnitIndices(IReadOnlyList<int> source)

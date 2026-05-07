@@ -48,7 +48,7 @@ public class EnemyUnitBootstrap : MonoBehaviour
         if (!HasConfiguredUnitSeeds())
             return;
 
-        if (onlyWhenUninitialized && enemyIdentity.EnemyId > 0 && !AreAllSlotsEmpty())
+        if (onlyWhenUninitialized && !string.IsNullOrWhiteSpace(enemyIdentity.EnemyId) && !AreAllSlotsEmpty())
             return;
 
         DHCsvTemplateCatalog templateCatalog = DHCsvTemplateCatalog.Instance;
@@ -89,7 +89,7 @@ public class EnemyUnitBootstrap : MonoBehaviour
         if (unitIndices.Count == 0)
             return;
 
-        int enemyId = enemyRepository.CreateEnemy(unitIndices);
+        string enemyId = enemyRepository.CreateEnemy(unitIndices);
         enemyIdentity.SetEnemyId(enemyId);
         enemyUnit.InitializePersistentIdentity(enemyId);
     }

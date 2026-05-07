@@ -17,7 +17,7 @@ public class CombatEncounterManager : MonoBehaviour
 
         PartyIdentity partyIdentity = party.GetComponent<PartyIdentity>();
         string partyId = partyIdentity != null ? partyIdentity.PartyId : party.name;
-        int enemyId = enemy.EnemyId;
+        string enemyId = enemy.EnemyId;
 
         RegisterCombatParticipants(party, partyId, enemy, enemyId);
 
@@ -36,7 +36,7 @@ public class CombatEncounterManager : MonoBehaviour
         ActiveEnemy = null;
     }
 
-    private void RegisterCombatParticipants(PartyGridMover party, string partyId, EnemyGridMover enemy, int enemyId)
+    private void RegisterCombatParticipants(PartyGridMover party, string partyId, EnemyGridMover enemy, string enemyId)
     {
         PersistentUnitRepository unitRepository = PersistentUnitRepository.Instance;
         PersistentEnemyRepository enemyRepository = PersistentEnemyRepository.Instance;
@@ -57,7 +57,7 @@ public class CombatEncounterManager : MonoBehaviour
         return FilterValidUnitIndices(composition != null ? composition.UnitIndices : Array.Empty<int>());
     }
 
-    private static IReadOnlyList<int> ResolveEnemyUnitIndices(PersistentEnemyRepository repository, EnemyGridMover enemy, int enemyId)
+    private static IReadOnlyList<int> ResolveEnemyUnitIndices(PersistentEnemyRepository repository, EnemyGridMover enemy, string enemyId)
     {
         if (repository != null && repository.TryGetEnemy(enemyId, out EnemyPersistentData enemyData))
             return enemyData.UnitIndices;
