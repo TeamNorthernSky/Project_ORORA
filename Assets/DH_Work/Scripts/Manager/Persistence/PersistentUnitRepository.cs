@@ -11,12 +11,15 @@ public class PersistentUnitRepository : MonoBehaviour
     [SerializeField] private List<UnitPersistentData> units = new List<UnitPersistentData>();
     [Header("Persistent Parties")]
     [SerializeField] private List<PartyPersistentData> parties = new List<PartyPersistentData>();
+    [Header("Combat Context")]
+    [SerializeField] private CombatPartyPersistentData combatParty;
 
     private readonly Dictionary<int, UnitPersistentData> unitLookup = new Dictionary<int, UnitPersistentData>();
     private readonly Dictionary<string, PartyPersistentData> partyLookup = new Dictionary<string, PartyPersistentData>();
 
     public IReadOnlyList<UnitPersistentData> Units => units;
     public IReadOnlyList<PartyPersistentData> Parties => parties;
+    public CombatPartyPersistentData CombatParty => combatParty;
 
     private void Awake()
     {
@@ -124,12 +127,33 @@ public class PersistentUnitRepository : MonoBehaviour
         return true;
     }
 
+    public void RegisterCombatParty(string partyId, IReadOnlyList<int> unitIndices)
+    {
+        if (string.IsNullOrWhiteSpace(partyId))
+            return;
+
+        if (combatParty == null)
+        {
+            combatParty = new CombatPartyPersistentData(partyId, unitIndices);
+            return;
+        }
+
+        combatParty.SetPartyId(partyId);
+        combatParty.SetUnitIndices(unitIndices);
+    }
+
+    public void ClearCombatParty()
+    {
+        combatParty = null;
+    }
+
     public void ClearAllUnits()
     {
         units.Clear();
         unitLookup.Clear();
         parties.Clear();
         partyLookup.Clear();
+        combatParty = null;
         nextUnitIndex = 1;
     }
 

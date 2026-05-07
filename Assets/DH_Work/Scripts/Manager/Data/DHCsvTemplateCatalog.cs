@@ -9,6 +9,7 @@ public class DHCsvTemplateCatalog : MonoBehaviour
     [Header("Catalog")]
     [SerializeField] private DHCsvDataLoad csvDataLoad;
     [SerializeField] private bool loadOnAwake = true;
+    [SerializeField] private bool dontDestroyOnLoad = true;
 
     [Header("Debug")]
     [SerializeField] private List<UnitData> cachedPlayerTemplates = new List<UnitData>();
@@ -31,6 +32,9 @@ public class DHCsvTemplateCatalog : MonoBehaviour
         }
 
         Instance = this;
+
+        if (dontDestroyOnLoad)
+            DontDestroyOnLoad(gameObject);
 
         if (loadOnAwake)
             ReloadTemplates();

@@ -1,21 +1,24 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine.Serialization;
 
 [Serializable]
-public class EnemyPersistentData
+public class CombatEnemyPersistentData
 {
     public string EnemyId => enemyId;
     public IReadOnlyList<int> UnitIndices => unitIndices;
 
     [UnityEngine.SerializeField] private string enemyId;
-    [FormerlySerializedAs("combatUnitIndices")]
     [UnityEngine.SerializeField] private List<int> unitIndices = new List<int>();
 
-    public EnemyPersistentData(string enemyId, IReadOnlyList<int> unitIndices)
+    public CombatEnemyPersistentData(string enemyId, IReadOnlyList<int> unitIndices)
     {
         this.enemyId = string.IsNullOrWhiteSpace(enemyId) ? string.Empty : enemyId;
         SetUnitIndices(unitIndices);
+    }
+
+    public void SetEnemyId(string nextEnemyId)
+    {
+        enemyId = string.IsNullOrWhiteSpace(nextEnemyId) ? string.Empty : nextEnemyId;
     }
 
     public void SetUnitIndices(IReadOnlyList<int> source)
@@ -26,6 +29,9 @@ public class EnemyPersistentData
             return;
 
         for (int i = 0; i < source.Count; i++)
-            unitIndices.Add(source[i]);
+        {
+            if (source[i] > 0)
+                unitIndices.Add(source[i]);
+        }
     }
 }

@@ -118,9 +118,9 @@ public class PartyUnitBootstrap : MonoBehaviour
             registeredCount++;
         }
 
-        string partyLabel = partyIdentity != null ? partyIdentity.PartyId : gameObject.name;
-        repository.RegisterOrUpdateParty(partyLabel, partyComposition.UnitIndices);
-        Debug.Log($"Party '{partyLabel}' initialized from {registeredCount} hero unit seed(s).", this);
+        string partyId = partyIdentity != null ? partyIdentity.PartyId : gameObject.name;
+        repository.RegisterOrUpdateParty(partyId, partyComposition.UnitIndices);
+        Debug.Log($"Party '{partyId}' initialized from {registeredCount} hero unit seed(s).", this);
     }
 
     private bool AreAllHeroSeedSlotsEmpty(int slotCount)
