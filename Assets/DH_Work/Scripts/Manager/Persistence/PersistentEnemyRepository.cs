@@ -11,12 +11,15 @@ public class PersistentEnemyRepository : MonoBehaviour
     [SerializeField] private int nextEnemyId = 1;
     [SerializeField] private List<EnemyUnitPersistentData> units = new List<EnemyUnitPersistentData>();
     [SerializeField] private List<EnemyPersistentData> enemies = new List<EnemyPersistentData>();
+    [Header("Combat Context")]
+    [SerializeField] private CombatEnemyPersistentData combatEnemy;
 
     private readonly Dictionary<int, EnemyUnitPersistentData> unitLookup = new Dictionary<int, EnemyUnitPersistentData>();
     private readonly Dictionary<int, EnemyPersistentData> enemyLookup = new Dictionary<int, EnemyPersistentData>();
 
     public IReadOnlyList<EnemyUnitPersistentData> Units => units;
     public IReadOnlyList<EnemyPersistentData> Enemies => enemies;
+    public CombatEnemyPersistentData CombatEnemy => combatEnemy;
 
     private void Awake()
     {
@@ -128,12 +131,33 @@ public class PersistentEnemyRepository : MonoBehaviour
         return true;
     }
 
+    public void RegisterCombatEnemy(int enemyId, IReadOnlyList<int> unitIndices)
+    {
+        if (enemyId <= 0)
+            return;
+
+        if (combatEnemy == null)
+        {
+            combatEnemy = new CombatEnemyPersistentData(enemyId, unitIndices);
+            return;
+        }
+
+        combatEnemy.SetEnemyId(enemyId);
+        combatEnemy.SetUnitIndices(unitIndices);
+    }
+
+    public void ClearCombatEnemy()
+    {
+        combatEnemy = null;
+    }
+
     public void ClearAllEnemies()
     {
         units.Clear();
         unitLookup.Clear();
         enemies.Clear();
         enemyLookup.Clear();
+        combatEnemy = null;
         nextUnitIndex = 1;
         nextEnemyId = 1;
     }
