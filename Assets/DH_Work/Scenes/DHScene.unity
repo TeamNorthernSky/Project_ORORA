@@ -395,111 +395,6 @@ MonoBehaviour:
   syncAnchorFromTransformOnAwake: 1
   drawOccupiedCellsGizmo: 1
   drawAdjacentCellsGizmo: 0
---- !u!1 &96884587
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 96884588}
-  - component: {fileID: 96884591}
-  - component: {fileID: 96884590}
-  - component: {fileID: 96884589}
-  m_Layer: 3
-  m_Name: Obstacle(Clone)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &96884588
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 96884587}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 28, y: 0.01, z: 29}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1944337207}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &96884589
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 96884587}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!23 &96884590
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 96884587}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 05636bd2bf1d03b4a9e7ede6a79c5696, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &96884591
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 96884587}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &106732307
 GameObject:
   m_ObjectHideFlags: 0
@@ -1057,111 +952,6 @@ MonoBehaviour:
   reachableColor: {r: 0, g: 1, b: 0, a: 1}
   unreachableColor: {r: 1, g: 0, b: 0, a: 1}
   drawWhenPathValid: 1
---- !u!1 &389252428
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 389252429}
-  - component: {fileID: 389252432}
-  - component: {fileID: 389252431}
-  - component: {fileID: 389252430}
-  m_Layer: 3
-  m_Name: Obstacle(Clone)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &389252429
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 389252428}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 28, y: 0.01, z: 28}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1944337207}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &389252430
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 389252428}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!23 &389252431
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 389252428}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 05636bd2bf1d03b4a9e7ede6a79c5696, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &389252432
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 389252428}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &408417866
 GameObject:
   m_ObjectHideFlags: 0
@@ -2360,11 +2150,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   populateOnStart: 1
-  heroUnitSeeds:
-  - {fileID: 1231214336}
-  - {fileID: 1021807301}
-  - {fileID: 1845465892}
-  - {fileID: 1952933578}
+  partyUnitStates: []
   onlyWhenAllSlotsEmpty: 1
 --- !u!1 &882956709
 GameObject:
@@ -2483,15 +2269,47 @@ MonoBehaviour:
   m_GameObject: {fileID: 882956709}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 088829bee9b64d04bbcc482f38caa63e, type: 3}
+  m_Script: {fileID: 11500000, guid: a095d05ea6f1df84f8d234b6b77d28d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  unitIndex: -1
   unitTemplateKey: 10002
-  legacyJobIndex: 10002
+  legacyJobIndex: 0
   level: 1
-  favorability: 1
-  initialSkillIndex: 3010
-  initialWeaponIndex: 310301
+  favorability: 0
+  currentSkillIndex: 2010
+  currentWeaponIndex: 310201
+  baseStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 0
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentWeaponStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    CriticalRate: 0
+    CounterRate: 0
+    AvoidRate: 0
+    Speed: 0
+  ingameStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentHp: 0
 --- !u!1 &942399885
 GameObject:
   m_ObjectHideFlags: 0
@@ -2899,15 +2717,47 @@ MonoBehaviour:
   m_GameObject: {fileID: 1021807296}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 088829bee9b64d04bbcc482f38caa63e, type: 3}
+  m_Script: {fileID: 11500000, guid: a095d05ea6f1df84f8d234b6b77d28d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  unitIndex: -1
   unitTemplateKey: 10002
-  legacyJobIndex: 10002
+  legacyJobIndex: 0
   level: 1
-  favorability: 1
-  initialSkillIndex: 3010
-  initialWeaponIndex: 310301
+  favorability: 0
+  currentSkillIndex: 2010
+  currentWeaponIndex: 310201
+  baseStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 0
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentWeaponStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    CriticalRate: 0
+    CounterRate: 0
+    AvoidRate: 0
+    Speed: 0
+  ingameStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentHp: 0
 --- !u!1 &1085809262
 GameObject:
   m_ObjectHideFlags: 0
@@ -3583,15 +3433,47 @@ MonoBehaviour:
   m_GameObject: {fileID: 1231214331}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 088829bee9b64d04bbcc482f38caa63e, type: 3}
+  m_Script: {fileID: 11500000, guid: a095d05ea6f1df84f8d234b6b77d28d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  unitIndex: -1
   unitTemplateKey: 10001
-  legacyJobIndex: 10001
+  legacyJobIndex: 0
   level: 1
-  favorability: 1
-  initialSkillIndex: 1010
-  initialWeaponIndex: 310101
+  favorability: 0
+  currentSkillIndex: 1010
+  currentWeaponIndex: 310101
+  baseStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 0
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentWeaponStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    CriticalRate: 0
+    CounterRate: 0
+    AvoidRate: 0
+    Speed: 0
+  ingameStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentHp: 0
 --- !u!1 &1264937136
 GameObject:
   m_ObjectHideFlags: 0
@@ -3843,15 +3725,47 @@ MonoBehaviour:
   m_GameObject: {fileID: 1375113722}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 088829bee9b64d04bbcc482f38caa63e, type: 3}
+  m_Script: {fileID: 11500000, guid: a095d05ea6f1df84f8d234b6b77d28d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  unitIndex: -1
   unitTemplateKey: 10004
-  legacyJobIndex: 10004
+  legacyJobIndex: 0
   level: 1
-  favorability: 1
-  initialSkillIndex: 4010
-  initialWeaponIndex: 310401
+  favorability: 0
+  currentSkillIndex: 4010
+  currentWeaponIndex: 310401
+  baseStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 0
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentWeaponStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    CriticalRate: 0
+    CounterRate: 0
+    AvoidRate: 0
+    Speed: 0
+  ingameStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentHp: 0
 --- !u!1 &1412590603
 GameObject:
   m_ObjectHideFlags: 0
@@ -3900,10 +3814,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c1a9fa61bd01c94191bce627cd71b58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerUnitCsv: {fileID: 4900000, guid: 835e74d03f65bfe438d441c81a678e63, type: 3}
+  playerUnitCsv: {fileID: 4900000, guid: c7e64af7d1932894782d79ac710474a5, type: 3}
   enemyUnitCsv: {fileID: 4900000, guid: 8221eccf2ff42694ea06270ffa4aaa3b, type: 3}
-  classSkillSheetCsv: {fileID: 4900000, guid: 0646140d7017c1447b2b35626d885ab8, type: 3}
-  weaponSheetCsv: {fileID: 4900000, guid: ea26b099547e06747b5254a226486eb9, type: 3}
+  classSkillSheetCsv: {fileID: 4900000, guid: aa2b125060d14e740a9b7faadf9ffd5d, type: 3}
+  weaponSheetCsv: {fileID: 4900000, guid: e00fda7d4c4a4514ea045a2e506aab09, type: 3}
 --- !u!4 &1412590606
 Transform:
   m_ObjectHideFlags: 0
@@ -4665,11 +4579,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   populateOnStart: 1
-  heroUnitSeeds:
-  - {fileID: 2013088182}
-  - {fileID: 882956714}
-  - {fileID: 2034704970}
-  - {fileID: 1375113727}
+  partyUnitStates: []
   onlyWhenAllSlotsEmpty: 1
 --- !u!1 &1845465887
 GameObject:
@@ -4788,15 +4698,47 @@ MonoBehaviour:
   m_GameObject: {fileID: 1845465887}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 088829bee9b64d04bbcc482f38caa63e, type: 3}
+  m_Script: {fileID: 11500000, guid: a095d05ea6f1df84f8d234b6b77d28d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  unitIndex: -1
   unitTemplateKey: 10003
-  legacyJobIndex: 10003
+  legacyJobIndex: 0
   level: 1
-  favorability: 1
-  initialSkillIndex: 2010
-  initialWeaponIndex: 310201
+  favorability: 0
+  currentSkillIndex: 3010
+  currentWeaponIndex: 310301
+  baseStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 0
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentWeaponStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    CriticalRate: 0
+    CounterRate: 0
+    AvoidRate: 0
+    Speed: 0
+  ingameStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentHp: 0
 --- !u!1 &1846435512
 GameObject:
   m_ObjectHideFlags: 0
@@ -5314,8 +5256,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 389252429}
-  - {fileID: 96884588}
+  - {fileID: 2065629347}
+  - {fileID: 1978719803}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1952933573
@@ -5435,15 +5377,152 @@ MonoBehaviour:
   m_GameObject: {fileID: 1952933573}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 088829bee9b64d04bbcc482f38caa63e, type: 3}
+  m_Script: {fileID: 11500000, guid: a095d05ea6f1df84f8d234b6b77d28d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  unitIndex: -1
   unitTemplateKey: 10004
-  legacyJobIndex: 10004
+  legacyJobIndex: 0
   level: 1
-  favorability: 1
-  initialSkillIndex: 4010
-  initialWeaponIndex: 310401
+  favorability: 0
+  currentSkillIndex: 4010
+  currentWeaponIndex: 310401
+  baseStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 0
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentWeaponStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    CriticalRate: 0
+    CounterRate: 0
+    AvoidRate: 0
+    Speed: 0
+  ingameStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentHp: 0
+--- !u!1 &1978719802
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1978719803}
+  - component: {fileID: 1978719806}
+  - component: {fileID: 1978719805}
+  - component: {fileID: 1978719804}
+  m_Layer: 3
+  m_Name: Obstacle(Clone)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1978719803
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1978719802}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 28, y: 0.01, z: 29}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1944337207}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1978719804
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1978719802}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!23 &1978719805
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1978719802}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 05636bd2bf1d03b4a9e7ede6a79c5696, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1978719806
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1978719802}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &2000643498
 GameObject:
   m_ObjectHideFlags: 0
@@ -5650,15 +5729,47 @@ MonoBehaviour:
   m_GameObject: {fileID: 2013088177}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 088829bee9b64d04bbcc482f38caa63e, type: 3}
+  m_Script: {fileID: 11500000, guid: a095d05ea6f1df84f8d234b6b77d28d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  unitIndex: -1
   unitTemplateKey: 10001
-  legacyJobIndex: 10001
+  legacyJobIndex: 0
   level: 1
-  favorability: 1
-  initialSkillIndex: 1010
-  initialWeaponIndex: 310101
+  favorability: 0
+  currentSkillIndex: 1010
+  currentWeaponIndex: 310101
+  baseStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 0
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentWeaponStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    CriticalRate: 0
+    CounterRate: 0
+    AvoidRate: 0
+    Speed: 0
+  ingameStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentHp: 0
 --- !u!1 &2034704965
 GameObject:
   m_ObjectHideFlags: 0
@@ -5776,21 +5887,158 @@ MonoBehaviour:
   m_GameObject: {fileID: 2034704965}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 088829bee9b64d04bbcc482f38caa63e, type: 3}
+  m_Script: {fileID: 11500000, guid: a095d05ea6f1df84f8d234b6b77d28d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  unitIndex: -1
   unitTemplateKey: 10003
-  legacyJobIndex: 10003
+  legacyJobIndex: 0
   level: 1
-  favorability: 1
-  initialSkillIndex: 2010
-  initialWeaponIndex: 310201
+  favorability: 0
+  currentSkillIndex: 3010
+  currentWeaponIndex: 310301
+  baseStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 0
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentWeaponStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    CriticalRate: 0
+    CounterRate: 0
+    AvoidRate: 0
+    Speed: 0
+  ingameStats:
+    HP: 0
+    Atk: 0
+    DEF: 0
+    Luck: 0
+    Speed: 0
+    CriticalRate: 0
+    CritMultiplier: 1.5
+    CounterRate: 0
+    AvoidRate: 0
+    influence: 0
+  currentHp: 0
 --- !u!4 &2038924131 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6645867119194613318, guid: 599b03017ceb0324d83124fd592826ce,
     type: 3}
   m_PrefabInstance: {fileID: 1847981856}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2065629346
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2065629347}
+  - component: {fileID: 2065629350}
+  - component: {fileID: 2065629349}
+  - component: {fileID: 2065629348}
+  m_Layer: 3
+  m_Name: Obstacle(Clone)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2065629347
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2065629346}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 28, y: 0.01, z: 28}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1944337207}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &2065629348
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2065629346}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!23 &2065629349
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2065629346}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 05636bd2bf1d03b4a9e7ede6a79c5696, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &2065629350
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2065629346}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &2071582393
 GameObject:
   m_ObjectHideFlags: 0

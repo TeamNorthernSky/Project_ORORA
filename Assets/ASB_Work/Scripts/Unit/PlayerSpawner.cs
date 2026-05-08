@@ -228,7 +228,8 @@ public class PlayerSpawner : MonoBehaviour
             return false;
         }
 
-        IReadOnlyList<int> combatUnitIndices = ResolveCombatUnitIndices(repository.CombatParty);
+        CombatContext combatContext = CombatContext.Instance;
+        IReadOnlyList<int> combatUnitIndices = ResolveCombatUnitIndices(combatContext != null ? combatContext.CombatParty : null);
         if (combatUnitIndices == null || combatUnitIndices.Count == 0)
         {
             return false;

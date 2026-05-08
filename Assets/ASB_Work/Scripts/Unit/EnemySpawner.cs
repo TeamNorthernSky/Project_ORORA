@@ -213,7 +213,8 @@ public class EnemySpawner : MonoBehaviour
             return false;
         }
 
-        IReadOnlyList<int> combatUnitIndices = ResolveCombatUnitIndices(repository.CombatEnemy);
+        CombatContext combatContext = CombatContext.Instance;
+        IReadOnlyList<int> combatUnitIndices = ResolveCombatUnitIndices(combatContext != null ? combatContext.CombatEnemy : null);
         if (combatUnitIndices == null || combatUnitIndices.Count == 0)
         {
             return false;
