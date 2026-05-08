@@ -228,6 +228,11 @@ public static class CSVLoader
         int indexCol = TryGetCol("Index");
         int unitTypeCol = TryGetCol("UnitType");
         int nameCol = TryGetCol("Name");
+
+        int levelGrowthMaxHPCol = TryGetCol("LevelGrowthMaxHP");
+        int levelGrowthMaxAtkCol = TryGetCol("LevelGrowthMaxAtk");
+        int levelGrowthMaxDefCol = TryGetCol("LevelGrowthMaxDef");
+
         if (nameCol < 0) nameCol = TryGetCol("UnitName");
         if (nameCol < 0) nameCol = TryGetCol("DisplayName");
 
@@ -282,12 +287,18 @@ public static class CSVLoader
             float counterRate = ParseFloatPercentOrFloat(GetField(fields, counterRateCol), 0f);
             float avoidRate = ParseFloatPercentOrFloat(GetField(fields, avoidRateCol), 0f);
 
+            float levelGrowthMaxHP = ParseFloatSafe(GetField(fields, levelGrowthMaxHPCol), 0f);
+            float levelGrowthMaxAtk = ParseFloatSafe(GetField(fields, levelGrowthMaxAtkCol), 0f);
+            float levelGrowthMaxDef = ParseFloatSafe(GetField(fields, levelGrowthMaxDefCol), 0f);
+
+
             var unit = new UnitData
             {
                 Index = index,
                 UnitType = unitType,
                 Name = name,
-                baseStats = new StatBlock(hp, atk, def, luck, speed, criticalRate, counterRate, avoidRate),
+                baseStats = new StatBlock(hp, atk, def, luck, speed, criticalRate,1.5f, counterRate, avoidRate, 100.0f),
+                levelupStats = new StatBlock(levelGrowthMaxHP, levelGrowthMaxAtk, levelGrowthMaxDef, 0, 0f, 0f, 0f, 0f, 0f),
                 IsEnemyRow = isEnemyRow
             };
 

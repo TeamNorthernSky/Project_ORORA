@@ -125,6 +125,10 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
         battle.ResolveSelectedSkill();
         battle.InitializeCurrentHpToMax();
         battle.MarkInitializedFromDataPipeline();
+        Debug.Log(
+            $"[Stats/Persistent] {battle.UnitName} uses precomputed snapshot. " +
+            $"LevelScaling=false, " +
+            $"FinalStats HP={battle.FinalStats.HP}, Atk={battle.FinalStats.Atk}, DEF={battle.FinalStats.DEF}");
 
         enemyData = fallbackData;
         EnsureAIReady();

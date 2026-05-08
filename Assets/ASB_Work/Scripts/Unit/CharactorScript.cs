@@ -85,8 +85,9 @@ public class CharactorScript : MonoBehaviour, IUnitIdentifier
 
         battle.BindPersistentSourceData(persistentData);
         battle.SetBaseStats(persistentData.BaseStats);
-        battle.SetLevelScaling(true);
-        battle.ApplyCombatTuning(Mathf.Max(1, persistentData.Level), levelWeight, classWeight);
+        // persistentData.BaseStats는 레벨/장비/무기 보정이 끝난 전투 스냅샷이므로
+        // 추가 스케일링(StatCalculator 경로)을 비활성화합니다.
+        battle.SetLevelScaling(false);
 
         if (!string.IsNullOrWhiteSpace(persistentData.UnitTemplateKey))
         {
@@ -111,6 +112,10 @@ public class CharactorScript : MonoBehaviour, IUnitIdentifier
         battle.ResolveSelectedSkill();
         battle.InitializeCurrentHpToMax();
         battle.MarkInitializedFromDataPipeline();
+        Debug.Log(
+            $"[Stats/Persistent] {battle.UnitName} uses precomputed snapshot. " +
+            $"LevelScaling=false, " +
+            $"FinalStats HP={battle.FinalStats.HP}, Atk={battle.FinalStats.Atk}, DEF={battle.FinalStats.DEF}");
     }
 
 #if UNITY_EDITOR
