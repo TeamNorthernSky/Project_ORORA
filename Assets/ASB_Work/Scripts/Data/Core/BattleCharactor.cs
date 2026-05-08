@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using GridCellRef = ASB.Work.BattleGrid.GridCell;
 
@@ -50,6 +51,8 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
     [HideInInspector] public List<SkillData> availableSkills = new List<SkillData>();
     public SkillData SelectedSkillData { get; private set; }
+    public UnitPersistentData SourceData { get; private set; }
+    public EnemyUnitPersistentData SourceEnemyData { get; private set; }
 
     /// <summary>계산 원본. 래퍼에서 SetBaseStats로 주입합니다.</summary>
     private StatBlock runtimeBaseStats;
@@ -894,6 +897,16 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
         classSkillIndex = Mathf.Max(0, globalSkillIndex);
     }
 
+    public void BindPersistentSourceData(UnitPersistentData sourceData)
+    {
+        SourceData = sourceData;
+    }
+
+    public void BindPersistentEnemySourceData(EnemyUnitPersistentData sourceData)
+    {
+        SourceEnemyData = sourceData;
+    }
+
     public void SetUnitNameForSkillMatching(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -1065,6 +1078,19 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
     public void ResolveSelectedSkill(bool emitWarning = true)
     {
+        if (SourceData != null && SourceData.CurrentSkillIndex > 0)
+        {
+            classSkillIndex = SourceData.CurrentSkillIndex;
+        }
+        else if (SourceEnemyData != null)
+        {
+            int persistentEnemySkillIndex = TryReadPersistentEnemySkillIndex(SourceEnemyData);
+            if (persistentEnemySkillIndex > 0)
+            {
+                classSkillIndex = persistentEnemySkillIndex;
+            }
+        }
+
         if (availableSkills != null && availableSkills.Count > 0)
         {
             int localIndex = -1;
@@ -1119,5 +1145,33 @@ public class BattleCharactor : MonoBehaviour, IUnitIdentifier
         {
             Debug.LogWarning($"[BattleCharactor] 장착 가능한 스킬이 없습니다: unitName={unitName}");
         }
+    }
+
+    private static int TryReadPersistentEnemySkillIndex(EnemyUnitPersistentData persistentData)
+    {
+        if (persistentData == null)
+        {
+            return 0;
+        }
+
+        PropertyInfo skillProp = persistentData.GetType().GetProperty("CurrentSkillIndex", BindingFlags.Public | BindingFlags.Instance);
+        if (skillProp != null && skillProp.GetValue(persistentData) is int propIndex && propIndex > 0)
+        {
+            return propIndex;
+        }
+
+        FieldInfo skillField =
+            persistentData.GetType().GetField("currentSkillIndex", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (skillField != null && skillField.GetValue(persistentData) is int fieldIndex && fieldIndex > 0)
+        {
+            return fieldIndex;
+        }
+
+        if (persistentData.UnitIndex > 0)
+        {
+            return (persistentData.UnitIndex * 10) + 1;
+        }
+
+        return 0;
     }
 }
