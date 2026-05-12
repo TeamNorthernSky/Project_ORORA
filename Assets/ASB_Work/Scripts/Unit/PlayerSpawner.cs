@@ -11,7 +11,7 @@ using GridCellRef = ASB.Work.BattleGrid.GridCell;
 /// </summary>
 public class PlayerSpawner : MonoBehaviour
 {
-    [Header("Prefab Overrides (Index → Prefab 매핑)")]
+    [Header("Prefab Overrides (Index -> Prefab 매핑)")]
     [SerializeField] private List<PrefabMapping> prefabOverrides = new List<PrefabMapping>();
     private Dictionary<string, GameObject> _prefabOverrideDict;
 
@@ -40,7 +40,7 @@ public class PlayerSpawner : MonoBehaviour
 
     private void Awake()
     {
-        BuildPrefabOverrideDictionary();
+        EnsurePrefabOverrideDictBuilt();
 
         gridSlots.Clear();
         gridRotations.Clear();
@@ -80,36 +80,40 @@ public class PlayerSpawner : MonoBehaviour
         hierarchyReady = true;
     }
 
-    private void BuildPrefabOverrideDictionary()
+    private void EnsurePrefabOverrideDictBuilt()
     {
+        if (_prefabOverrideDict != null)
+        {
+            return;
+        }
+
         _prefabOverrideDict = new Dictionary<string, GameObject>(StringComparer.Ordinal);
         if (prefabOverrides == null || prefabOverrides.Count == 0)
         {
             return;
         }
 
-        for (int i = 0; i < prefabOverrides.Count; i++)
+        foreach (PrefabMapping mapping in prefabOverrides)
         {
-            PrefabMapping entry = prefabOverrides[i];
-            string key = string.IsNullOrEmpty(entry.unitIndex) ? string.Empty : entry.unitIndex.Trim();
-            if (string.IsNullOrEmpty(key))
+            if (string.IsNullOrWhiteSpace(mapping.unitIndex))
             {
                 continue;
             }
 
-            if (entry.prefab == null)
+            if (mapping.prefab == null)
             {
-                Debug.LogWarning($"[PlayerSpawner] PrefabOverride: Index '{entry.unitIndex}'에 프리팹이 없습니다.");
+                Debug.LogWarning($"[PlayerSpawner] PrefabOverride: Index '{mapping.unitIndex}'에 프리팹이 연결되지 않았습니다.");
                 continue;
             }
 
+            string key = mapping.unitIndex.Trim();
             if (_prefabOverrideDict.ContainsKey(key))
             {
-                Debug.LogWarning($"[PlayerSpawner] PrefabOverride: 중복 키 '{key}' — 첫 등록 항목을 유지하고 건너뜁니다.");
+                Debug.LogWarning($"[PlayerSpawner] PrefabOverride: Index '{key}' 중복 등록. 첫 번째 항목만 사용됩니다.");
                 continue;
             }
 
-            _prefabOverrideDict[key] = entry.prefab;
+            _prefabOverrideDict.Add(key, mapping.prefab);
         }
     }
 
@@ -157,10 +161,11 @@ public class PlayerSpawner : MonoBehaviour
             return null;
         }
 
+        EnsurePrefabOverrideDictBuilt();
+
         string trimmedIndex = unit.Index.Trim();
 
-        if (_prefabOverrideDict != null &&
-            _prefabOverrideDict.TryGetValue(trimmedIndex, out GameObject overridePrefab) &&
+        if (_prefabOverrideDict.TryGetValue(trimmedIndex, out GameObject overridePrefab) &&
             overridePrefab != null)
         {
             return overridePrefab;

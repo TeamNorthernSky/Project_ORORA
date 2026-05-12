@@ -130,16 +130,18 @@ public partial class BattleCharactor : MonoBehaviour, IUnitIdentifier
 
     /// <summary>
     /// 딕셔너리/Outline 등 런타임 조회용 고유 ID. 스킬 CSV 매칭용 <see cref="unitName"/>에는 포함되지 않습니다.
+    /// 스포너가 <c>gameObject.name</c>에 Index와 GetInstanceID를 붙인 뒤에는 그 이름을 그대로 씁니다(이중 접미사 방지).
     /// </summary>
     public string UnitId
     {
         get
         {
-            EnsureRuntimeInstanceKey();
-            string baseName = string.IsNullOrWhiteSpace(unitName) || unitName == "Unit"
-                ? gameObject.name
-                : unitName;
-            return $"{baseName}_{runtimeInstanceKey}";
+            if (string.IsNullOrWhiteSpace(unitName) || unitName == "Unit")
+            {
+                return gameObject.name;
+            }
+
+            return $"{unitName}_{gameObject.GetInstanceID()}";
         }
     }
 

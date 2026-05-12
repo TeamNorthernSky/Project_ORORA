@@ -551,13 +551,27 @@ public class BattleFlowManager : MonoBehaviour
         battleById.Clear();
         outlineByBattle.Clear();
 
+        int duplicateUnitIdKeys = 0;
         foreach (var battle in participants)
         {
             if (battle == null) continue;
             string key = battle.UnitId != null ? battle.UnitId.Trim() : string.Empty;
             if (string.IsNullOrWhiteSpace(key)) continue;
             // 인스턴스별 고유 UnitId 가정. 동일 키가 있으면 최신 참가자로 덮어써 조용히 누락되지 않게 합니다.
+            if (battleById.ContainsKey(key))
+            {
+                duplicateUnitIdKeys++;
+                Log(
+                    $"[BattleFlow/UnitIdDebug] Duplicate UnitId key before overwrite: '{key}' " +
+                    $"existingGo='{battleById[key].gameObject.name}' newGo='{battle.gameObject.name}'");
+            }
+
             battleById[key] = battle;
+        }
+
+        if (duplicateUnitIdKeys > 0)
+        {
+            Log($"[BattleFlow/UnitIdDebug] RebuildRuntimeLookup: {duplicateUnitIdKeys} duplicate key(s) (expected 0 after unique spawn names).");
         }
 
         var inactiveMode = includeInactiveUnitRootsInOutlineLookup

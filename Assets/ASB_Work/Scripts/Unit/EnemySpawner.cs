@@ -11,7 +11,7 @@ using GridCellRef = ASB.Work.BattleGrid.GridCell;
 /// </summary>
 public class EnemySpawner : MonoBehaviour
 {
-    [Header("Prefab Overrides (Index → Prefab 매핑)")]
+    [Header("Prefab Overrides (Index -> Prefab 매핑)")]
     [SerializeField] private List<PrefabMapping> prefabOverrides = new List<PrefabMapping>();
     private Dictionary<string, GameObject> _prefabOverrideDict;
 
@@ -38,7 +38,7 @@ public class EnemySpawner : MonoBehaviour
 
     private void Awake()
     {
-        BuildPrefabOverrideDictionary();
+        EnsurePrefabOverrideDictBuilt();
 
         gridSlots.Clear();
         gridRotations.Clear();
@@ -76,36 +76,40 @@ public class EnemySpawner : MonoBehaviour
         hierarchyReady = true;
     }
 
-    private void BuildPrefabOverrideDictionary()
+    private void EnsurePrefabOverrideDictBuilt()
     {
+        if (_prefabOverrideDict != null)
+        {
+            return;
+        }
+
         _prefabOverrideDict = new Dictionary<string, GameObject>(StringComparer.Ordinal);
         if (prefabOverrides == null || prefabOverrides.Count == 0)
         {
             return;
         }
 
-        for (int i = 0; i < prefabOverrides.Count; i++)
+        foreach (PrefabMapping mapping in prefabOverrides)
         {
-            PrefabMapping entry = prefabOverrides[i];
-            string key = string.IsNullOrEmpty(entry.unitIndex) ? string.Empty : entry.unitIndex.Trim();
-            if (string.IsNullOrEmpty(key))
+            if (string.IsNullOrWhiteSpace(mapping.unitIndex))
             {
                 continue;
             }
 
-            if (entry.prefab == null)
+            if (mapping.prefab == null)
             {
-                Debug.LogWarning($"[EnemySpawner] PrefabOverride: Index '{entry.unitIndex}'에 프리팹이 없습니다.");
+                Debug.LogWarning($"[EnemySpawner] PrefabOverride: Index '{mapping.unitIndex}'에 프리팹이 연결되지 않았습니다.");
                 continue;
             }
 
+            string key = mapping.unitIndex.Trim();
             if (_prefabOverrideDict.ContainsKey(key))
             {
-                Debug.LogWarning($"[EnemySpawner] PrefabOverride: 중복 키 '{key}' — 첫 등록 항목을 유지하고 건너뜁니다.");
+                Debug.LogWarning($"[EnemySpawner] PrefabOverride: Index '{key}' 중복 등록. 첫 번째 항목만 사용됩니다.");
                 continue;
             }
 
-            _prefabOverrideDict[key] = entry.prefab;
+            _prefabOverrideDict.Add(key, mapping.prefab);
         }
     }
 
@@ -144,10 +148,11 @@ public class EnemySpawner : MonoBehaviour
             return null;
         }
 
+        EnsurePrefabOverrideDictBuilt();
+
         string trimmedIndex = data.Index.Trim();
 
-        if (_prefabOverrideDict != null &&
-            _prefabOverrideDict.TryGetValue(trimmedIndex, out GameObject overridePrefab) &&
+        if (_prefabOverrideDict.TryGetValue(trimmedIndex, out GameObject overridePrefab) &&
             overridePrefab != null)
         {
             return overridePrefab;
@@ -243,9 +248,9 @@ public class EnemySpawner : MonoBehaviour
         battle.AssignToCell(resolvedCell);
         resolvedCell.SetOccupyingUnit(battle);
 
-        // 디버그 확인용, 이후 제거 — 스폰 직후 UnitID가 battleById 키와 일치하는지 확인
+        // 디버그: battleById는 BattleCharactor.UnitId 기준. 래퍼 UnitID는 별도 문자열입니다.
         Debug.Log(
-            $"[EnemySpawner] 스폰 직후 EnemyScript.UnitID='{enemyScript.UnitID}' (enemyId={enemyId}, grid={gridNumber})");
+            $"[EnemySpawner] 스폰 직후 BattleCharactor.UnitId='{battle.UnitId}' EnemyScript.UnitID='{enemyScript.UnitID}' (enemyId={enemyId}, grid={gridNumber})");
 
         spawnedByGrid[gridNumber] = go;
         Debug.Log(

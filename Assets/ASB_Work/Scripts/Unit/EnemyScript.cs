@@ -25,13 +25,17 @@ public class EnemyScript : MonoBehaviour, IUnitIdentifier
         set => enemyData = value;
     }
 
-    /// <summary>런타임 전투 식별자. CSV Index와 별개로 <see cref="BattleCharactor.UnitId"/>에 위임합니다.</summary>
+    /// <summary>런타임 전투 식별자. 영속 저장소 키로 사용하지 마세요(인스턴스마다 달라짐).</summary>
     public string UnitID
     {
         get
         {
-            BattleCharactor battle = GetComponent<BattleCharactor>();
-            return battle != null ? battle.UnitId : string.Empty;
+            if (enemyData == null || string.IsNullOrWhiteSpace(enemyData.Index))
+            {
+                return gameObject.GetInstanceID().ToString();
+            }
+
+            return $"{enemyData.Index.Trim()}_{gameObject.GetInstanceID()}";
         }
     }
 
