@@ -25,16 +25,13 @@ public class CharactorScript : MonoBehaviour, IUnitIdentifier
         set => charactorData = value;
     }
 
+    /// <summary>런타임 전투 식별자. CSV Index와 별개로 <see cref="BattleCharactor.UnitId"/>에 위임합니다.</summary>
     public string UnitID
     {
         get
         {
-            if (charactorData == null || string.IsNullOrWhiteSpace(charactorData.Index))
-            {
-                return string.Empty;
-            }
-
-            return charactorData.Index.Trim();
+            BattleCharactor battle = GetComponent<BattleCharactor>();
+            return battle != null ? battle.UnitId : string.Empty;
         }
     }
 

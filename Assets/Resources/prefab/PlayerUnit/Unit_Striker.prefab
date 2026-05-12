@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 1337145186152817137}
   - component: {fileID: 7338368974131783160}
   m_Layer: 8
-  m_Name: Unit_Archer
+  m_Name: Unit_Striker
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -64,6 +64,17 @@ MonoBehaviour:
       CounterRate: 5
       AvoidRate: 5
       influence: 0
+    levelupStats:
+      HP: 0
+      Atk: 0
+      DEF: 0
+      Luck: 0
+      Speed: 0
+      CriticalRate: 0
+      CritMultiplier: 0
+      CounterRate: 0
+      AvoidRate: 0
+      influence: 0
     IsEnemyRow: 0
   level: 10
   levelWeight:
@@ -110,7 +121,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitName: "\uC544\uCC98"
+  unitName: "\uC2A4\uD2B8\uB77C\uC774\uCEE4"
   teamType: 0
   finalStats:
     HP: 26

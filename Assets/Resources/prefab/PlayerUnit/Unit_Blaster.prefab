@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2337814053015336450}
   - component: {fileID: 7601110002510587678}
   m_Layer: 8
-  m_Name: Unit_Wizard
+  m_Name: Unit_Blaster
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -63,6 +63,17 @@ MonoBehaviour:
       CounterRate: 0
       AvoidRate: 0
       influence: 0
+    levelupStats:
+      HP: 0
+      Atk: 0
+      DEF: 0
+      Luck: 0
+      Speed: 0
+      CriticalRate: 0
+      CritMultiplier: 0
+      CounterRate: 0
+      AvoidRate: 0
+      influence: 0
     IsEnemyRow: 0
   level: 7
   levelWeight:
@@ -96,7 +107,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitName: "\uBA54\uC774\uC9C0"
+  unitName: "\uBE14\uB798\uC2A4\uD130"
   teamType: 0
   finalStats:
     HP: 11

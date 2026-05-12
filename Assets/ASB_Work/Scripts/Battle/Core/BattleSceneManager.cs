@@ -131,6 +131,8 @@ public class BattleSceneManager : MonoBehaviour
         allUnits.AddRange(playerBattleCharactors);
         allUnits.AddRange(enemyBattleCharactors);
 
+        // BattleFlowManager.Initialize → RebuildRuntimeLookup: 스포너/CollectParticipantsAfterInitialize 이후이며
+        // 각 인스턴스의 BattleCharactor.Awake에서 런타임 키가 이미 할당된 상태입니다.
         battleFlowManager.Initialize(allUnits);
     }
 

@@ -275,6 +275,17 @@ MonoBehaviour:
       CounterRate: 0
       AvoidRate: 0
       influence: 0
+    levelupStats:
+      HP: 0
+      Atk: 0
+      DEF: 0
+      Luck: 0
+      Speed: 0
+      CriticalRate: 0
+      CritMultiplier: 0
+      CounterRate: 0
+      AvoidRate: 0
+      influence: 0
     IsEnemyRow: 0
   enableAIDebugLog: 1
   inspectorBaseStats:
@@ -300,7 +311,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ece0c42e99d094241987f09ff85888de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitName: LowerMonster
+  unitName: LowerVillian
   teamType: 1
   finalStats:
     HP: 12

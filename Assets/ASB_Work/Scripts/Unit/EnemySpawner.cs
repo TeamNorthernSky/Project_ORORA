@@ -7,10 +7,14 @@ using GridCellRef = ASB.Work.BattleGrid.GridCell;
 
 /// <summary>
 /// EnemyPlace 최상위에 부착. Grid/Grid_n 월드 위치 참조, 소환 유닛은 Units 자식.
-/// 프리팹은 Resources/prefab/Unit_{UnitType} 에서 로드.
+/// 프리팹은 인스펙터 오버라이드(1순위) 또는 Resources/prefab/EnemyUnit/Unit_{Index} 에서 로드.
 /// </summary>
 public class EnemySpawner : MonoBehaviour
 {
+    [Header("Prefab Overrides (Index → Prefab 매핑)")]
+    [SerializeField] private List<PrefabMapping> prefabOverrides = new List<PrefabMapping>();
+    private Dictionary<string, GameObject> _prefabOverrideDict;
+
     [Serializable]
     public struct SpawnRequest
     {
@@ -34,6 +38,8 @@ public class EnemySpawner : MonoBehaviour
 
     private void Awake()
     {
+        BuildPrefabOverrideDictionary();
+
         gridSlots.Clear();
         gridRotations.Clear();
         gridCellsByNumber.Clear();
@@ -68,6 +74,39 @@ public class EnemySpawner : MonoBehaviour
         }
 
         hierarchyReady = true;
+    }
+
+    private void BuildPrefabOverrideDictionary()
+    {
+        _prefabOverrideDict = new Dictionary<string, GameObject>(StringComparer.Ordinal);
+        if (prefabOverrides == null || prefabOverrides.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < prefabOverrides.Count; i++)
+        {
+            PrefabMapping entry = prefabOverrides[i];
+            string key = string.IsNullOrEmpty(entry.unitIndex) ? string.Empty : entry.unitIndex.Trim();
+            if (string.IsNullOrEmpty(key))
+            {
+                continue;
+            }
+
+            if (entry.prefab == null)
+            {
+                Debug.LogWarning($"[EnemySpawner] PrefabOverride: Index '{entry.unitIndex}'에 프리팹이 없습니다.");
+                continue;
+            }
+
+            if (_prefabOverrideDict.ContainsKey(key))
+            {
+                Debug.LogWarning($"[EnemySpawner] PrefabOverride: 중복 키 '{key}' — 첫 등록 항목을 유지하고 건너뜁니다.");
+                continue;
+            }
+
+            _prefabOverrideDict[key] = entry.prefab;
+        }
     }
 
     private void Start()
@@ -105,7 +144,16 @@ public class EnemySpawner : MonoBehaviour
             return null;
         }
 
-        string path = $"prefab/Unit_{data.Index}";
+        string trimmedIndex = data.Index.Trim();
+
+        if (_prefabOverrideDict != null &&
+            _prefabOverrideDict.TryGetValue(trimmedIndex, out GameObject overridePrefab) &&
+            overridePrefab != null)
+        {
+            return overridePrefab;
+        }
+
+        string path = $"prefab/EnemyUnit/Unit_{trimmedIndex}";
         var prefab = Resources.Load<GameObject>(path);
         if (prefab == null)
         {
@@ -168,7 +216,7 @@ public class EnemySpawner : MonoBehaviour
 
         // BattleSceneManager.SyncGridOccupancy가 cell 하위에서 유닛을 탐색하므로, 반드시 GridCell 아래에 붙입니다.
         var go = Instantiate(prefab, worldPos, worldRot, resolvedCell.transform);
-        go.name = $"Enemy_{data.Index}";
+        go.name = $"Enemy_{data.Index}_{go.GetInstanceID()}";
 
         // 적 인스턴스에서는 IUnitIdentifier를 EnemyScript만 담당하도록 CharactorScript 제거(클릭 식별 모호 방지).
         // 같은 프레임에 RebuildRuntimeLookup이 돌 수 있어 DestroyImmediate로 즉시 제거한다.
@@ -287,7 +335,7 @@ public class EnemySpawner : MonoBehaviour
 
         ClearGrid(gridNumber);
         var go = Instantiate(prefab, worldPos, worldRot, persistentCell.transform);
-        go.name = $"Enemy_{data.Index}";
+        go.name = $"Enemy_{data.Index}_{go.GetInstanceID()}";
 
         foreach (var legacy in go.GetComponentsInChildren<CharactorScript>(true))
         {
