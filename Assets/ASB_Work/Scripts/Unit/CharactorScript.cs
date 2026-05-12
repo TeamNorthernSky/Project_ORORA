@@ -98,20 +98,11 @@ public class CharactorScript : MonoBehaviour, IUnitIdentifier
             battle.SetUnitNameForSkillMatching(fallbackData.Name);
         }
 
-        if (persistentData.CurrentSkillIndex > 0)
-        {
-            battle.SetClassSkillIndex(persistentData.CurrentSkillIndex);
-        }
-
-        if (persistentData.CurrentWeaponIndex >= 0)
-        {
-            battle.SetEquippedWeaponIndex(persistentData.CurrentWeaponIndex);
-        }
+        battle.LoadPersistentEquipment(persistentData.CurrentSkillIndex, persistentData.CurrentWeaponIndex);
 
         battle.RecalculateStats();
-        battle.ResolveSelectedSkill();
         battle.InitializeCurrentHpToMax();
-        battle.MarkInitializedFromDataPipeline();
+        battle.MarkInitializedFromDataPipeline(true);
         Debug.Log(
             $"[Stats/Persistent] {battle.UnitName} uses precomputed snapshot. " +
             $"LevelScaling=false, " +
