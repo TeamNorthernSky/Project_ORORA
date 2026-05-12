@@ -27,6 +27,11 @@ public class Outpost : MonoBehaviour
     public bool IsEnemyClaimed => outpostState == OutpostState.EnemyClaimed;
     public OutpostType OutpostType => outpostType;
 
+    private void OnValidate()
+    {
+        outpostType = OutpostTypeUtility.Normalize(outpostType);
+    }
+
     private void Awake()
     {
         multiGridOccupant = GetComponent<MultiGridOccupant>();
@@ -90,6 +95,12 @@ public class Outpost : MonoBehaviour
 
     public void ApplyInitialData(int nextResourcePerTurn, OutpostState nextState)
     {
+        ApplyInitialData(outpostType, nextResourcePerTurn, nextState);
+    }
+
+    public void ApplyInitialData(OutpostType nextOutpostType, int nextResourcePerTurn, OutpostState nextState)
+    {
+        outpostType = OutpostTypeUtility.Normalize(nextOutpostType);
         resourcePerTurn = nextResourcePerTurn;
         outpostState = nextState;
         ApplyStateMaterial();

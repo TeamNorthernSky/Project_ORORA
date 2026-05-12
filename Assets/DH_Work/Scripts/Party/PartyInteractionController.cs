@@ -18,6 +18,7 @@ public class PartyInteractionController
 
     public event Action<Vector2Int> AdjacentItemCellEntered;
     public event Action<CastleUnit> AdjacentCastleDetected;
+    public event Action<MapEventObject> AdjacentMapEventDetected;
 
     public PartyInteractionController(
         GridManager gridManager,
@@ -48,6 +49,7 @@ public class PartyInteractionController
         HandleAdjacentCastleProximity(enteredGrid);
         HandleAdjacentItemProximity(enteredGrid);
         HandleAdjacentOutpostProximity(enteredGrid);
+        HandleAdjacentEventProximity(enteredGrid);
     }
 
     public void Dispose()
@@ -76,6 +78,18 @@ public class PartyInteractionController
             return;
 
         BeginAdjacentOutpostClaim(outpostGrid);
+    }
+
+    private void HandleAdjacentEventProximity(Vector2Int enteredGrid)
+    {
+        if (!gridManager.TryGetAdjacentEventGrid(enteredGrid, out Vector2Int eventGrid))
+            return;
+
+        if (!gridManager.TryGetEventObjectAtGrid(eventGrid, out MapEventObject mapEvent))
+            return;
+
+        mapEvent.Interact();
+        AdjacentMapEventDetected?.Invoke(mapEvent);
     }
 
     private bool HandleAdjacentEnemyProximity(Vector2Int enteredGrid)
