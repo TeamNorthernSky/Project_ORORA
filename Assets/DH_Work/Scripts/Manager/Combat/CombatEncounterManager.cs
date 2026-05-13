@@ -22,12 +22,16 @@ public class CombatEncounterManager : MonoBehaviour
         if (!TryRegisterCombatParticipants(party, partyId, enemy, enemyId))
             return false;
 
+        IsCombatActive = true;
+        ActiveParty = party;
+        ActiveEnemy = enemy;
+
         Debug.Log(
             $"Combat encounter requested between party '{partyId}' and enemy '{enemyId}'. " +
             "Combat flow is not implemented yet.",
             this);
         CombatStarted?.Invoke(party, enemy);
-        return false;
+        return true;
     }
 
     public void ClearCombatState()

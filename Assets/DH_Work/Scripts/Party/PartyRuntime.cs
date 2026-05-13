@@ -37,12 +37,16 @@ public class PartyRuntime : MonoBehaviour
         interactionController.AdjacentItemCellEntered += HandleAdjacentItemCellEntered;
         interactionController.AdjacentCastleDetected += HandleAdjacentCastleDetected;
         partyGridMover.GridEntered += HandleGridEntered;
+        partyGridMover.MoveCompleted += HandleMoveCompleted;
     }
 
     private void OnDestroy()
     {
         if (partyGridMover != null)
+        {
             partyGridMover.GridEntered -= HandleGridEntered;
+            partyGridMover.MoveCompleted -= HandleMoveCompleted;
+        }
 
         if (interactionController == null)
             return;
@@ -55,6 +59,11 @@ public class PartyRuntime : MonoBehaviour
     private void HandleGridEntered(Vector2Int enteredGrid)
     {
         interactionController?.HandleGridEntered(enteredGrid);
+    }
+
+    private void HandleMoveCompleted()
+    {
+        interactionController?.HandleMoveCompleted();
     }
 
     private void HandleAdjacentItemCellEntered(Vector2Int itemGrid)

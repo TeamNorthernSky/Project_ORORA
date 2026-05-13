@@ -2,6 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum EnemyBehaviorType
+{
+    Mobile,
+    StayEnemy
+}
+
 [RequireComponent(typeof(EnemyIdentity))]
 [RequireComponent(typeof(EnemyComposition))]
 public class EnemyGridMover : MonoBehaviour
@@ -16,6 +22,7 @@ public class EnemyGridMover : MonoBehaviour
     [SerializeField] private float moveSpeed = 4f;
     [SerializeField] private float arriveThreshold = 0.01f;
     [SerializeField] private int movePointsPerTurn = 5;
+    [SerializeField] private EnemyBehaviorType behaviorType = EnemyBehaviorType.Mobile;
 
     private Vector2Int currentGrid;
     private float fixedY;
@@ -27,6 +34,8 @@ public class EnemyGridMover : MonoBehaviour
 
     public string EnemyId => enemyIdentity != null ? enemyIdentity.EnemyId : string.Empty;
     public int MovePointsPerTurn => Mathf.Max(0, movePointsPerTurn);
+    public EnemyBehaviorType BehaviorType => behaviorType;
+    public bool IsStayEnemy => behaviorType == EnemyBehaviorType.StayEnemy;
     public EnemyTargetType CurrentTargetType => currentTargetType;
     public Component CurrentTarget => currentTarget;
 
@@ -67,6 +76,11 @@ public class EnemyGridMover : MonoBehaviour
     {
         enemyIdentity ??= GetComponent<EnemyIdentity>();
         enemyIdentity?.SetEnemyId(nextEnemyId);
+    }
+
+    public void SetBehaviorType(EnemyBehaviorType nextBehaviorType)
+    {
+        behaviorType = nextBehaviorType;
     }
 
     public void SetTarget(EnemyTargetType targetType, Component target)

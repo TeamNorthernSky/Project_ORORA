@@ -45,6 +45,9 @@ public class EnemyTurnController : MonoBehaviour
             if (enemy == null)
                 continue;
 
+            if (enemy.IsStayEnemy)
+                continue;
+
             if (HandleAdjacentOutpostInteraction(enemy))
                 continue;
 

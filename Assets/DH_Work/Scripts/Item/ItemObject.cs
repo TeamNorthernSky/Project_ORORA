@@ -27,6 +27,9 @@ public class ItemObject : MonoBehaviour
 
     public void GetItem(ResourceManager resourceManager)
     {
+        if (resourceManager == null)
+            return;
+
         resourceManager.AddResource(resourceType, amount);
 
         Destroy(gameObject);

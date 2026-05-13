@@ -3,6 +3,14 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.Tilemaps;
 
+public enum EnemyEncounterZoneState
+{
+    None,
+    EnemyOccupied,
+    SingleEnemyZone,
+    OverlappedEnemyZone
+}
+
 public class GridManager : MonoBehaviour
 {
     private static readonly Vector2Int[] directions8 =
@@ -39,6 +47,7 @@ public class GridManager : MonoBehaviour
     [SerializeField] private LayerMask enemyLayerMask;
     [SerializeField] private LayerMask castleLayerMask;
     [SerializeField] private FogGridManager fogGridManager;
+    [SerializeField] private EnemyRegistry enemyRegistry;
     [SerializeField] private CastleRegistry castleRegistry;
     [FormerlySerializedAs("mineRegistry")]
     [SerializeField] private OutpostRegistry outpostRegistry;
@@ -85,6 +94,9 @@ public class GridManager : MonoBehaviour
         if (fogGridManager == null)
             fogGridManager = FindFirstObjectByType<FogGridManager>();
 
+        if (enemyRegistry == null)
+            enemyRegistry = FindFirstObjectByType<EnemyRegistry>();
+
         if (castleRegistry == null)
             castleRegistry = FindFirstObjectByType<CastleRegistry>();
 
@@ -108,6 +120,9 @@ public class GridManager : MonoBehaviour
 
         if (castleRegistry == null)
             castleRegistry = FindFirstObjectByType<CastleRegistry>();
+
+        if (enemyRegistry == null)
+            enemyRegistry = FindFirstObjectByType<EnemyRegistry>();
 
         if (outpostRegistry == null)
             outpostRegistry = FindFirstObjectByType<OutpostRegistry>();
@@ -308,6 +323,20 @@ public class GridManager : MonoBehaviour
     {
         enemy = null;
 
+        IReadOnlyList<EnemyGridMover> enemies = enemyRegistry != null
+            ? enemyRegistry.Enemies
+            : FindObjectsByType<EnemyGridMover>(FindObjectsSortMode.None);
+
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            EnemyGridMover candidate = enemies[i];
+            if (candidate == null || candidate.GetCurrentGrid() != grid)
+                continue;
+
+            enemy = candidate;
+            return true;
+        }
+
         Vector3 center = GridToWorldCenter(grid);
         center.y = GetLandSurfaceY() + 0.5f;
 
@@ -326,6 +355,63 @@ public class GridManager : MonoBehaviour
         }
 
         return false;
+    }
+
+    public EnemyEncounterZoneState GetEnemyEncounterZoneState(Vector2Int grid, out EnemyGridMover owner)
+    {
+        owner = null;
+
+        IReadOnlyList<EnemyGridMover> enemies = enemyRegistry != null
+            ? enemyRegistry.Enemies
+            : FindObjectsByType<EnemyGridMover>(FindObjectsSortMode.None);
+
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            EnemyGridMover enemy = enemies[i];
+            if (enemy == null)
+                continue;
+
+            if (enemy.GetCurrentGrid() != grid)
+                continue;
+
+            owner = enemy;
+            return EnemyEncounterZoneState.EnemyOccupied;
+        }
+
+        int ownerCount = 0;
+        EnemyGridMover singleOwner = null;
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            EnemyGridMover enemy = enemies[i];
+            if (enemy == null)
+                continue;
+
+            if (GridDistance(grid, enemy.GetCurrentGrid()) > 1)
+                continue;
+
+            ownerCount++;
+            if (ownerCount == 1)
+            {
+                singleOwner = enemy;
+                continue;
+            }
+
+            owner = null;
+            return EnemyEncounterZoneState.OverlappedEnemyZone;
+        }
+
+        if (ownerCount == 1)
+        {
+            owner = singleOwner;
+            return EnemyEncounterZoneState.SingleEnemyZone;
+        }
+
+        return EnemyEncounterZoneState.None;
+    }
+
+    public bool TryGetEnemyEncounterZoneOwner(Vector2Int grid, out EnemyGridMover enemy)
+    {
+        return GetEnemyEncounterZoneState(grid, out enemy) == EnemyEncounterZoneState.SingleEnemyZone;
     }
 
     public bool TryGetCastleObjectAtGrid(Vector2Int grid, out CastleUnit castle)

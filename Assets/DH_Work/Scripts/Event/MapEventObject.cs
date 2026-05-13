@@ -6,10 +6,14 @@ public class MapEventObject : MonoBehaviour
     public static event Action<MapEventObject> EventInteracted;
 
     [SerializeField] private string eventKey = "event_001";
+    [SerializeField] private ResourceType requireResource = ResourceType.Money;
+    [SerializeField] private int requireAmount = 100;
 
     private MapEventRegistry eventRegistry;
 
     public string EventKey => eventKey;
+    public ResourceType RequireResource => requireResource;
+    public int RequireAmount => requireAmount;
 
     private void OnEnable()
     {
@@ -33,6 +37,25 @@ public class MapEventObject : MonoBehaviour
     public void Interact()
     {
         EventInteracted?.Invoke(this);
+    }
+
+    public bool TryExecuteEvent(ResourceManager resourceManager)
+    {
+        if (resourceManager == null) return false;
+
+        if (resourceManager.SpendResource(requireResource, requireAmount))
+        {
+            ExecuteEvent();
+            Destroy(gameObject);
+            return true;
+        }
+        return false;
+    }
+
+    private void ExecuteEvent()
+    {
+        // TODO: 실제 이벤트 로직 구현
+        Debug.Log($"[MapEvent] Executing event '{eventKey}'... Consumed {requireAmount} {requireResource}");
     }
 
     public Vector2Int GetCurrentGrid(GridManager gridManager)

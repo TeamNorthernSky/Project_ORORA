@@ -20,6 +20,8 @@ public class PartyGridMover : MonoBehaviour
     private float fixedY;
     private PartyMovePointController movePointController;
 
+    public Vector2Int? TargetInteractionGrid { get; private set; }
+
     public event Action<List<Vector2Int>> PathUpdated;
     public event Action<Vector2Int> GridEntered;
     public event Action MoveCompleted;
@@ -55,6 +57,7 @@ public class PartyGridMover : MonoBehaviour
             if (reachedPathEnd && pathQueue.Count == 0)
             {
                 isMoving = false;
+                TargetInteractionGrid = null;
                 MoveCompleted?.Invoke();
             }
         }
@@ -83,6 +86,7 @@ public class PartyGridMover : MonoBehaviour
     {
         pathQueue.Clear();
         isMoving = false;
+        TargetInteractionGrid = null;
         currentGrid = grid;
 
         if (gridManager == null)
@@ -93,6 +97,7 @@ public class PartyGridMover : MonoBehaviour
         transform.position = worldPosition;
         GridEntered?.Invoke(currentGrid);
         NotifyPathUpdated();
+        MoveCompleted?.Invoke();
     }
 
     public List<Vector2Int> GetRemainingPath()
@@ -102,8 +107,9 @@ public class PartyGridMover : MonoBehaviour
         return remainingPath;
     }
 
-    public void MoveByGridPath(List<Vector2Int> fullPath)
+    public void MoveByGridPath(List<Vector2Int> fullPath, Vector2Int? interactionTarget = null)
     {
+        TargetInteractionGrid = interactionTarget;
         pathQueue.Clear();
         isMoving = false;
 
@@ -113,6 +119,11 @@ public class PartyGridMover : MonoBehaviour
         if (fullPath == null || fullPath.Count <= 1)
         {
             NotifyPathUpdated();
+
+            if (interactionTarget.HasValue && !TargetInteractionGrid.HasValue)
+                return;
+
+            TargetInteractionGrid = null;
             MoveCompleted?.Invoke();
             return;
         }
