@@ -484,12 +484,23 @@ public class GridManager : MonoBehaviour
 
     public bool TryGetAdjacentOutpostGrid(Vector2Int grid, out Vector2Int outpostGrid)
     {
-        for (int i = 0; i < directions8.Length; i++)
+        IReadOnlyList<Outpost> outposts = outpostRegistry != null
+            ? outpostRegistry.Outposts
+            : FindObjectsByType<Outpost>(FindObjectsSortMode.None);
+
+        for (int i = 0; i < outposts.Count; i++)
         {
-            Vector2Int candidate = grid + directions8[i];
-            if (TryGetOutpostObjectAtGrid(candidate, out _))
+            Outpost outpost = outposts[i];
+            if (outpost == null)
+                continue;
+
+            IReadOnlyList<Vector2Int> interactionCells = outpost.GetAdjacentInteractionCells(this);
+            for (int cellIndex = 0; cellIndex < interactionCells.Count; cellIndex++)
             {
-                outpostGrid = candidate;
+                if (interactionCells[cellIndex] != grid)
+                    continue;
+
+                outpostGrid = outpost.GetAnchorGrid(this);
                 return true;
             }
         }
@@ -588,11 +599,7 @@ public class GridManager : MonoBehaviour
         if (castle == null)
             return false;
 
-        MultiGridOccupant occupant = castle.GetComponent<MultiGridOccupant>();
-        if (occupant != null)
-            return occupant.IsAdjacentOuterCell(grid);
-
-        return IsAdjacentToSingleCell(grid, castle.GetCurrentGrid());
+        return castle.IsInteractionCell(grid);
     }
 
     public bool CanEnterCell(Vector2Int grid, Vector2Int destination, Transform selfTransform = null, bool ignoreFogVisibility = false)

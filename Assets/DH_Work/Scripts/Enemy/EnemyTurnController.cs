@@ -250,11 +250,7 @@ public class EnemyTurnController : MonoBehaviour
     private List<Vector2Int> GetApproachCandidates(EnemyTargetType targetType, Component target, Vector2Int targetGrid)
     {
         if (targetType == EnemyTargetType.Castle && target is CastleUnit castle && gridManager != null)
-        {
-            MultiGridOccupant occupant = castle.GetComponent<MultiGridOccupant>();
-            if (occupant != null)
-                return new List<Vector2Int>(occupant.GetAdjacentOuterCells());
-        }
+            return new List<Vector2Int>(castle.GetInteractionCells());
 
         if (targetType == EnemyTargetType.Outpost && target is Outpost outpost)
             return new List<Vector2Int>(outpost.GetAdjacentInteractionCells(gridManager));

@@ -79,7 +79,12 @@ public class MoveCommandPreviewController
         if (activeMover == null || gridManager == null || pathfinder == null || marker == null)
             return;
 
-        Vector2Int requestedDestinationGrid = ResolveDestinationGrid(activeMover, clickedGrid);
+        if (!TryResolveDestinationGrid(activeMover, clickedGrid, out Vector2Int requestedDestinationGrid))
+        {
+            ClearPreview();
+            return;
+        }
+
         Vector2Int partyGrid = activeMover.GetCurrentGrid();
         List<Vector2Int> path = FindPlayerPreviewPath(
             activeMover,
@@ -235,25 +240,39 @@ public class MoveCommandPreviewController
             marker.gameObject.SetActive(true);
     }
 
-    private Vector2Int ResolveDestinationGrid(PartyGridMover activeMover, Vector2Int clickedGrid)
+    private bool TryResolveDestinationGrid(PartyGridMover activeMover, Vector2Int clickedGrid, out Vector2Int destinationGrid)
     {
+        destinationGrid = clickedGrid;
+
         if (activeMover == null || gridManager == null)
-            return clickedGrid;
+            return true;
 
         if (gridManager.TryGetOutpostObjectAtGrid(clickedGrid, out Outpost outpost))
-            return ResolveApproachGrid(activeMover, clickedGrid, outpost.GetAnchorGrid(gridManager), outpost.GetAdjacentInteractionCells(gridManager));
+            return TryResolveApproachGrid(
+                activeMover,
+                outpost.GetAnchorGrid(gridManager),
+                outpost.GetAdjacentInteractionCells(gridManager),
+                out destinationGrid);
 
         if (gridManager.TryGetVillainUnionBaseAtGrid(clickedGrid, out VillainUnionBase villainUnionBase))
-            return ResolveApproachGrid(activeMover, clickedGrid, villainUnionBase.GetAnchorGrid(), villainUnionBase.GetAdjacentOuterCells());
+            return TryResolveApproachGrid(
+                activeMover,
+                villainUnionBase.GetAnchorGrid(),
+                villainUnionBase.GetInteractionCells(),
+                out destinationGrid);
 
         if (!gridManager.TryGetCastleObjectAtGrid(clickedGrid, out CastleUnit castle))
-            return clickedGrid;
+            return true;
 
         MultiGridOccupant occupant = castle.GetComponent<MultiGridOccupant>();
         if (occupant == null)
-            return clickedGrid;
+            return true;
 
-        return ResolveApproachGrid(activeMover, clickedGrid, castle.GetCurrentGrid(), occupant.GetAdjacentOuterCells());
+        return TryResolveApproachGrid(
+            activeMover,
+            occupant.AnchorGrid,
+            castle.GetInteractionCells(),
+            out destinationGrid);
     }
 
     private List<Vector2Int> FindPlayerPreviewPath(
@@ -294,20 +313,23 @@ public class MoveCommandPreviewController
         return null;
     }
 
-    private Vector2Int ResolveApproachGrid(
+    private bool TryResolveApproachGrid(
         PartyGridMover activeMover,
-        Vector2Int fallbackGrid,
         Vector2Int targetGrid,
-        IReadOnlyList<Vector2Int> approachCandidates)
+        IReadOnlyList<Vector2Int> approachCandidates,
+        out Vector2Int destinationGrid)
     {
         Vector2Int moverGrid = activeMover.GetCurrentGrid();
         for (int i = 0; i < approachCandidates.Count; i++)
         {
             if (approachCandidates[i] == moverGrid)
-                return moverGrid;
+            {
+                destinationGrid = moverGrid;
+                return true;
+            }
         }
 
-        Vector2Int bestGrid = fallbackGrid;
+        Vector2Int bestGrid = moverGrid;
         List<Vector2Int> bestPath = null;
 
         for (int i = 0; i < approachCandidates.Count; i++)
@@ -338,7 +360,8 @@ public class MoveCommandPreviewController
             }
         }
 
-        return bestPath != null ? bestGrid : fallbackGrid;
+        destinationGrid = bestGrid;
+        return bestPath != null;
     }
 
     private List<Vector2Int> AdjustPathForSpecialDestination(List<Vector2Int> path)
