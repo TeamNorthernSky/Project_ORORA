@@ -4,6 +4,7 @@ Shader "Custom/KJ/Outline"
     {
         _OutlineColor ("Outline Color", Color) = (0, 0, 0, 1)
         _OutlineWidth ("Outline Width", Range(0, 0.5)) = 0.02
+        _StencilRef ("Stencil Ref", Float) = 1
         [Space(10)]
         [KeywordEnum(Normal, Color, UV2)] _NormalSource ("Normal Source", Float) = 0
         [KeywordEnum(Screen, World)] _WidthMode ("Width Mode", Float) = 0
@@ -29,7 +30,7 @@ Shader "Custom/KJ/Outline"
             // → 실루엣 바깥 픽셀(외곽선 영역)에만 그림
             Stencil
             {
-                Ref 1
+                Ref [_StencilRef]
                 Comp NotEqual
                 Pass Keep
             }
@@ -84,6 +85,9 @@ Shader "Custom/KJ/Outline"
 #elif defined(_NORMALSOURCE_UV2)
                 outlineNormal = input.uv2.xyz;
 #endif
+                outlineNormal = dot(outlineNormal, outlineNormal) > 0.000001
+                    ? normalize(outlineNormal)
+                    : normalize(input.normalOS);
 
 #if defined(_WIDTHMODE_WORLD)
                 // 1. 월드 공간(World Space) 기준 확장
@@ -116,8 +120,12 @@ Shader "Custom/KJ/Outline"
 #endif
 
                 // Z-Fighting(끊김/파묻힘) 방지 및 Depth Bias 적용
+                // clipPos.z -= _DepthBias * clipPos.w;
+#if UNITY_REVERSED_Z
+                clipPos.z += _DepthBias * clipPos.w;
+#else
                 clipPos.z -= _DepthBias * clipPos.w;
-
+#endif
                 output.positionCS = clipPos;
 
                 return output;

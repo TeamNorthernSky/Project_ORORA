@@ -28,7 +28,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   fogColor:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: {r: 1, g: 0.07861614, b: 0.07861614, a: 0.50980395}
   noiseTexture:
     m_OverrideState: 0
