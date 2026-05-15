@@ -40,6 +40,14 @@ public class LevelLoader : MonoBehaviour
     private bool queuedEditorReload;
 #endif
 
+    private void Awake()
+    {
+        if (!Application.isPlaying || !clearExistingBeforeLoad)
+            return;
+
+        ClearSpawnedObjects();
+    }
+
     private void Start()
     {
         if (loadOnStart)
@@ -316,9 +324,28 @@ public class LevelLoader : MonoBehaviour
     private void ClearStayEnemies()
     {
         if (stayEnemyRoot != null && stayEnemyRoot != transform)
-            ClearChildren(stayEnemyRoot);
+            ClearStayEnemyChildren(stayEnemyRoot);
 
-        ClearDirectChildrenWithComponent<EnemyGridMover>();
+        ClearStayEnemyChildren(transform);
+    }
+
+    private void ClearStayEnemyChildren(Transform root)
+    {
+        if (root == null)
+            return;
+
+        for (int i = root.childCount - 1; i >= 0; i--)
+        {
+            Transform child = root.GetChild(i);
+            EnemyGridMover enemy = child.GetComponent<EnemyGridMover>();
+            if (enemy == null || !enemy.IsStayEnemy)
+                continue;
+
+            if (Application.isPlaying)
+                Destroy(child.gameObject);
+            else
+                DestroyImmediate(child.gameObject);
+        }
     }
 
     private void ClearDirectChildrenWithComponent<T>() where T : Component
